@@ -44,6 +44,9 @@ decisions.
   operation needs a schema in `ops/schema.ts`, a case in the `Executor`,
   unit tests for success and every failure, and a generator case in
   `test/op-arbitraries.ts` so the inverse property covers it (ADR-008).
+- **Diagnostics state the gap, never the fix** (ADR-009). A new diagnostic needs
+  an entry in `DIAGNOSTICS`, tests that make it fire and keep it quiet, and,
+  for warnings, a reason it isn't noise.
 - Significant decisions get an ADR in `docs/adr/`.
 - Match the surrounding code's style and comment density. Prettier formats
   code; Markdown is hand-formatted.

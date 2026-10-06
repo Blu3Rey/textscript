@@ -69,7 +69,13 @@ export { diffPrograms, isEmptyDiff, type IrDiff } from './ir/diff';
 export type * from './ops/types';
 export { HOLE_REASONS, apply } from './ops/apply';
 export { EditBatchSchema, EditOpSchema, OP_SCHEMAS, editBatchJsonSchema } from './ops/schema';
-export { createUtterance, tokenize, type Utterance, type UtteranceToken } from './session/tokenize';
+export {
+  createUtterance,
+  quoteSpan,
+  tokenize,
+  type Utterance,
+  type UtteranceToken,
+} from './session/tokenize';
 export {
   SessionLogSchema,
   applyEvent,
@@ -87,3 +93,17 @@ export {
   type SessionResult,
   type SessionState,
 } from './session/session';
+export {
+  DIAGNOSTICS,
+  type Diagnostic,
+  type DiagnosticCode,
+  type Severity,
+} from './analyze/diagnostics';
+export { INFERENCE_RULES, fitsInferenceRule, type InferenceRule } from './analyze/inference-rules';
+export { completesNormally, fallsThrough } from './analyze/flow';
+export {
+  analyze,
+  type Analysis,
+  type AnalyzeOptions,
+  type CoverageSummary,
+} from './analyze/analyze';

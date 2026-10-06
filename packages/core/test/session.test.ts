@@ -4,6 +4,7 @@ import {
   createUtterance,
   emptySession,
   parseSessionLog,
+  quoteSpan,
   replay,
   serialize,
   serializeSessionLog,
@@ -38,6 +39,14 @@ describe('tokenize', () => {
       '😀',
     ]);
     expect(tokenize('O(n)').map((t) => t.text)).toEqual(['O', '(', 'n', ')']);
+  });
+
+  it('quotes the words a span covers, as typed', () => {
+    const utterances = [createUtterance('u1', 'add  it to   the set')];
+    expect(quoteSpan({ utteranceId: 'u1', start: 2, end: 5 }, utterances)).toBe('to   the set');
+    expect(quoteSpan({ utteranceId: 'u2', start: 0, end: 1 }, utterances)).toBeUndefined();
+    expect(quoteSpan({ utteranceId: 'u1', start: 4, end: 9 }, utterances)).toBeUndefined();
+    expect(quoteSpan({ utteranceId: 'u1', start: 2, end: 2 }, utterances)).toBeUndefined();
   });
 
   it('returns nothing for blank text', () => {
