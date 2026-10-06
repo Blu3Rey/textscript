@@ -294,6 +294,8 @@ criteria** (the definition of done) and **Risks**.
 
 #### S0: Project foundations
 
+**Status:** ✅ Done
+
 **Goal:** A repo where adding code is cheap and breaking it is loud.
 
 **Deliverables**

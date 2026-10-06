@@ -8,5 +8,20 @@ approach covers and go back to refine it.
 Built for practicing the "walk me through your approach" part of coding
 interviews.
 
-**Status:** planning. See [ROADMAP.md](ROADMAP.md) for the architecture and
-the segmented development plan.
+## Status
+
+Segment S0 (project foundations) is done. The engine itself starts in S1.
+See [ROADMAP.md](ROADMAP.md) for the architecture and the full plan.
+
+## Getting started
+
+Requires Node 22, pnpm 10 (`corepack enable`) and Python 3.12+.
+
+```sh
+pnpm install
+pnpm check            # typecheck, lint, format, tests, Python golden parse
+pnpm textscript --help
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for commands, conventions and how to
+add a package, and [docs/adr/](docs/adr/README.md) for design decisions.

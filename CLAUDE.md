@@ -1,0 +1,36 @@
+# CLAUDE.md
+
+Guidance for AI coding assistants working in this repository.
+
+## What this is
+
+TextScript turns a plain-English walkthrough of a coding approach into code
+that shows only what was said. Gaps stay visible as holes. Read
+`ROADMAP.md` §1–3 before making design changes, and `docs/adr/` for settled
+decisions.
+
+## Commands
+
+- `pnpm check`: run before finishing any change; it's exactly what CI runs.
+- `pnpm test`, `pnpm --filter @textscript/<pkg> test`, `pnpm test -u` (rewrite goldens).
+- `pnpm new-package <name> [--node]` to add a package.
+
+## Rules
+
+- **Never make the engine "helpful".** Code that infers values, conditions,
+  returns or data structures the user didn't state violates ADR-004. Leave a
+  hole instead. The allowed-inference list is ROADMAP.md §3.5.
+- `packages/core` and `packages/render-python` must stay environment-agnostic:
+  no Node built-ins, no `process`/`Buffer`, no DOM globals in `src/`. Lint
+  enforces it; don't disable the rule.
+- Internal packages export TypeScript source (`src/index.ts`); don't add
+  build steps or `dist/` outputs.
+- Golden files in `test/golden/` are compared byte for byte. Update them with
+  `pnpm test -u` only for intended output changes, and check the diff.
+- Strict TypeScript (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`).
+  Narrow types instead of using `!` or `as`.
+- TypeScript is pinned to `~6.0` because typescript-eslint doesn't support 7
+  yet. Don't bump it without checking that.
+- Significant decisions get an ADR in `docs/adr/`.
+- Match the surrounding code's style and comment density. Prettier formats
+  code; Markdown is hand-formatted.
