@@ -10,9 +10,10 @@ interviews.
 
 ## Status
 
-Segments S0 (project foundations), S1 (the IR), S2 (the Python renderer)
-and S3 (edit operations, undo and the session log) are done. Next is S4: the
-analyzer that finds gaps.
+Segments S0–S4 are done: project foundations, the IR, the Python renderer,
+edit operations with undo and the session log, and the analyzer that reports
+gaps. Next is S5, the developer console that completes the deterministic
+engine (milestone M1).
 See [ROADMAP.md](ROADMAP.md) for the architecture and the full plan.
 
 ## Getting started

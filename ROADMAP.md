@@ -228,12 +228,20 @@ that breaks any of them.
 | `GAP005 vague-value` | gap | An `ExprHole` exists |
 | `GAP006 unknown-input` | gap | A function's inputs were never named |
 | `GAP007 ambiguous-reference` | gap | A `RefHole` exists |
+| `GAP008 unnamed` | gap | A `NameHole` exists outside a function's inputs |
+| `GAP009 step-in-words-only` | gap | An `IntentStmt`: a step described in words but not how it works |
 | `WARN001 unused-name` | warning | Introduced but never used |
 | `WARN002 unreachable` | warning | Statements after a `return`/`break` |
 | `WARN003 shadowing` | warning | A name is reintroduced in an inner scope |
+| `WARN004 unsupported-inference` | warning | A node marked as inferred doesn't fit its rule |
+| `WARN005 used-before-set` | warning | A name is used before it's set up, in the same scope |
+| `WARN006 jump-outside-loop` | warning | `break` or `continue` outside a loop |
+| `WARN007 duplicate-parameter` | warning | A function has two inputs with the same name |
 | `INFO001 inferred` | info | Something was added under an allowed inference rule |
 
 Diagnostics describe what's missing. They **never** suggest what the fix should be.
+[ADR-009](docs/adr/009-gap-analysis.md) has the exact rules; GAP008, GAP009 and
+WARN004–007 were added in S4.
 
 ### 3.5 Allowed-inference policy
 
@@ -255,15 +263,18 @@ and anything the user said "we'll figure out later" about.
 
 ### 3.6 Worked example
 
+The problem gives `nums` as its input. Gaps after each step (inferences omitted):
+
 | # | User says | Ops (summary) | Result |
 |---|---|---|---|
-| 1 | "Loop through the list of numbers." | `add_stmt(root, ForEach{target: num (INF-LOOPVAR), iterable: nums, body: BlockHole})` | `for num in nums:` + `⟨body not described⟩` |
-| 2 | "If we've already seen the number, return true." | `fill_hole(body, If{cond: Membership(num, seen), then: [Return(True)]})` | `if num in seen: return True`. **GAP001**: `seen` never introduced |
-| 3 | "Oh, we keep a set called seen, empty at the start." | `add_stmt(root, before loop, Assign(seen, set()))` | GAP001 resolved |
-| 4 | "Otherwise add it to the set." | `update_field(if, else, [Update(seen, add, num)])` (`INF-SYNONYM`) | `else: seen.add(num)` |
-| — | (nothing said about the end) | — | **GAP003**: no return described after the loop |
+| 1 | "Loop through the list of numbers." | `add_stmt(root, ForEach{target: num (INF-LOOPVAR), iterable: nums, body: BlockHole})` | `for num in nums:` + `⟨body not described⟩`. **GAP002**: nothing inside the loop |
+| 2 | "If we've already seen the number, return true." | `fill_hole(body, If{cond: Membership(num, seen), body: [Return(True)]})` | `if num in seen: return True`. **GAP001**: `seen` never set up. **GAP003**: nothing returned at the end |
+| 3 | "Oh, we keep a set called seen, empty at the start." | `add_stmt(root, at start, Assign(seen, set()))` | GAP001 resolved |
+| 4 | "Otherwise add it to the set." | `update_field(if, orelse, Block[Update(seen, add, num)])` (`INF-SYNONYM`) | `else: seen.add(num)`. GAP003 remains |
 
-The user never said "return False". The tool shows that they didn't.
+The user never said "return False". The tool shows that they didn't. This
+walkthrough is a test (`packages/core/test/analyze-walkthrough.test.ts`) that
+checks the exact diagnostics at every step.
 
 ---
 
@@ -409,6 +420,8 @@ criteria** (the definition of done) and **Risks**.
 ---
 
 #### S4: Analyzer (gap and diagnostic engine)
+
+**Status:** ✅ Done ([ADR-009](docs/adr/009-gap-analysis.md))
 
 **Goal:** Turn "what's missing" into a precise, explainable list.
 

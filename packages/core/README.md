@@ -1,7 +1,7 @@
 # @textscript/core
 
-The deterministic engine: the IR, edit operations, the session log and (in
-S4) gap analysis. Environment-agnostic; Zod is the only runtime dependency.
+The deterministic engine: the IR, edit operations, the session log and gap
+analysis. Environment-agnostic; Zod is the only runtime dependency.
 
 ## The IR (segment S1)
 
@@ -88,8 +88,29 @@ const result = applyEvent(state, {
 // result.state.document now holds the loop; applyEvent(result.state, { type: 'undo' }) takes it back.
 ```
 
+## Gap analysis (segment S4)
+
+| Module | What it provides |
+|---|---|
+| `analyze/analyze.ts` | `analyze(program, options)`: diagnostics and the coverage summary |
+| `analyze/diagnostics.ts` | `DIAGNOSTICS`: every code, its name, severity and summary |
+| `analyze/inference-rules.ts` | `INFERENCE_RULES` and `fitsInferenceRule` |
+| `analyze/flow.ts` | `completesNormally`, `fallsThrough` |
+
+```ts
+import { analyze } from '@textscript/core';
+import { PYTHON_BUILTINS } from '@textscript/render-python';
+
+const { diagnostics, coverage } = analyze(state.document.program, {
+  builtins: PYTHON_BUILTINS, // len(), range() … aren't gaps
+  inputs: ['nums'], // the problem's inputs
+  utterances: state.utterances, // fills in each diagnostic's quotes
+});
+```
+
 Design decisions are in [ADR-006](../../docs/adr/006-ir-schema-and-validation.md)
-(the IR) and [ADR-008](../../docs/adr/008-edit-operations-and-sessions.md)
-(edits and sessions).
+(the IR), [ADR-008](../../docs/adr/008-edit-operations-and-sessions.md)
+(edits and sessions) and [ADR-009](../../docs/adr/009-gap-analysis.md) (gap
+analysis).
 Expected outputs are in `test/golden/`: the exported JSON Schema and the
 ROADMAP §3.6 worked example as canonical JSON.

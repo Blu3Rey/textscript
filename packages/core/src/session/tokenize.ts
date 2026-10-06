@@ -34,3 +34,25 @@ export function tokenize(text: string): UtteranceToken[] {
 export function createUtterance(id: string, text: string): Utterance {
   return { id, text, tokens: tokenize(text) };
 }
+
+/**
+ * The words a span covers, as the user typed them (original spacing kept),
+ * or `undefined` if the span doesn't fit the utterance.
+ */
+export function quoteSpan(
+  span: { utteranceId: string; start: number; end: number },
+  utterances: readonly Utterance[],
+): string | undefined {
+  const utterance = utterances.find((u) => u.id === span.utteranceId);
+  const first = utterance?.tokens[span.start];
+  const last = utterance?.tokens[span.end - 1];
+  if (
+    utterance === undefined ||
+    first === undefined ||
+    last === undefined ||
+    span.end <= span.start
+  ) {
+    return undefined;
+  }
+  return utterance.text.slice(first.start, last.end);
+}

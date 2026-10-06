@@ -1,4 +1,4 @@
-import { buildSymbolTable, createBuilder } from '@textscript/core';
+import { analyze, buildSymbolTable, createBuilder } from '@textscript/core';
 import { said } from '@textscript/core/testing';
 import { describe, expect, it } from 'vitest';
 import {
@@ -84,5 +84,22 @@ describe('PYTHON_BUILTINS', () => {
       ['len', 'builtin'],
       ['nums', 'unresolved'],
     ]);
+  });
+});
+
+describe('PYTHON_BUILTINS with the analyzer', () => {
+  it("keeps Python's built-ins from being reported as undeclared names", () => {
+    const b = createBuilder();
+    const call = b.call(
+      { callee: b.name('len', said(0)), args: [b.name('nums', said(1))] },
+      said(0, 2),
+    );
+    const program = b.program([b.exprStmt(call, said(0, 2))]);
+    const undeclared = (options: Parameters<typeof analyze>[1]) =>
+      analyze(program, options)
+        .diagnostics.filter((d) => d.code === 'GAP001')
+        .map((d) => d.message);
+    expect(undeclared({ inputs: ['nums'] })).toEqual(['`len` is used but never set up.']);
+    expect(undeclared({ inputs: ['nums'], builtins: PYTHON_BUILTINS })).toEqual([]);
   });
 });
