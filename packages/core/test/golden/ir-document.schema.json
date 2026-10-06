@@ -1,0 +1,1632 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/IrDocument",
+  "$defs": {
+    "IrDocument": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "nextId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "program": {
+          "$ref": "#/$defs/Program"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "nextId",
+        "program"
+      ],
+      "additionalProperties": false
+    },
+    "Program": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Program"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Stmt"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "body",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "NodeId": {
+      "type": "string",
+      "pattern": "^n[1-9][0-9]*$"
+    },
+    "Stmt": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/FunctionDef"
+        },
+        {
+          "$ref": "#/$defs/ForEach"
+        },
+        {
+          "$ref": "#/$defs/ForRange"
+        },
+        {
+          "$ref": "#/$defs/While"
+        },
+        {
+          "$ref": "#/$defs/If"
+        },
+        {
+          "$ref": "#/$defs/Assign"
+        },
+        {
+          "$ref": "#/$defs/Update"
+        },
+        {
+          "$ref": "#/$defs/Return"
+        },
+        {
+          "$ref": "#/$defs/Break"
+        },
+        {
+          "$ref": "#/$defs/Continue"
+        },
+        {
+          "$ref": "#/$defs/ExprStmt"
+        },
+        {
+          "$ref": "#/$defs/IntentStmt"
+        },
+        {
+          "$ref": "#/$defs/BlockHole"
+        }
+      ]
+    },
+    "FunctionDef": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "FunctionDef"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "name": {
+          "$ref": "#/$defs/Binding"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Binding"
+          }
+        },
+        "body": {
+          "$ref": "#/$defs/Block"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "name",
+        "params",
+        "body",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Binding": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Name"
+        },
+        {
+          "$ref": "#/$defs/NameHole"
+        }
+      ]
+    },
+    "Name": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Name"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "name": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "name",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "Provenance": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Span"
+      }
+    },
+    "Span": {
+      "type": "object",
+      "properties": {
+        "utteranceId": {
+          "$ref": "#/$defs/Text"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "utteranceId",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "Text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "InferenceRuleId": {
+      "type": "string",
+      "enum": [
+        "INF-LOOPVAR",
+        "INF-INDEXVAR",
+        "INF-RANGE-BOUNDS",
+        "INF-SYNONYM",
+        "INF-PLURAL-NAME",
+        "INF-BLOCK-END"
+      ]
+    },
+    "Notes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Note"
+      }
+    },
+    "Note": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "text": {
+          "$ref": "#/$defs/Text"
+        },
+        "tag": {
+          "type": "string",
+          "enum": [
+            "general",
+            "edge-case",
+            "complexity"
+          ]
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "tag",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "NameHole": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "NameHole"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "reason": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "reason",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Block": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Block"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "stmts": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Stmt"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "stmts",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "ForEach": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ForEach"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "target": {
+          "$ref": "#/$defs/Binding"
+        },
+        "iterable": {
+          "$ref": "#/$defs/Expr"
+        },
+        "body": {
+          "$ref": "#/$defs/Block"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "target",
+        "iterable",
+        "body",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Expr": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Name"
+        },
+        {
+          "$ref": "#/$defs/Literal"
+        },
+        {
+          "$ref": "#/$defs/InfinityLiteral"
+        },
+        {
+          "$ref": "#/$defs/UnaryOp"
+        },
+        {
+          "$ref": "#/$defs/BinOp"
+        },
+        {
+          "$ref": "#/$defs/Compare"
+        },
+        {
+          "$ref": "#/$defs/BoolOp"
+        },
+        {
+          "$ref": "#/$defs/Membership"
+        },
+        {
+          "$ref": "#/$defs/Call"
+        },
+        {
+          "$ref": "#/$defs/Index"
+        },
+        {
+          "$ref": "#/$defs/Slice"
+        },
+        {
+          "$ref": "#/$defs/Attribute"
+        },
+        {
+          "$ref": "#/$defs/CollectionLiteral"
+        },
+        {
+          "$ref": "#/$defs/DictLiteral"
+        },
+        {
+          "$ref": "#/$defs/ExprHole"
+        },
+        {
+          "$ref": "#/$defs/CondHole"
+        },
+        {
+          "$ref": "#/$defs/NameHole"
+        },
+        {
+          "$ref": "#/$defs/RefHole"
+        }
+      ]
+    },
+    "Literal": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Literal"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "value",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "InfinityLiteral": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "InfinityLiteral"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "negative": {
+          "type": "boolean"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "negative",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "UnaryOp": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "UnaryOp"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "not",
+            "-"
+          ]
+        },
+        "operand": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "op",
+        "operand",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "BinOp": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "BinOp"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "+",
+            "-",
+            "*",
+            "/",
+            "//",
+            "%",
+            "**"
+          ]
+        },
+        "left": {
+          "$ref": "#/$defs/Expr"
+        },
+        "right": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "op",
+        "left",
+        "right",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Compare": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Compare"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">="
+          ]
+        },
+        "left": {
+          "$ref": "#/$defs/Expr"
+        },
+        "right": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "op",
+        "left",
+        "right",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "BoolOp": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "BoolOp"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "and",
+            "or"
+          ]
+        },
+        "operands": {
+          "minItems": 2,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Expr"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "op",
+        "operands",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Membership": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Membership"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "negated": {
+          "type": "boolean"
+        },
+        "element": {
+          "$ref": "#/$defs/Expr"
+        },
+        "container": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "negated",
+        "element",
+        "container",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Call": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Call"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "callee": {
+          "$ref": "#/$defs/Expr"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Expr"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "callee",
+        "args",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Index": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Index"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "object": {
+          "$ref": "#/$defs/Expr"
+        },
+        "index": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "object",
+        "index",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Slice": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Slice"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "object": {
+          "$ref": "#/$defs/Expr"
+        },
+        "start": {
+          "$ref": "#/$defs/Expr"
+        },
+        "stop": {
+          "$ref": "#/$defs/Expr"
+        },
+        "step": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "object",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Attribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Attribute"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "object": {
+          "$ref": "#/$defs/Expr"
+        },
+        "name": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "object",
+        "name",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "CollectionLiteral": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "CollectionLiteral"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "collection": {
+          "type": "string",
+          "enum": [
+            "list",
+            "set",
+            "tuple"
+          ]
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Expr"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "collection",
+        "elements",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "DictLiteral": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "DictLiteral"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DictEntry"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "entries",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "DictEntry": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "DictEntry"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "key": {
+          "$ref": "#/$defs/Expr"
+        },
+        "value": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "key",
+        "value",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "ExprHole": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ExprHole"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "reason": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "reason",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "CondHole": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "CondHole"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "reason": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "reason",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "RefHole": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "RefHole"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "reason": {
+          "$ref": "#/$defs/Text"
+        },
+        "candidates": {
+          "minItems": 2,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NodeId"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "reason",
+        "candidates",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "ForRange": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ForRange"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "target": {
+          "$ref": "#/$defs/Binding"
+        },
+        "start": {
+          "$ref": "#/$defs/Expr"
+        },
+        "stop": {
+          "$ref": "#/$defs/Expr"
+        },
+        "step": {
+          "$ref": "#/$defs/Expr"
+        },
+        "body": {
+          "$ref": "#/$defs/Block"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "target",
+        "stop",
+        "body",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "While": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "While"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "cond": {
+          "$ref": "#/$defs/Expr"
+        },
+        "body": {
+          "$ref": "#/$defs/Block"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "cond",
+        "body",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "If": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "If"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "cond": {
+          "$ref": "#/$defs/Expr"
+        },
+        "body": {
+          "$ref": "#/$defs/Block"
+        },
+        "elifs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Elif"
+          }
+        },
+        "orelse": {
+          "$ref": "#/$defs/Block"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "cond",
+        "body",
+        "elifs",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Elif": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Elif"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "cond": {
+          "$ref": "#/$defs/Expr"
+        },
+        "body": {
+          "$ref": "#/$defs/Block"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "cond",
+        "body",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Assign": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Assign"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "value": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "target",
+        "value",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Target": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Name"
+        },
+        {
+          "$ref": "#/$defs/NameHole"
+        },
+        {
+          "$ref": "#/$defs/Index"
+        },
+        {
+          "$ref": "#/$defs/Attribute"
+        }
+      ]
+    },
+    "Update": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Update"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "+=",
+            "-=",
+            "*=",
+            "/=",
+            "//=",
+            "%=",
+            "append",
+            "extend",
+            "add",
+            "remove",
+            "discard"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "target",
+        "op",
+        "value",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Return": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Return"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "value": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Break": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Break"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "Continue": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Continue"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "ExprStmt": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ExprStmt"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "expr": {
+          "$ref": "#/$defs/Expr"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "expr",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "IntentStmt": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "IntentStmt"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "text": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "text",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "BlockHole": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "BlockHole"
+        },
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "reason": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "inferred": {
+          "$ref": "#/$defs/InferenceRuleId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "reason",
+        "provenance"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

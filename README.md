@@ -10,7 +10,9 @@ interviews.
 
 ## Status
 
-Segment S0 (project foundations) is done. The engine itself starts in S1.
+Segments S0 (project foundations) and S1 (the IR: types, validation,
+serialization, tree utilities and symbol table) are done. Next is S2, the
+Python renderer.
 See [ROADMAP.md](ROADMAP.md) for the architecture and the full plan.
 
 ## Getting started

@@ -31,6 +31,11 @@ decisions.
   Narrow types instead of using `!` or `as`.
 - TypeScript is pinned to `~6.0` because typescript-eslint doesn't support 7
   yet. Don't bump it without checking that.
+- **Changing the IR** means editing `ir/types.ts` and `ir/schema.ts` together
+  (typecheck fails if they disagree), updating `CHILD_FIELDS` for new child
+  fields, and the builder. If valid documents change, bump
+  `IR_SCHEMA_VERSION`, add a migration with tests, and review the
+  `ir-document.schema.json` golden diff. See ADR-006.
 - Significant decisions get an ADR in `docs/adr/`.
 - Match the surrounding code's style and comment density. Prettier formats
   code; Markdown is hand-formatted.

@@ -2,7 +2,7 @@
   "name": "@textscript/core",
   "version": "0.0.0",
   "private": true,
-  "description": "IR types, edit operations, history and analysis. Environment-agnostic, zero runtime dependencies.",
+  "description": "IR types, edit operations, history and analysis. Environment-agnostic; Zod is the only runtime dependency.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -10,5 +10,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
   }
 }
