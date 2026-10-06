@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+coverage/
+dist/
+# Golden files are compared byte-for-byte; never reformat them.
+**/golden/**
+# Docs are hand-formatted prose; Prettier's table alignment makes noisy diffs.
+*.md

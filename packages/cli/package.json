@@ -1,0 +1,25 @@
+{
+  "name": "@textscript/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Developer console for driving the TextScript engine by hand.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "textscript": "./bin/textscript.js"
+  },
+  "textscript": {
+    "runtime": "node"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@textscript/core": "workspace:*",
+    "@textscript/render-python": "workspace:*",
+    "tsx": "^4.23.15"
+  }
+}

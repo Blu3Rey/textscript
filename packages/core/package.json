@@ -1,0 +1,14 @@
+{
+  "name": "@textscript/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "IR types, edit operations, history and analysis. Environment-agnostic, zero runtime dependencies.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

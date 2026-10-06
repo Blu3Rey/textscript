@@ -1,0 +1,14 @@
+{
+  "name": "@textscript/render-python",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Renders the TextScript IR to Python source with a source map.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
+}
