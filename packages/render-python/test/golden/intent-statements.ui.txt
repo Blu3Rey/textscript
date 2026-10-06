@@ -1,0 +1,3 @@
+for item in items:
+    ⟨process the element here⟩
+    ⟨then update the running best⟩

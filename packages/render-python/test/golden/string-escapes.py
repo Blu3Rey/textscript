@@ -1,0 +1,6 @@
+quote = "say \"hi\""
+slash = "C:\\path"
+lines = "a\nb\r\tc"
+control = "nul\x00bell\x07del\x7f"
+unicode = "héllo ✓ 😀"
+lone = "half\ud800pair"

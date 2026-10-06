@@ -58,6 +58,9 @@ scripts/           repo tooling
   built-ins or use Node or DOM globals. A package that truly needs Node is
   marked with `"textscript": { "runtime": "node" }` in its `package.json`
   ([ADR-001](docs/adr/001-typescript-monorepo.md)). Tests may use Node.
+- **Tests may use Node; browser-safe source may not.** Such a package has
+  two tsconfigs: `tsconfig.json` compiles `src/` without Node types, and
+  `test/tsconfig.json` adds them for the tests. `pnpm new-package` sets this up.
 - **Strict TypeScript.** `noUncheckedIndexedAccess` and
   `exactOptionalPropertyTypes` are on. Prefer narrowing over `!` and `as`.
 - **Coverage stays at or above 80%** for `packages/*/src`.

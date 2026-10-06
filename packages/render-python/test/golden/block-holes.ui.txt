@@ -1,0 +1,6 @@
+while running:
+    ⟨loop body not described⟩
+if x:
+    x
+else:
+    ⟨else branch not described⟩
