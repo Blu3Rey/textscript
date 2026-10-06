@@ -50,6 +50,29 @@ export const CHILD_FIELDS = {
   RefHole: [],
 } as const satisfies { readonly [K in NodeKind]: readonly ChildFieldOf<NodeOfKind<K>>[] };
 
+/** The child fields of `N` that may be absent. */
+export type OptionalChildFieldOf<N> = {
+  [F in ChildFieldOf<N>]-?: undefined extends N[F] ? F : never;
+}[ChildFieldOf<N>];
+
+/**
+ * Child fields that may be absent, per kind. Removing the node in such a
+ * field leaves the field empty; removing one in a required field leaves a
+ * hole instead.
+ */
+export const OPTIONAL_CHILD_FIELDS = {
+  ForRange: ['start', 'step'],
+  If: ['orelse'],
+  Return: ['value'],
+  Slice: ['start', 'stop', 'step'],
+} as const satisfies { readonly [K in NodeKind]?: readonly OptionalChildFieldOf<NodeOfKind<K>>[] };
+
+const optionalChildFields: Partial<Record<NodeKind, readonly string[]>> = OPTIONAL_CHILD_FIELDS;
+
+export function isOptionalChildField(kind: NodeKind, field: string): boolean {
+  return optionalChildFields[kind]?.includes(field) ?? false;
+}
+
 export function isNodeKind(value: string): value is NodeKind {
   return Object.hasOwn(CHILD_FIELDS, value);
 }

@@ -212,6 +212,11 @@ Each op carries its own `provenance`. The applier enforces invariants (valid
 tree, unique IDs, no orphaned holes, provenance present) and rejects a batch
 that breaks any of them.
 
+> [ADR-008](docs/adr/008-edit-operations-and-sessions.md) has the exact rules:
+> anchor positions, temporary IDs for new nodes, how removal leaves holes, the
+> four primitives inverses are made of, and the changes from this table
+> (`rename_symbol` takes a node, `remove_note` was added).
+
 ### 3.4 Diagnostics (gap analysis)
 
 | Code | Severity | Meaning |
@@ -381,6 +386,8 @@ criteria** (the definition of done) and **Risks**.
 ---
 
 #### S3: Edit operations, applier and history
+
+**Status:** ✅ Done ([ADR-008](docs/adr/008-edit-operations-and-sessions.md))
 
 **Goal:** The only way to change a solution is through validated, undoable operations.
 

@@ -40,6 +40,10 @@ decisions.
   fields, and the builder. If valid documents change, bump
   `IR_SCHEMA_VERSION`, add a migration with tests, and review the
   `ir-document.schema.json` golden diff. See ADR-006.
+- **The only way to change a document is `apply(document, batch)`.** A new
+  operation needs a schema in `ops/schema.ts`, a case in the `Executor`,
+  unit tests for success and every failure, and a generator case in
+  `test/op-arbitraries.ts` so the inverse property covers it (ADR-008).
 - Significant decisions get an ADR in `docs/adr/`.
 - Match the surrounding code's style and comment density. Prettier formats
   code; Markdown is hand-formatted.

@@ -14,6 +14,7 @@ the old one.
 | [005](005-event-sourced-history.md) | Event-sourced session history | Accepted |
 | [006](006-ir-schema-and-validation.md) | IR schema definition and validation | Accepted |
 | [007](007-python-rendering.md) | Rendering the IR as Python | Accepted |
+| [008](008-edit-operations-and-sessions.md) | Edit operations, inverses and the session log | Accepted |
 
 ## Writing a new ADR
 

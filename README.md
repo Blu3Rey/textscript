@@ -10,8 +10,9 @@ interviews.
 
 ## Status
 
-Segments S0 (project foundations), S1 (the IR) and S2 (the Python renderer
-with source maps) are done. Next is S3: edit operations, history and undo.
+Segments S0 (project foundations), S1 (the IR), S2 (the Python renderer)
+and S3 (edit operations, undo and the session log) are done. Next is S4: the
+analyzer that finds gaps.
 See [ROADMAP.md](ROADMAP.md) for the architecture and the full plan.
 
 ## Getting started

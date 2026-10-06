@@ -2,12 +2,15 @@
 // A document is valid when it matches IrDocumentSchema and has no issues here.
 
 import { nodeIdNumber } from './ids';
+import { TEMP_ID_PATTERN } from './schema';
 import { walk } from './tree';
 import type { IrDocument, IrNode, NodeId, NodeKind, Note, Span } from './types';
 
 export type InvariantCode =
   /** Two nodes or notes share an ID. */
   | 'duplicate-id'
+  /** A temporary ID (`t…`) from an edit batch was never replaced. */
+  | 'temp-id'
   /** An ID is not below `nextId`, so the allocator could hand it out again. */
   | 'id-not-below-next'
   /** A node that needs a source has no provenance and no inference rule (ADR-004). */
@@ -56,6 +59,13 @@ export function checkInvariants(doc: IrDocument): InvariantIssue[] {
       issues.push({ code: 'duplicate-id', nodeId: id, message: `ID ${id} is used more than once` });
     }
     seen.add(id);
+    if (TEMP_ID_PATTERN.test(id)) {
+      issues.push({
+        code: 'temp-id',
+        nodeId: id,
+        message: `Temporary ID ${id} was never assigned a permanent one`,
+      });
+    }
     const number = nodeIdNumber(id);
     if (number !== undefined && number >= doc.nextId) {
       issues.push({

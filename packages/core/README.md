@@ -1,8 +1,7 @@
 # @textscript/core
 
-The deterministic engine: the IR, and (in later segments) edit operations,
-session history and gap analysis. Environment-agnostic; Zod is the only
-runtime dependency.
+The deterministic engine: the IR, edit operations, the session log and (in
+S4) gap analysis. Environment-agnostic; Zod is the only runtime dependency.
 
 ## The IR (segment S1)
 
@@ -41,6 +40,56 @@ const doc = b.document(
 serialize(doc); // throws if the document breaks a schema rule or invariant
 ```
 
-Design decisions are in [ADR-006](../../docs/adr/006-ir-schema-and-validation.md).
+## Edits and sessions (segment S3)
+
+| Module | What it provides |
+|---|---|
+| `ops/types.ts` | The edit operations and batches |
+| `ops/apply.ts` | `apply(document, batch)`: atomic, returns the inverse batch |
+| `ops/schema.ts` | Zod schemas for batches, and `editBatchJsonSchema()` for S7 |
+| `ops/transaction.ts` | The four primitives and their inverses |
+| `ops/temp-ids.ts` | Temporary IDs (`t1`) for nodes a batch creates |
+| `ir/diff.ts` | `diffPrograms`: added, removed, changed and moved nodes |
+| `session/session.ts` | Events, `applyEvent`, undo/redo/revert, `replay`, log persistence |
+| `session/tokenize.ts` | Utterance tokens, which provenance spans count |
+
+```ts
+import { applyEvent, createUtterance, emptySession } from '@textscript/core';
+
+const state = emptySession();
+const utterance = createUtterance('u1', 'Loop through the numbers.');
+const result = applyEvent(state, {
+  type: 'edit',
+  utterance,
+  batch: {
+    utteranceId: 'u1',
+    ops: [
+      {
+        op: 'add_stmt',
+        parent: state.document.program.id,
+        position: { at: 'end' },
+        stmt: {
+          kind: 'ForEach',
+          id: 't1',
+          target: { kind: 'Name', id: 't2', name: 'num', provenance: [], inferred: 'INF-LOOPVAR' },
+          iterable: { kind: 'Name', id: 't3', name: 'nums', provenance: [{ utteranceId: 'u1', start: 3, end: 4 }] },
+          body: {
+            kind: 'Block',
+            id: 't4',
+            stmts: [{ kind: 'BlockHole', id: 't5', reason: 'body not described', provenance: [] }],
+            provenance: [],
+          },
+          provenance: [{ utteranceId: 'u1', start: 0, end: 4 }],
+        },
+      },
+    ],
+  },
+});
+// result.state.document now holds the loop; applyEvent(result.state, { type: 'undo' }) takes it back.
+```
+
+Design decisions are in [ADR-006](../../docs/adr/006-ir-schema-and-validation.md)
+(the IR) and [ADR-008](../../docs/adr/008-edit-operations-and-sessions.md)
+(edits and sessions).
 Expected outputs are in `test/golden/`: the exported JSON Schema and the
 ROADMAP §3.6 worked example as canonical JSON.
