@@ -43,7 +43,7 @@ pnpm check
 
 ```
 packages/          libraries; each exports TypeScript source from src/index.ts
-  core/            IR, edit operations, history, analysis (no runtime deps)
+  core/            IR, edit operations, history, analysis (only dependency: Zod)
   render-python/   IR → Python source + source map
   cli/             developer console
 apps/              deployable apps (web UI, API server); from S10

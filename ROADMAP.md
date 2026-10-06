@@ -83,7 +83,7 @@ synchronous code that can run in the browser.
 | Area | Choice | Why |
 |---|---|---|
 | Language | **TypeScript** (strict) everywhere | The engine runs in the browser so rendering and undo are instant. One language for engine and UI means no duplicated IR types. |
-| Repo | pnpm workspaces monorepo | Clean package boundaries (the core engine has zero runtime deps). |
+| Repo | pnpm workspaces monorepo | Clean package boundaries (the core engine's only runtime dependency is Zod). |
 | Tests | Vitest + golden-file snapshots | Fast. Snapshots fit renderer output well. |
 | First output language | **Python** | Closest to pseudocode, and the most common interview language. |
 | LLM | Claude API via `@anthropic-ai/sdk`, default model `claude-opus-5-5` | Structured outputs make the model return schema-valid edit operations. |
@@ -96,7 +96,7 @@ synchronous code that can run in the browser.
 ```
 textscript/
 ├── packages/
-│   ├── core/            # IR types, ids, edit ops, applier, history, analyzer (no deps)
+│   ├── core/            # IR types, ids, edit ops, applier, history, analyzer (Zod only)
 │   ├── render-python/   # IR → Python text + source map
 │   ├── translator/      # Translator interface, LLM translator, baseline translator
 │   ├── validator/       # provenance + inference-policy checks
@@ -121,6 +121,12 @@ textscript/
 
 The IR is a tree of statements and expressions. It is close to Python's AST but
 has three additions: **holes**, **provenance** and **labels**.
+
+> The sketch below was the starting point. The authoritative definitions are in
+> [`packages/core/src/ir/types.ts`](packages/core/src/ir/types.ts), and
+> [ADR-006](docs/adr/006-ir-schema-and-validation.md) lists what changed (for
+> example `Not` became `UnaryOp`, and `InfinityLiteral`, `DictLiteral` and
+> `Elif` were added).
 
 ```ts
 type NodeId = string;                       // stable, e.g. "n12"; never reused
@@ -317,6 +323,8 @@ criteria** (the definition of done) and **Risks**.
 ---
 
 #### S1: IR schema and holes
+
+**Status:** ✅ Done ([ADR-006](docs/adr/006-ir-schema-and-validation.md))
 
 **Goal:** One precise, versioned definition of what a solution *is*.
 
@@ -667,9 +675,9 @@ Decide these in the listed segment and record each one as an ADR.
 
 | Question | Decide in | Leaning |
 |---|---|---|
-| Use a schema library (e.g. Zod) or hand-written guards + JSON Schema? | S1 | Use a library if it can emit JSON Schema directly for structured outputs |
+| Use a schema library (e.g. Zod) or hand-written guards + JSON Schema? | S1 | **Decided:** Zod 4 with hand-written types ([ADR-006](docs/adr/006-ir-schema-and-validation.md)) |
 | Hole sentinel in export: `...` + comment, or `__hole__("…")`? | S2 | Both: `...` for blocks, `__hole__` for expressions |
-| Spans as token indices or character offsets? | S1/S7 | Token indices (more reliable for the model to cite) |
+| Spans as token indices or character offsets? | S1/S7 | **Decided:** token indices ([ADR-006](docs/adr/006-ir-schema-and-validation.md)) |
 | How strict is the lexical check by default? | S8 | Start strict; loosen based on the false-rejection rate |
 | Hosted app or local-only first? | S10 | Local dev server first; hosted after S14 privacy work |
 | Should the user's stated complexity ("this is O(n)") be checked? | S11 | No. Record it as a note. Checking it would be grading, which is outside the tool's job |

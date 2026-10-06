@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "nextId": 20,
+  "program": {
+    "kind": "Program",
+    "id": "n19",
+    "body": [
+      {
+        "kind": "Assign",
+        "id": "n3",
+        "target": {
+          "kind": "Name",
+          "id": "n1",
+          "name": "seen",
+          "provenance": [
+            {
+              "utteranceId": "u3",
+              "start": 5,
+              "end": 7
+            }
+          ]
+        },
+        "value": {
+          "kind": "CollectionLiteral",
+          "id": "n2",
+          "collection": "set",
+          "elements": [],
+          "provenance": [
+            {
+              "utteranceId": "u3",
+              "start": 3,
+              "end": 5
+            },
+            {
+              "utteranceId": "u3",
+              "start": 7,
+              "end": 8
+            }
+          ]
+        },
+        "provenance": [
+          {
+            "utteranceId": "u3",
+            "start": 1,
+            "end": 11
+          }
+        ]
+      },
+      {
+        "kind": "ForEach",
+        "id": "n18",
+        "target": {
+          "kind": "Name",
+          "id": "n4",
+          "name": "num",
+          "provenance": [],
+          "inferred": "INF-LOOPVAR"
+        },
+        "iterable": {
+          "kind": "Name",
+          "id": "n5",
+          "name": "nums",
+          "provenance": [
+            {
+              "utteranceId": "u1",
+              "start": 2,
+              "end": 6
+            }
+          ],
+          "inferred": "INF-PLURAL-NAME"
+        },
+        "body": {
+          "kind": "Block",
+          "id": "n17",
+          "stmts": [
+            {
+              "kind": "If",
+              "id": "n16",
+              "cond": {
+                "kind": "Membership",
+                "id": "n8",
+                "negated": false,
+                "element": {
+                  "kind": "Name",
+                  "id": "n6",
+                  "name": "num",
+                  "provenance": [
+                    {
+                      "utteranceId": "u2",
+                      "start": 4,
+                      "end": 6
+                    }
+                  ]
+                },
+                "container": {
+                  "kind": "Name",
+                  "id": "n7",
+                  "name": "seen",
+                  "provenance": [
+                    {
+                      "utteranceId": "u2",
+                      "start": 3,
+                      "end": 4
+                    }
+                  ]
+                },
+                "provenance": [
+                  {
+                    "utteranceId": "u2",
+                    "start": 1,
+                    "end": 6
+                  }
+                ]
+              },
+              "body": {
+                "kind": "Block",
+                "id": "n11",
+                "stmts": [
+                  {
+                    "kind": "Return",
+                    "id": "n10",
+                    "value": {
+                      "kind": "Literal",
+                      "id": "n9",
+                      "value": true,
+                      "provenance": [
+                        {
+                          "utteranceId": "u2",
+                          "start": 7,
+                          "end": 8
+                        }
+                      ]
+                    },
+                    "provenance": [
+                      {
+                        "utteranceId": "u2",
+                        "start": 6,
+                        "end": 8
+                      }
+                    ]
+                  }
+                ],
+                "provenance": []
+              },
+              "elifs": [],
+              "orelse": {
+                "kind": "Block",
+                "id": "n15",
+                "stmts": [
+                  {
+                    "kind": "Update",
+                    "id": "n14",
+                    "target": {
+                      "kind": "Name",
+                      "id": "n12",
+                      "name": "seen",
+                      "provenance": [
+                        {
+                          "utteranceId": "u4",
+                          "start": 4,
+                          "end": 6
+                        }
+                      ]
+                    },
+                    "op": "add",
+                    "value": {
+                      "kind": "Name",
+                      "id": "n13",
+                      "name": "num",
+                      "provenance": [
+                        {
+                          "utteranceId": "u4",
+                          "start": 2,
+                          "end": 3
+                        }
+                      ]
+                    },
+                    "provenance": [
+                      {
+                        "utteranceId": "u4",
+                        "start": 1,
+                        "end": 6
+                      }
+                    ],
+                    "inferred": "INF-SYNONYM"
+                  }
+                ],
+                "provenance": [
+                  {
+                    "utteranceId": "u4",
+                    "start": 0,
+                    "end": 1
+                  }
+                ]
+              },
+              "provenance": [
+                {
+                  "utteranceId": "u2",
+                  "start": 0,
+                  "end": 8
+                }
+              ]
+            }
+          ],
+          "provenance": []
+        },
+        "provenance": [
+          {
+            "utteranceId": "u1",
+            "start": 0,
+            "end": 6
+          }
+        ]
+      }
+    ],
+    "provenance": []
+  }
+}

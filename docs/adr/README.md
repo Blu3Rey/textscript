@@ -12,6 +12,7 @@ the old one.
 | [003](003-python-first-output-language.md) | Python as the first output language | Accepted |
 | [004](004-faithfulness-contract.md) | Faithfulness contract and allowed-inference policy | Accepted |
 | [005](005-event-sourced-history.md) | Event-sourced session history | Accepted |
+| [006](006-ir-schema-and-validation.md) | IR schema definition and validation | Accepted |
 
 ## Writing a new ADR
 

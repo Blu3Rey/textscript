@@ -34,6 +34,12 @@ export default defineConfig(
     },
   },
   {
+    rules: {
+      // Omitting a key by destructuring (`const { id: _id, ...rest } = node`) is fine.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
+  },
+  {
     files: ['**/*.js'],
     extends: [tseslint.configs.disableTypeChecked],
   },
