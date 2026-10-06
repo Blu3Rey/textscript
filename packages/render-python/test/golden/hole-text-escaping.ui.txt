@@ -1,0 +1,4 @@
+x = ⟨the "right" value\maybe⟩
+while x:
+    ⟨multi line reason⟩
+⟨name # with hash⟩ = 1

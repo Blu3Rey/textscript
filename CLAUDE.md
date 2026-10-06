@@ -25,6 +25,10 @@ decisions.
   enforces it; don't disable the rule.
 - Internal packages export TypeScript source (`src/index.ts`); don't add
   build steps or `dist/` outputs.
+- Renderer changes must keep the property tests in
+  `packages/render-python/test/properties.test.ts` passing: export parses,
+  minimal and full parentheses give the same Python AST, and a one-node change
+  only touches that node's lines (ADR-007).
 - Golden files in `test/golden/` are compared byte for byte. Update them with
   `pnpm test -u` only for intended output changes, and check the diff.
 - Strict TypeScript (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`).

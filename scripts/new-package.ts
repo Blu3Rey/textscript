@@ -51,13 +51,33 @@ export async function scaffoldPackage({
       type: 'module',
       exports: { '.': './src/index.ts' },
       ...(node ? { textscript: { runtime: 'node' } } : {}),
-      scripts: { typecheck: 'tsc -p tsconfig.json', test: 'vitest run' },
+      scripts: {
+        typecheck: node
+          ? 'tsc -p tsconfig.json'
+          : 'tsc -p tsconfig.json && tsc -p test/tsconfig.json',
+        test: 'vitest run',
+      },
     }),
-    'tsconfig.json': json({
-      extends: '../../tsconfig.base.json',
-      ...(node ? { compilerOptions: { types: ['node'] } } : {}),
-      include: ['src', 'test'],
-    }),
+    // A browser-safe package compiles src/ without Node types; its tests,
+    // which may use Node, get their own tsconfig (docs/adr/001).
+    'tsconfig.json': json(
+      node
+        ? {
+            extends: '../../tsconfig.base.json',
+            compilerOptions: { types: ['node'] },
+            include: ['src', 'test'],
+          }
+        : { extends: '../../tsconfig.base.json', include: ['src'] },
+    ),
+    ...(node
+      ? {}
+      : {
+          'test/tsconfig.json': json({
+            extends: '../../../tsconfig.base.json',
+            compilerOptions: { types: ['node'] },
+            include: ['.', '../src'],
+          }),
+        }),
     'README.md': `# @textscript/${name}\n\n${description}\n`,
     'src/index.ts': `// Public API of @textscript/${name}.\nexport {};\n`,
     'test/index.test.ts': [

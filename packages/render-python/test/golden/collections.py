@@ -1,0 +1,9 @@
+empty_list = []
+pair_list = [1, 2]
+empty_set = set()
+some_set = {a, b}
+empty_tuple = ()
+single = (a,)
+pair = (a, b)
+empty_dict = {}
+mapping = {"a": 1, k: []}

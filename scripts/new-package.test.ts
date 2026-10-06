@@ -34,6 +34,7 @@ describe('scaffoldPackage', () => {
         'packages/render-js/package.json',
         'packages/render-js/src/index.ts',
         'packages/render-js/test/index.test.ts',
+        'packages/render-js/test/tsconfig.json',
         'packages/render-js/tsconfig.json',
       ].sort(),
     );
@@ -41,9 +42,13 @@ describe('scaffoldPackage', () => {
     expect(pkg['name']).toBe('@textscript/render-js');
     expect(pkg['description']).toBe('Renders JS.');
     expect(pkg).not.toHaveProperty('textscript');
-    expect(readJson('packages', 'render-js', 'tsconfig.json')).not.toHaveProperty(
-      'compilerOptions',
-    );
+    expect(readJson('packages', 'render-js', 'tsconfig.json')).toEqual({
+      extends: '../../tsconfig.base.json',
+      include: ['src'],
+    });
+    expect(readJson('packages', 'render-js', 'test', 'tsconfig.json')).toMatchObject({
+      compilerOptions: { types: ['node'] },
+    });
   });
 
   it('marks --node packages and gives them Node types', async () => {

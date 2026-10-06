@@ -13,6 +13,7 @@ the old one.
 | [004](004-faithfulness-contract.md) | Faithfulness contract and allowed-inference policy | Accepted |
 | [005](005-event-sourced-history.md) | Event-sourced session history | Accepted |
 | [006](006-ir-schema-and-validation.md) | IR schema definition and validation | Accepted |
+| [007](007-python-rendering.md) | Rendering the IR as Python | Accepted |
 
 ## Writing a new ADR
 

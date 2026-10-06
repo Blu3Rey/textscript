@@ -1,0 +1,5 @@
+items.append(x)
+items.extend(x)
+items.add(x)
+items.remove(x)
+items.discard(x)

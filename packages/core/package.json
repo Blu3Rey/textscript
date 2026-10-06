@@ -5,10 +5,11 @@
   "description": "IR types, edit operations, history and analysis. Environment-agnostic; Zod is the only runtime dependency.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./test/testing.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {

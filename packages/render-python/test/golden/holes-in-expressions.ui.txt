@@ -1,0 +1,6 @@
+total = ⟨the starting total⟩
+if ⟨the number is valid⟩:
+    use(⟨which list?⟩)
+⟨nums or seen?⟩
+⟨a value⟩ + 1
+⟨the map⟩.keys

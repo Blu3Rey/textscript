@@ -186,6 +186,8 @@ text replacement.
 
 Every hole has its own ID, a short reason, and (where possible) the quoted
 words it stands for. The plain-text export always parses as valid Python.
+[ADR-007](docs/adr/007-python-rendering.md) has the exact renderings,
+including placeholder names for holes in binding positions.
 
 ### 3.3 Edit operations
 
@@ -350,6 +352,8 @@ criteria** (the definition of done) and **Risks**.
 ---
 
 #### S2: Python renderer and source maps
+
+**Status:** ✅ Done ([ADR-007](docs/adr/007-python-rendering.md))
 
 **Goal:** IR in, readable Python out, with a precise map between the two.
 
@@ -676,7 +680,7 @@ Decide these in the listed segment and record each one as an ADR.
 | Question | Decide in | Leaning |
 |---|---|---|
 | Use a schema library (e.g. Zod) or hand-written guards + JSON Schema? | S1 | **Decided:** Zod 4 with hand-written types ([ADR-006](docs/adr/006-ir-schema-and-validation.md)) |
-| Hole sentinel in export: `...` + comment, or `__hole__("…")`? | S2 | Both: `...` for blocks, `__hole__` for expressions |
+| Hole sentinel in export: `...` + comment, or `__hole__("…")`? | S2 | **Decided:** both, plus placeholder names in binding positions ([ADR-007](docs/adr/007-python-rendering.md)) |
 | Spans as token indices or character offsets? | S1/S7 | **Decided:** token indices ([ADR-006](docs/adr/006-ir-schema-and-validation.md)) |
 | How strict is the lexical check by default? | S8 | Start strict; loosen based on the false-rejection rate |
 | Hosted app or local-only first? | S10 | Local dev server first; hosted after S14 privacy work |

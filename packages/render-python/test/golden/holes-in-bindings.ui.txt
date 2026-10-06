@@ -1,0 +1,6 @@
+def ⟨function name not given⟩(nums, ⟨second input not named⟩):
+    for ⟨loop variable not named⟩ in nums:
+        ⟨loop body not described⟩
+    ⟨where the result goes⟩ = 0
+    ⟨which counter?⟩ += 1
+    ⟨which list?⟩.append(⟨what to add⟩)

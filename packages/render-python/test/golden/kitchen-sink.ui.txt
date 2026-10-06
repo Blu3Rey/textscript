@@ -1,0 +1,20 @@
+def contains_duplicate(nums):
+    seen = set()
+    best = float("-inf")
+    counts = {"first": 0}
+    # Complexity: this is O(n)
+    for num in nums:
+        if num in seen and not done:
+            return True
+        elif num == ⟨the target value⟩:
+            continue
+        else:
+            seen.add(num)
+    for i in range(0, len(nums), 1):
+        total = nums[i] + nums[1:i:2].size
+        ⟨process the element here⟩
+    while ⟨while it is valid⟩:
+        ⟨loop body not described⟩
+    ⟨which list?⟩.append(⟨nums or seen?⟩)
+    print(best)
+    break
