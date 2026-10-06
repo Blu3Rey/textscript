@@ -13,21 +13,32 @@ import { INFERENCE_RULE_IDS } from './inference';
 import type { Binding, Block, DictEntry, Elif, Expr, IrDocument, Stmt, Target } from './types';
 import { IR_SCHEMA_VERSION } from './version';
 
-/** Gives schemas readable names in the exported JSON Schema's `$defs`. */
-const registry = z.registry<{ id: string }>();
+/**
+ * Gives schemas readable names in exported JSON Schemas' `$defs`. Shared
+ * with the edit-operation schemas, which embed these.
+ */
+export const schemaRegistry = z.registry<{ id: string }>();
+const registry = schemaRegistry;
 
-function named<T extends z.ZodType>(id: string, schema: T): T {
+export function named<T extends z.ZodType>(id: string, schema: T): T {
   const registered: z.ZodType = schema;
   registry.add(registered, { id });
   return schema;
 }
 
+/** A permanent node ID: `n` and a positive integer. */
 export const NODE_ID_PATTERN = /^n[1-9][0-9]*$/;
+/**
+ * A temporary ID for a node created by an edit batch, before the applier
+ * assigns a permanent one (docs/adr/008). Allowed by the shape so batches can
+ * carry them; `checkInvariants` rejects them in documents.
+ */
+export const TEMP_ID_PATTERN = /^t[1-9][0-9]*$/;
 export const IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
-export const NodeIdSchema = named('NodeId', z.string().regex(NODE_ID_PATTERN));
+export const NodeIdSchema = named('NodeId', z.string().regex(/^[nt][1-9][0-9]*$/));
 const IdentifierSchema = named('Identifier', z.string().regex(IDENTIFIER_PATTERN));
-const TextSchema = named('Text', z.string().min(1));
+export const TextSchema = named('Text', z.string().min(1));
 
 export const SpanSchema = named(
   'Span',

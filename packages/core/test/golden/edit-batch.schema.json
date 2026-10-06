@@ -1,70 +1,160 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$ref": "#/$defs/IrDocument",
+  "$ref": "#/$defs/EditBatch",
   "$defs": {
-    "IrDocument": {
+    "EditBatch": {
       "type": "object",
       "properties": {
-        "schemaVersion": {
-          "type": "number",
-          "const": 1
+        "utteranceId": {
+          "$ref": "#/$defs/Text"
         },
-        "nextId": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "program": {
-          "$ref": "#/$defs/Program"
+        "ops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EditOp"
+          }
         }
       },
       "required": [
-        "schemaVersion",
-        "nextId",
-        "program"
+        "utteranceId",
+        "ops"
       ],
       "additionalProperties": false
     },
-    "Program": {
+    "Text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "EditOp": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AddStmtOp"
+        },
+        {
+          "$ref": "#/$defs/FillHoleOp"
+        },
+        {
+          "$ref": "#/$defs/UpdateFieldOp"
+        },
+        {
+          "$ref": "#/$defs/ReplaceNodeOp"
+        },
+        {
+          "$ref": "#/$defs/RemoveNodeOp"
+        },
+        {
+          "$ref": "#/$defs/MoveNodeOp"
+        },
+        {
+          "$ref": "#/$defs/WrapNodesOp"
+        },
+        {
+          "$ref": "#/$defs/RenameSymbolOp"
+        },
+        {
+          "$ref": "#/$defs/SetLabelOp"
+        },
+        {
+          "$ref": "#/$defs/AddNoteOp"
+        },
+        {
+          "$ref": "#/$defs/RemoveNoteOp"
+        },
+        {
+          "$ref": "#/$defs/AskClarificationOp"
+        },
+        {
+          "$ref": "#/$defs/InsertAtOp"
+        },
+        {
+          "$ref": "#/$defs/DeleteChildOp"
+        },
+        {
+          "$ref": "#/$defs/SwapNodeOp"
+        },
+        {
+          "$ref": "#/$defs/SetFieldOp"
+        }
+      ]
+    },
+    "AddStmtOp": {
       "type": "object",
       "properties": {
-        "kind": {
+        "op": {
           "type": "string",
-          "const": "Program"
+          "const": "add_stmt"
         },
-        "id": {
+        "parent": {
           "$ref": "#/$defs/NodeId"
         },
-        "body": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Stmt"
-          }
+        "position": {
+          "$ref": "#/$defs/InsertPosition"
+        },
+        "stmt": {
+          "$ref": "#/$defs/Stmt"
         },
         "provenance": {
-          "$ref": "#/$defs/Provenance"
-        },
-        "inferred": {
-          "$ref": "#/$defs/InferenceRuleId"
-        },
-        "label": {
-          "$ref": "#/$defs/Text"
-        },
-        "notes": {
-          "$ref": "#/$defs/Notes"
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
         }
       },
       "required": [
-        "kind",
-        "id",
-        "body",
-        "provenance"
+        "op",
+        "parent",
+        "position",
+        "stmt"
       ],
       "additionalProperties": false
     },
     "NodeId": {
       "type": "string",
       "pattern": "^[nt][1-9][0-9]*$"
+    },
+    "InsertPosition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "string",
+              "enum": [
+                "start",
+                "end"
+              ]
+            }
+          },
+          "required": [
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "before": {
+              "$ref": "#/$defs/NodeId"
+            }
+          },
+          "required": [
+            "before"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "after": {
+              "$ref": "#/$defs/NodeId"
+            }
+          },
+          "required": [
+            "after"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "Stmt": {
       "oneOf": [
@@ -231,10 +321,6 @@
         "end"
       ],
       "additionalProperties": false
-    },
-    "Text": {
-      "type": "string",
-      "minLength": 1
     },
     "InferenceRuleId": {
       "type": "string",
@@ -1625,6 +1711,519 @@
         "id",
         "reason",
         "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "FillHoleOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "fill_hole"
+        },
+        "hole": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Expr"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Stmt"
+              }
+            }
+          ]
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "hole",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "UpdateFieldOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "update_field"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "field": {
+          "$ref": "#/$defs/Text"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReplaceableNode"
+            },
+            {
+              "$ref": "#/$defs/JsonValue"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "field",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "ReplaceableNode": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Stmt"
+        },
+        {
+          "$ref": "#/$defs/Expr"
+        },
+        {
+          "$ref": "#/$defs/Block"
+        },
+        {
+          "$ref": "#/$defs/Elif"
+        },
+        {
+          "$ref": "#/$defs/DictEntry"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      ]
+    },
+    "ReplaceNodeOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "replace_node"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "replacement": {
+          "$ref": "#/$defs/ReplaceableNode"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "RemoveNodeOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "remove_node"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node"
+      ],
+      "additionalProperties": false
+    },
+    "MoveNodeOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "move_node"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "parent": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "position": {
+          "$ref": "#/$defs/InsertPosition"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "parent",
+        "position"
+      ],
+      "additionalProperties": false
+    },
+    "WrapNodesOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "wrap_nodes"
+        },
+        "nodes": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NodeId"
+          }
+        },
+        "wrapper": {
+          "$ref": "#/$defs/Stmt"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "nodes",
+        "wrapper"
+      ],
+      "additionalProperties": false
+    },
+    "RenameSymbolOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "rename_symbol"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "name": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "SetLabelOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_label"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "label": {
+          "$ref": "#/$defs/Text"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node"
+      ],
+      "additionalProperties": false
+    },
+    "AddNoteOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "add_note"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "text": {
+          "$ref": "#/$defs/Text"
+        },
+        "tag": {
+          "type": "string",
+          "enum": [
+            "general",
+            "edge-case",
+            "complexity"
+          ]
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "text",
+        "tag"
+      ],
+      "additionalProperties": false
+    },
+    "RemoveNoteOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "remove_note"
+        },
+        "note": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "note"
+      ],
+      "additionalProperties": false
+    },
+    "AskClarificationOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "ask_clarification"
+        },
+        "question": {
+          "$ref": "#/$defs/Text"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NodeId"
+          }
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "question",
+        "candidates"
+      ],
+      "additionalProperties": false
+    },
+    "InsertAtOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "insert_at"
+        },
+        "parent": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "field": {
+          "$ref": "#/$defs/Text"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "node": {
+          "$ref": "#/$defs/ListNode"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "parent",
+        "field",
+        "index",
+        "node"
+      ],
+      "additionalProperties": false
+    },
+    "ListNode": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Stmt"
+        },
+        {
+          "$ref": "#/$defs/Expr"
+        },
+        {
+          "$ref": "#/$defs/Elif"
+        },
+        {
+          "$ref": "#/$defs/DictEntry"
+        }
+      ]
+    },
+    "DeleteChildOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "delete_child"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node"
+      ],
+      "additionalProperties": false
+    },
+    "SwapNodeOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "swap_node"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "replacement": {
+          "$ref": "#/$defs/ReplaceableNode"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "replacement"
+      ],
+      "additionalProperties": false
+    },
+    "SetFieldOp": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_field"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "field": {
+          "$ref": "#/$defs/Text"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Span"
+          }
+        }
+      },
+      "required": [
+        "op",
+        "node",
+        "field"
       ],
       "additionalProperties": false
     }

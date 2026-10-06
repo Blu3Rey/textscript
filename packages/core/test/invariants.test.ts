@@ -41,6 +41,11 @@ describe('checkInvariants', () => {
     });
   });
 
+  it('temp-id: documents may not keep temporary IDs', () => {
+    const doc = docWith((b) => [{ ...b.break(said(0)), id: 't1' }]);
+    expect(codes(doc)).toEqual(['temp-id']);
+  });
+
   it('id-not-below-next: reports IDs the allocator could hand out again', () => {
     const doc = docWith((b) => [b.break(said(0))]);
     expect(codes({ ...doc, nextId: 2 })).toEqual(['id-not-below-next']);

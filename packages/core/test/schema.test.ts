@@ -110,7 +110,7 @@ describe('shape rules', () => {
   });
 
   it('requires well-formed node IDs', () => {
-    for (const id of ['n0', 'n01', 'x1', 'n', '1']) {
+    for (const id of ['n0', 'n01', 'x1', 'n', '1', 't0', 'tn1']) {
       expect(ok({ ...b.name('x', said(0)), id })).toBe(false);
     }
   });

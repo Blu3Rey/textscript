@@ -35,7 +35,8 @@ function formatPath(path: readonly PropertyKey[]): string {
   }, '');
 }
 
-function formatZodIssues(error: z.ZodError): string[] {
+/** Zod issues as `path: message` lines. */
+export function zodIssueMessages(error: z.ZodError): string[] {
   return error.issues.map((issue) => {
     const path = formatPath(issue.path);
     return path === '' ? issue.message : `${path}: ${issue.message}`;
@@ -48,7 +49,7 @@ export function parseDocument(raw: unknown, options: MigrateOptions = {}): Parse
   if (!migrated.ok) return { ok: false, stage: 'version', issues: [migrated.issue] };
 
   const shaped = IrDocumentSchema.safeParse(migrated.document);
-  if (!shaped.success) return { ok: false, stage: 'shape', issues: formatZodIssues(shaped.error) };
+  if (!shaped.success) return { ok: false, stage: 'shape', issues: zodIssueMessages(shaped.error) };
 
   const invariantIssues = checkInvariants(shaped.data);
   if (invariantIssues.length > 0) {
