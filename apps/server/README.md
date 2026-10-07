@@ -23,7 +23,7 @@ TEXTSCRIPT_PROVIDER=ollama TEXTSCRIPT_MODEL=qwen3:8b pnpm --filter @textscript/s
 | `TEXTSCRIPT_CONTEXT_LENGTH` | `16384` | Ollama's context window in tokens |
 | `TEXTSCRIPT_EFFORT` | `medium` | `low`, `medium`, `high`, `xhigh` or `max` (Gemini's thinking level) |
 | `PORT` | `8787` | Port to listen on |
-| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5, Gemini 3.1 Flash-Lite, or the same local model; one call per batch with claims) |
+| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5, Gemini 3.1 Flash-Lite, or the same local model; one call per batch with claims). Not recommended with Ollama: qwen3:14b's second opinion rejected mostly correct code |
 
 ## Routes
 

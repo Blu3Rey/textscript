@@ -32,7 +32,10 @@ picks how:
 
 - `lexical` is the default.
 - `verified` adds a second opinion from a cheap model. It is the
-  default for `claude` and `gemini` and needs an API key. `--verifier
+  default for `claude` and `gemini` and needs an API key. Ollama runs
+  default to `lexical`: in the first local runs, qwen3:14b's second
+  opinion was wrong on 26 of its 27 rejections, so ask for it with
+  `--validator verified` only to measure it. `--verifier
   claude` uses Claude Haiku 4.5; `--verifier gemini` uses Gemini 3.1
   Flash-Lite. The default is the translator's provider, else whichever
   key is set.

@@ -321,7 +321,7 @@ describe('textscript-eval', () => {
     expect(notLlm.stderr).toContain("sweep runs claude, gemini or ollama, not 'rules'");
   });
 
-  it('runs a local model through Ollama, with its own second opinion, at no cost', async () => {
+  it('runs a local model through Ollama at no cost, without a second opinion unless asked', async () => {
     const root = corpusDir();
     const ollama = silentOllama();
     const result = await run(
@@ -337,6 +337,8 @@ describe('textscript-eval', () => {
       (r) => !JSON.stringify(r.format).includes('verdicts'),
     );
     expect(translations).toHaveLength(7);
+    expect(ollama.requests).toHaveLength(7);
+    expect(result.stdout).toContain('## Validator');
     expect(translations[0]).toMatchObject({ model: 'gpt-oss:20b', options: { num_ctx: 16384 } });
     expect(translations[0]).not.toHaveProperty('think');
 

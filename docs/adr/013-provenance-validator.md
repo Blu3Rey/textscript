@@ -76,6 +76,13 @@ same reason. The report now breaks held-back items down by code, so it
 shows whether the lexicon or the second opinion is the one that's too
 strict.
 
+The breakdown answered the question. On the test split with qwen3:14b,
+the second opinion from the same local model held back 27 items; gold
+supports 26 of them (113 units). The lexicon held back 9, and gold
+supports only 1. A local model's second opinion is therefore off by
+default (`--validator lexical` for Ollama runs). Claude Haiku and Gemini
+Flash-Lite as second opinions still need measuring with a key.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

@@ -97,8 +97,10 @@ Options:
                                http://127.0.0.1:11434). LLM runs leave out the
                                problems their examples come from.
   --validator <mode>           lexical (the default), verified (adds a
-                               second opinion; the default for LLM
-                               translators) or off
+                               second opinion; the default for claude and
+                               gemini) or off. A local model's second opinion
+                               rejected mostly correct code, so ollama runs
+                               use lexical unless asked.
   --verifier <provider>        Who gives the second opinion: claude
                                (${VERIFIER_MODEL}), gemini
                                (${GEMINI_VERIFIER_MODEL}) or ollama (the
@@ -377,9 +379,15 @@ function verifierFor(provider: Provider, options: Map<string, string>, io: Io): 
   }
 }
 
-/** The validator for a run: lexical by default, with a second opinion for an LLM translator. */
+/**
+ * The validator for a run: lexical by default, with a second opinion for
+ * Claude and Gemini. Not for Ollama: on the first local runs (qwen3:14b),
+ * 26 of the local model's 27 rejections were code gold supports, so its
+ * second opinion is opt-in until a local model does better.
+ */
 function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Validator | undefined {
-  const mode = options.get('validator') ?? (llm ? 'verified' : 'lexical');
+  const local = options.get('translator') === 'ollama';
+  const mode = options.get('validator') ?? (llm && !local ? 'verified' : 'lexical');
   switch (mode) {
     case 'off':
       return undefined;
