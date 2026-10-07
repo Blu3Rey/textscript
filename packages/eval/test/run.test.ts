@@ -311,9 +311,9 @@ describe('the validator', () => {
     expect(metrics.faithfulness.value).toBe(1);
     const held = steps.flatMap((s) => s.validation?.heldBack ?? []);
     expect(held.some((h) => h.falseRejection)).toBe(true);
-    expect(markdownReport({ translator: 'oracle', steps, metrics })).toContain(
-      'Held back (VAL003, which a gold answer supports)',
-    );
+    const report = markdownReport({ translator: 'oracle', steps, metrics });
+    expect(report).toContain('Held back (VAL003, which a gold answer supports)');
+    expect(report).toMatch(/\| VAL003 \| The cited words don't say it \| \d+ \| \d+ \| \d+ \|/);
   });
 
   it('keeps the gaps a gap-filling translator closes', async () => {

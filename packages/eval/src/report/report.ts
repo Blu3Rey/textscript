@@ -3,6 +3,7 @@
 // breakdowns by style, split and problem, and every step that didn't fully
 // match, with the reasons and a diff of the code.
 
+import { VALIDATION_CODES } from '@textscript/validator';
 import { isExact, type Metrics, type Ratio } from '../metrics';
 import { breakdown, type RunResult, type StepResult } from '../run';
 import { diffLines } from './diff';
@@ -143,11 +144,52 @@ function validationRows(m: RunResult['metrics']): string[][] {
   ];
 }
 
-function validationSection(m: RunResult['metrics']): string[] {
-  const rows = validationRows(m);
-  return rows.length === 0
-    ? []
-    : ['## Validator', '', ...table(['Metric', 'Value', 'Count', 'S8 target', ''], rows), ''];
+const CODE_HEADER = [
+  'Code',
+  'Meaning',
+  'Held back',
+  'Of those, gold supports',
+  'Gold units held back',
+];
+
+/**
+ * What was held back, by validation code: whether false rejections come
+ * from the lexicon (VAL003) or the second opinion (VAL005) decides what to
+ * tune.
+ */
+function codeRows(result: RunResult): string[][] {
+  const codes = new Map<string, { held: number; supported: number; units: number }>();
+  for (const step of result.steps) {
+    for (const held of step.validation?.heldBack ?? []) {
+      const entry = codes.get(held.code) ?? { held: 0, supported: 0, units: 0 };
+      entry.held++;
+      if (held.falseRejection) entry.supported++;
+      entry.units += held.falselyHeld;
+      codes.set(held.code, entry);
+    }
+  }
+  return [...codes.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([code, e]) => [
+      code,
+      Object.entries(VALIDATION_CODES).find(([key]) => key === code)?.[1].summary ?? '',
+      String(e.held),
+      String(e.supported),
+      String(e.units),
+    ]);
+}
+
+function validationSection(result: RunResult): string[] {
+  const rows = validationRows(result.metrics);
+  if (rows.length === 0) return [];
+  const codes = codeRows(result);
+  return [
+    '## Validator',
+    '',
+    ...table(['Metric', 'Value', 'Count', 'S8 target', ''], rows),
+    '',
+    ...(codes.length === 0 ? [] : [...table(CODE_HEADER, codes), '']),
+  ];
 }
 
 export function markdownReport(
@@ -182,7 +224,7 @@ export function markdownReport(
         ? ''
         : ` Cost $${m.usage.costUsd.toFixed(4)} ($${(m.usage.costPer20 ?? 0).toFixed(4)} per 20 utterances).`),
     '',
-    ...validationSection(m),
+    ...validationSection(result),
     '## By style',
     '',
     ...table(BREAKDOWN_HEADER, breakdownRows(breakdown(result.steps, (s) => s.style))),
@@ -285,7 +327,7 @@ export function htmlReport(result: RunResult, title = `Evaluation: ${result.tran
 Rejected batches: ${String(m.rejected)}. Latency p50 ${ms(m.latencyMs.p50)}, p95 ${ms(m.latencyMs.p95)}.</p>
 <h2>Metrics</h2>
 ${htmlTable(['Metric', 'Meaning', 'Value', 'Count', 'M2 target', ''], metricRows)}
-${m.validation === null ? '' : `<h2>Validator</h2>\n${htmlTable(['Metric', 'Value', 'Count', 'S8 target', ''], validationRows(m))}`}
+${m.validation === null ? '' : `<h2>Validator</h2>\n${htmlTable(['Metric', 'Value', 'Count', 'S8 target', ''], validationRows(m))}\n${codeRows(result).length === 0 ? '' : htmlTable(CODE_HEADER, codeRows(result))}`}
 ${sections.map(([name, groups]) => `<h2>${name}</h2>\n${htmlTable(BREAKDOWN_HEADER, breakdownRows(groups))}`).join('\n')}
 <h2>Steps that don't match (${String(failing.length)})</h2>
 ${failures.length === 0 ? '<p>None.</p>' : failures.join('\n')}

@@ -66,6 +66,16 @@ Two refinements came from the corpus:
   In `best = total + ?`, the words "add it to total" would otherwise
   vouch for a structure nobody described.
 
+A node the cited words don't support is checked again against the whole
+utterance those words come from before it is held back. The first local
+run (Ollama, qwen3:14b) held back 26% of gold-supported units. Models
+cite narrower word ranges than they should, such as "num" for `seen`,
+while the lexicon was tuned and measured on whole utterances, which is
+what gold cites. The second opinion is given the whole utterance for the
+same reason. The report now breaks held-back items down by code, so it
+shows whether the lexicon or the second opinion is the one that's too
+strict.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

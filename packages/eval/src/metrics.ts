@@ -52,7 +52,14 @@ export interface Metrics {
 export interface StepValidation {
   /** Nodes and field changes checked. */
   checked: number;
-  heldBack: { code: string; proposed: string; message: string; falseRejection: boolean }[];
+  heldBack: {
+    code: string;
+    proposed: string;
+    message: string;
+    falseRejection: boolean;
+    /** Gold-supported units inside what was held back. */
+    falselyHeld: number;
+  }[];
   /** Units of the unvalidated output a gold answer supports, and how many were held back. */
   supportedUnits: number;
   falselyHeld: number;

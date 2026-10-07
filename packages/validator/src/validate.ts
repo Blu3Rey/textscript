@@ -274,6 +274,21 @@ class Checker {
     return Words.of(spans, this.#utterances);
   }
 
+  /**
+   * The whole utterances some spans point into. Models cite narrower word
+   * ranges than they should ("num is in seen" for `if num in seen`), and
+   * the lexicon was tuned and measured on whole utterances (gold cites
+   * nothing finer), so a node the cited words don't support is checked
+   * again against its utterance before it's held back.
+   */
+  widen(spans: readonly Span[]): Span[] {
+    const ids = [...new Set(spans.map((span) => span.utteranceId))];
+    return ids.flatMap((utteranceId) => {
+      const utterance = this.#utterances.find((u) => u.id === utteranceId);
+      return utterance ? [{ utteranceId, start: 0, end: utterance.tokens.length }] : [];
+    });
+  }
+
   quote(spans: readonly Span[]): string {
     return spans.map((span) => quoteSpan(span, this.#utterances) ?? '').join(' … ');
   }
@@ -695,8 +710,10 @@ export function validate(input: ValidationInput): ValidationResult {
     if (node.kind === 'Update' && node.target.kind === 'Name' && known.has(node.target.name))
       covered.add(node.target.id);
     if (spans.length === 0) return;
-    const words = checker.words(spans);
-    const verdict = checker.node(node, position, words);
+    const cited = checker.words(spans);
+    const citedVerdict = checker.node(node, position, cited);
+    const words = citedVerdict === 'no' ? checker.words(checker.widen(spans)) : cited;
+    const verdict = citedVerdict === 'no' ? checker.node(node, position, words) : citedVerdict;
     if (verdict === 'no') {
       holdBack(
         node,
@@ -720,7 +737,13 @@ export function validate(input: ValidationInput): ValidationResult {
       return false;
     }
     if (verdict === 'unchecked')
-      claims.push({ node: node.id, code: proposed, words: words.text, spans });
+      claims.push({
+        node: node.id,
+        code: proposed,
+        // The second opinion sees the whole utterance, for the same reason.
+        words: checker.words(checker.widen(spans)).text,
+        spans,
+      });
     return;
   });
 
@@ -755,20 +778,23 @@ export function validate(input: ValidationInput): ValidationResult {
       drop('VAL001', proposed, `Nothing said supports ${proposed}`);
       return;
     }
-    const words = checker.words(spans);
-    let verdict: Verdict = 'yes';
-    if (op.op === 'update_field') {
-      const target = index.get(op.node)?.node;
-      verdict = target === undefined ? 'yes' : checker.field(target, op.field, op.value, words);
-    } else if (op.op === 'rename_symbol') {
-      verdict = nameSaid(op.name, words, NAME_SYNONYMS) ? 'yes' : 'no';
-    } else if (op.op === 'set_label' && op.label !== undefined) {
-      const content = op.label
-        .toLowerCase()
-        .split(/[^\p{L}\p{N}]+/u)
-        .filter((w) => w.length > 2);
-      verdict = content.every((w) => words.has(w)) ? 'yes' : 'no';
-    }
+    const judge = (words: Words): Verdict => {
+      if (op.op === 'update_field') {
+        const target = index.get(op.node)?.node;
+        return target === undefined ? 'yes' : checker.field(target, op.field, op.value, words);
+      }
+      if (op.op === 'rename_symbol') return nameSaid(op.name, words, NAME_SYNONYMS) ? 'yes' : 'no';
+      if (op.op === 'set_label' && op.label !== undefined) {
+        const content = op.label
+          .toLowerCase()
+          .split(/[^\p{L}\p{N}]+/u)
+          .filter((w) => w.length > 2);
+        return content.every((w) => words.has(w)) ? 'yes' : 'no';
+      }
+      return 'yes';
+    };
+    let verdict = judge(checker.words(spans));
+    if (verdict === 'no') verdict = judge(checker.words(checker.widen(spans)));
     if (verdict === 'no')
       drop('VAL003', proposed, `The words "${checker.quote(spans)}" don't say ${proposed}`);
   });

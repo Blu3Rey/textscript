@@ -9,6 +9,7 @@
 // - Thinking is the model's default unless `think` is set: some models
 //   take true/false, some take low/medium/high, and some reject it.
 // - A `length` stop is a cut-off. There are no refusals to detect.
+// - A dropped connection ("fetch failed") is retried once.
 
 import type { ChatRequest, ChatResponse, Message } from 'ollama';
 import { ANSWER_JSON_SCHEMA } from './answer';
@@ -76,7 +77,7 @@ export function ollamaBackend(options: OllamaTranslatorOptions): LlmBackend {
               { role: 'user', content: feedback },
             ];
           }
-          const reply = await options.ollama.chat({
+          const request = {
             model,
             messages,
             stream: false,
@@ -86,7 +87,16 @@ export function ollamaBackend(options: OllamaTranslatorOptions): LlmBackend {
               num_ctx: options.contextLength ?? OLLAMA_DEFAULT_CONTEXT,
               num_predict: options.maxTokens ?? 8192,
             },
-          });
+          } satisfies ChatRequest & { stream: false };
+          let reply: OllamaReply;
+          try {
+            reply = await options.ollama.chat(request);
+          } catch (error) {
+            // "fetch failed": the connection dropped or Node gave up waiting
+            // (it waits five minutes for a response to start). Try once more.
+            if (!(error instanceof TypeError)) throw error;
+            reply = await options.ollama.chat(request);
+          }
           counts = addCounts(counts, {
             input: reply.prompt_eval_count,
             output: reply.eval_count,

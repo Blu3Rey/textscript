@@ -255,6 +255,7 @@ function falseRejections(
       proposed: held.proposed,
       message: held.message,
       falseRejection: count > 0,
+      falselyHeld: count,
     };
   });
   return {

@@ -128,6 +128,27 @@ describe('the Ollama translator', () => {
     ).rejects.toMatchObject({ code: 'no-answer' });
   });
 
+  it('retries once when the connection drops, but not on other errors', async () => {
+    let calls = 0;
+    const flaky: OllamaChatApi = {
+      chat() {
+        calls++;
+        return calls === 1
+          ? Promise.reject(new TypeError('fetch failed'))
+          : Promise.resolve(reply(loop));
+      },
+    };
+    const translation = await createOllamaTranslator({ ollama: flaky }).translate(context());
+    expect(calls).toBe(2);
+    expect(translation.batch.ops).toHaveLength(1);
+    const missing: OllamaChatApi = {
+      chat: () => Promise.reject(new Error('model "qwen3:8b" not found, try pulling it first')),
+    };
+    await expect(createOllamaTranslator({ ollama: missing }).translate(context())).rejects.toThrow(
+      'not found',
+    );
+  });
+
   it('accepts the real client', () => {
     const typed = (client: Ollama): OllamaChatApi => client;
     expect(typed).toBeTypeOf('function');

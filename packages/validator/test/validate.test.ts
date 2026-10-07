@@ -216,6 +216,25 @@ describe('validate', () => {
     expect(operand.heldBack.map((h) => h.proposed)).toEqual(['best', 'total + 1']);
   });
 
+  it('checks a narrow citation against its whole utterance before holding anything back', () => {
+    const s = new Session();
+    // The model cites only "num" for `seen`; "seen" is elsewhere in the utterance.
+    const narrow = s.say(
+      'If num is in seen, return true.',
+      'add root:\n    if num in seen@1:2:\n        return True',
+    );
+    expect(narrow.heldBack).toEqual([]);
+    expect(s.find((node) => node.kind === 'Name' && node.name === 'seen').provenance).toEqual([
+      { utteranceId: 'u1', start: 1, end: 2 },
+    ]);
+    // Words the whole utterance doesn't say are still held back.
+    const unsaid = s.say(
+      'If num shows up, keep going.',
+      'add root:\n    if num in seen@1:2:\n        continue',
+    );
+    expect(unsaid.heldBack.map((h) => h.proposed)).toEqual(['num in seen']);
+  });
+
   it('accepts code the batch takes out and rebuilds unchanged', () => {
     const s = new Session();
     s.say('If num is in seen, return true.', 'add root: if num in seen:\n    return True');
