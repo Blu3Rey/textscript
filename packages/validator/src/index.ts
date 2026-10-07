@@ -12,8 +12,11 @@ export {
 } from './validate';
 export {
   createClaudeVerifier,
+  createGeminiVerifier,
+  GEMINI_VERIFIER_MODEL,
   VERIFIER_MODEL,
   type ClaudeVerifierOptions,
+  type GeminiVerifierOptions,
   type Verifier,
 } from './verifier';
 export { inflects, nameParts, nameSaid, partMatches, Words } from './words';

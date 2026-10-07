@@ -40,7 +40,7 @@ pnpm check
 | `pnpm textscript --help` | Runs the developer CLI |
 | `pnpm eval check` | Checks the walkthrough corpus (see [corpus/README.md](corpus/README.md)) |
 | `pnpm check:eval` | The eval gate: the corpus is valid and the rules translator doesn't regress against `corpus/baselines/rules.json` |
-| `pnpm eval run --translator claude` | Scores the LLM translator (needs `ANTHROPIC_API_KEY`; see [packages/eval/README.md](packages/eval/README.md)) |
+| `pnpm eval run --translator claude` | Scores the LLM translator (needs `ANTHROPIC_API_KEY`; `--translator gemini` needs `GEMINI_API_KEY`; see [packages/eval/README.md](packages/eval/README.md)) |
 
 ## Repository layout
 

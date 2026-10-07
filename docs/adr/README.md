@@ -20,6 +20,7 @@ the old one.
 | [011](011-corpus-and-evaluation.md) | Walkthrough corpus and evaluation | Accepted |
 | [012](012-translator.md) | The translator: commands as output, context packing, baseline, server | Accepted |
 | [013](013-provenance-validator.md) | The provenance validator: lexical checks, downgrades, second opinion | Accepted |
+| [014](014-llm-providers.md) | LLM providers behind one translator loop: Claude and Gemini | Accepted |
 
 ## Writing a new ADR
 

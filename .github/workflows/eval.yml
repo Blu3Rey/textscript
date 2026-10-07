@@ -1,12 +1,18 @@
 name: Eval (LLM)
 
-# Runs the Claude translator over the corpus and gates it against
-# corpus/baselines/claude.json when that file exists. Started by hand
-# because every run costs money; it needs the ANTHROPIC_API_KEY secret.
+# Runs an LLM translator (Claude or Gemini) over the corpus and gates it
+# against corpus/baselines/<translator>.json when that file exists. Started
+# by hand because every run costs money; it needs the ANTHROPIC_API_KEY or
+# GEMINI_API_KEY secret.
 
 on:
   workflow_dispatch:
     inputs:
+      translator:
+        description: Provider
+        default: claude
+        type: choice
+        options: [claude, gemini]
       split:
         description: Corpus split to score (test is the held-out set)
         default: test
@@ -18,8 +24,8 @@ on:
         type: choice
         options: [low, medium, high, xhigh, max]
       model:
-        description: Model
-        default: claude-opus-5-5
+        description: Model (empty for the provider's default)
+        default: ''
         type: string
 
 permissions:
@@ -27,11 +33,12 @@ permissions:
 
 jobs:
   eval:
-    name: Score the Claude translator
+    name: Score the LLM translator
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,16 +54,20 @@ jobs:
 
       - name: Run
         env:
+          TRANSLATOR: ${{ inputs.translator }}
           SPLIT: ${{ inputs.split }}
           EFFORT: ${{ inputs.effort }}
           MODEL: ${{ inputs.model }}
         run: |
-          baseline=()
-          if [ -f corpus/baselines/claude.json ]; then
-            baseline=(--baseline corpus/baselines/claude.json)
+          extra=()
+          if [ -f "corpus/baselines/$TRANSLATOR.json" ]; then
+            extra+=(--baseline "corpus/baselines/$TRANSLATOR.json")
           fi
-          pnpm -s eval run --translator claude --split "$SPLIT" --effort "$EFFORT" \
-            --model "$MODEL" --out eval-report "${baseline[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -n "$MODEL" ]; then
+            extra+=(--model "$MODEL")
+          fi
+          pnpm -s eval run --translator "$TRANSLATOR" --split "$SPLIT" --effort "$EFFORT" \
+            --out eval-report "${extra[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload reports
         if: always()

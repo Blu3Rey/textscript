@@ -4,12 +4,16 @@ import { analyze } from '@textscript/core';
 import { formatCode } from '@textscript/cli';
 import { PYTHON_BUILTINS } from '@textscript/render-python';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 import {
   createClaudeTranslator,
+  createGeminiTranslator,
   DEFAULT_MODEL,
   emptyTranslator,
+  GEMINI_DEFAULT_MODEL,
   rulesTranslator,
   type Effort,
+  type GeminiModelsApi,
   type MessagesApi,
   type Translator,
 } from '@textscript/translator';
@@ -17,6 +21,8 @@ import { examples } from '@textscript/translator/examples';
 import {
   checkBatch,
   createClaudeVerifier,
+  createGeminiVerifier,
+  GEMINI_VERIFIER_MODEL,
   VERIFIER_MODEL,
   type ValidationInput,
   type ValidationResult,
@@ -35,7 +41,13 @@ export interface Io {
   stderr: (text: string) => void;
   /** The Claude API; by default a client that reads ANTHROPIC_API_KEY. */
   messages?: MessagesApi;
+  /** The Gemini API; by default a client that reads GEMINI_API_KEY (or GOOGLE_API_KEY). */
+  gemini?: GeminiModelsApi;
 }
+
+type Provider = 'claude' | 'gemini';
+
+const PROVIDERS: readonly Provider[] = ['claude', 'gemini'];
 
 const EFFORTS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -53,24 +65,32 @@ Commands:
                                (default: every file in <corpus>/agreement/).
   examples [--out <file>]      Print (or write) the LLM translator's few-shot
                                examples, made from training-split gold.
-  sweep                        Run the Claude translator at several efforts and
+  sweep                        Run an LLM translator (claude, or gemini with
+                               --translator gemini) at several efforts and
                                compare quality, latency and cost.
 
 Options:
   --corpus <dir>               Corpus directory (default: corpus)
-  --translator <name>          empty, oracle, rules, filler or claude (default:
-                               empty). filler replays gold and fills every
-                               hole with made-up code, to test the validator.
-                               claude needs ANTHROPIC_API_KEY and leaves out
-                               the problems its examples come from.
+  --translator <name>          empty, oracle, rules, filler, claude or gemini
+                               (default: empty). filler replays gold and fills
+                               every hole with made-up code, to test the
+                               validator. claude needs ANTHROPIC_API_KEY,
+                               gemini needs GEMINI_API_KEY; both leave out
+                               the problems their examples come from.
   --validator <mode>           lexical (the default), verified (adds a
-                               second opinion from ${VERIFIER_MODEL}; the
-                               default for claude) or off
-  --model <id>                 Claude model (default: ${DEFAULT_MODEL})
-  --effort <level>             Claude effort: ${EFFORTS.join(', ')} (default: medium)
+                               second opinion; the default for claude and
+                               gemini) or off
+  --verifier <provider>        Who gives the second opinion: claude
+                               (${VERIFIER_MODEL}) or gemini
+                               (${GEMINI_VERIFIER_MODEL}). Defaults to the
+                               translator's provider, else whichever key is set.
+  --model <id>                 LLM model (default: ${DEFAULT_MODEL} for claude,
+                               ${GEMINI_DEFAULT_MODEL} for gemini)
+  --effort <level>             Effort, or Gemini's thinking level:
+                               ${EFFORTS.join(', ')} (default: medium)
   --efforts <level,...>        Efforts to sweep (default: low,medium,high)
   --concurrency <n>            Walkthroughs translated at once (default: 1;
-                               4 for claude)
+                               4 for claude and gemini)
   --split <train|test>         Only this split
   --problem <id,...>           Only these problems
   --style <style,...>          Only these styles (${STYLES.join(', ')})
@@ -105,6 +125,7 @@ const VALUE_OPTIONS = new Set([
   'efforts',
   'concurrency',
   'validator',
+  'verifier',
 ]);
 
 function parseArgs(argv: readonly string[]): Args {
@@ -174,18 +195,47 @@ function effortFrom(value: string): Effort {
 function messagesFrom(io: Io): MessagesApi {
   if (io.messages) return io.messages;
   if (!process.env['ANTHROPIC_API_KEY']) {
-    throw new UsageError('the claude translator needs ANTHROPIC_API_KEY in the environment');
+    throw new UsageError('claude needs ANTHROPIC_API_KEY in the environment');
   }
   return new Anthropic().beta.messages;
 }
 
-function claudeTranslator(options: Map<string, string>, io: Io, effort: Effort): Translator {
-  return createClaudeTranslator({
-    messages: messagesFrom(io),
-    model: options.get('model') ?? DEFAULT_MODEL,
-    effort,
-    examples,
-  });
+function geminiKey(): string | undefined {
+  return process.env['GEMINI_API_KEY'] ?? process.env['GOOGLE_API_KEY'];
+}
+
+function geminiFrom(io: Io): GeminiModelsApi {
+  if (io.gemini) return io.gemini;
+  const apiKey = geminiKey();
+  if (!apiKey) throw new UsageError('gemini needs GEMINI_API_KEY in the environment');
+  return new GoogleGenAI({ apiKey }).models;
+}
+
+/** The provider an LLM translator name stands for, if it is one. */
+function providerOf(name: string | undefined): Provider | undefined {
+  return PROVIDERS.find((p) => p === name);
+}
+
+function llmTranslator(
+  provider: Provider,
+  options: Map<string, string>,
+  io: Io,
+  effort: Effort,
+): Translator {
+  const model = options.get('model');
+  return provider === 'claude'
+    ? createClaudeTranslator({
+        messages: messagesFrom(io),
+        model: model ?? DEFAULT_MODEL,
+        effort,
+        examples,
+      })
+    : createGeminiTranslator({
+        models: geminiFrom(io),
+        model: model ?? GEMINI_DEFAULT_MODEL,
+        effort,
+        examples,
+      });
 }
 
 function translatorFrom(
@@ -193,6 +243,9 @@ function translatorFrom(
   io: Io,
 ): Translator | ((gold: CompiledGold) => Translator) {
   const name = options.get('translator') ?? 'empty';
+  const provider = providerOf(name);
+  if (provider !== undefined)
+    return llmTranslator(provider, options, io, effortFrom(options.get('effort') ?? 'medium'));
   switch (name) {
     case 'empty':
       return emptyTranslator;
@@ -202,16 +255,30 @@ function translatorFrom(
       return rulesTranslator;
     case 'filler':
       return fillerTranslator;
-    case 'claude':
-      return claudeTranslator(options, io, effortFrom(options.get('effort') ?? 'medium'));
     default:
       throw new UsageError(
-        `unknown translator '${name}'; use empty, oracle, rules, filler or claude`,
+        `unknown translator '${name}'; use empty, oracle, rules, filler, claude or gemini`,
       );
   }
 }
 
 type Validator = (input: ValidationInput) => Promise<ValidationResult>;
+
+/** Who gives the second opinion: as asked, else the translator's provider, else whoever has a key. */
+function verifierProvider(options: Map<string, string>, io: Io): Provider {
+  const asked = options.get('verifier');
+  if (asked !== undefined) {
+    const provider = providerOf(asked);
+    if (provider === undefined)
+      throw new UsageError(`unknown verifier '${asked}'; use ${PROVIDERS.join(' or ')}`);
+    return provider;
+  }
+  const translator = providerOf(options.get('translator'));
+  if (translator !== undefined) return translator;
+  const claude = io.messages !== undefined || Boolean(process.env['ANTHROPIC_API_KEY']);
+  const gemini = io.gemini !== undefined || Boolean(geminiKey());
+  return !claude && gemini ? 'gemini' : 'claude';
+}
 
 /** The validator for a run: lexical by default, with a second opinion for an LLM translator. */
 function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Validator | undefined {
@@ -222,7 +289,10 @@ function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Vali
     case 'lexical':
       return (input) => checkBatch(input);
     case 'verified': {
-      const verifier = createClaudeVerifier({ messages: messagesFrom(io) });
+      const verifier =
+        verifierProvider(options, io) === 'claude'
+          ? createClaudeVerifier({ messages: messagesFrom(io) })
+          : createGeminiVerifier({ models: geminiFrom(io) });
       return (input) => checkBatch(input, { verifier });
     }
     default:
@@ -287,7 +357,7 @@ function check(corpus: Corpus, io: Io): number {
 
 async function run(corpus: Corpus, options: Map<string, string>, io: Io): Promise<number> {
   if (refuseIssues(corpus, io)) return 2;
-  const llm = options.get('translator') === 'claude';
+  const llm = providerOf(options.get('translator')) !== undefined;
   const validator = validatorFrom(options, io, llm);
   const result = await runEval(corpus, {
     translator: translatorFrom(options, io),
@@ -336,15 +406,19 @@ function isBaseline(value: unknown): value is Baseline {
   );
 }
 
-/** The Claude translator at several efforts, side by side. */
+/** An LLM translator at several efforts, side by side. */
 async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Promise<number> {
   if (refuseIssues(corpus, io)) return 2;
+  const translator = options.get('translator') ?? 'claude';
+  const provider = providerOf(translator);
+  if (provider === undefined)
+    throw new UsageError(`sweep runs claude or gemini, not '${translator}'`);
   const efforts = (list(options.get('efforts')) ?? ['low', 'medium', 'high']).map(effortFrom);
   const rows: string[] = [];
   for (const effort of efforts) {
-    const validator = validatorFrom(options, io, true);
+    const validator = validatorFrom(new Map([...options, ['translator', translator]]), io, true);
     const result = await runEval(corpus, {
-      translator: claudeTranslator(options, io, effort),
+      translator: llmTranslator(provider, options, io, effort),
       filter: runFilter(corpus, options, true),
       concurrency: concurrencyFrom(options, 4),
       ...(validator ? { validator } : {}),
@@ -367,7 +441,7 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
   }
   io.stdout(
     [
-      `# Effort sweep: ${options.get('model') ?? DEFAULT_MODEL}`,
+      `# Effort sweep: ${options.get('model') ?? (provider === 'claude' ? DEFAULT_MODEL : GEMINI_DEFAULT_MODEL)}`,
       '',
       '| Effort | Faithful | Gaps kept | Coverage | Placement | Exact | Rejected | Held back | False rejections | p50 | p95 | Cost per 20 utterances |',
       '|---|---|---|---|---|---|---|---|---|---|---|---|',
