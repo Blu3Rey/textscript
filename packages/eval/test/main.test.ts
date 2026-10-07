@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { MessagesApi, ModelReply } from '@textscript/translator';
+import { FinishReason } from '@google/genai';
+import type { GeminiModelsApi, MessagesApi, ModelReply } from '@textscript/translator';
 import { describe, expect, it, vi } from 'vitest';
 import { main } from '../src/main';
 import { INCOMPLETE, INCOMPLETE_GOLD, PROBLEM, TERSE, TERSE_GOLD } from './helpers';
@@ -25,15 +26,36 @@ function corpusDir(extra: Record<string, string> = {}): string {
   return root;
 }
 
-async function run(argv: string[], messages?: MessagesApi) {
+async function run(argv: string[], messages?: MessagesApi, gemini?: GeminiModelsApi) {
   let stdout = '';
   let stderr = '';
   const code = await main(argv, {
     stdout: (t) => (stdout += t),
     stderr: (t) => (stderr += t),
     ...(messages ? { messages } : {}),
+    ...(gemini ? { gemini } : {}),
   });
   return { code, stdout, stderr };
+}
+
+/** A Gemini API that understands nothing, and records the models and thinking levels asked for. */
+function silentGemini(): GeminiModelsApi & { asked: string[] } {
+  const asked: string[] = [];
+  return {
+    asked,
+    generateContent(params) {
+      asked.push(`${params.model}:${params.config?.thinkingConfig?.thinkingLevel ?? 'none'}`);
+      return Promise.resolve({
+        candidates: [
+          {
+            finishReason: FinishReason.STOP,
+            content: { role: 'model', parts: [{ text: '{"commands":[],"unparsed":[]}' }] },
+          },
+        ],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
+      });
+    },
+  };
 }
 
 /** A Claude API that understands nothing, and records the efforts it was asked for. */
@@ -229,6 +251,98 @@ describe('textscript-eval', () => {
     const bad = await run(['run', '--corpus', root, '--validator', 'strict']);
     expect(bad.code).toBe(2);
     expect(bad.stderr).toContain("unknown validator 'strict'");
+  });
+
+  it('runs the Gemini translator, and sweeps it', async () => {
+    const gemini = silentGemini();
+    const result = await run(
+      ['run', '--corpus', corpusDir(), '--translator', 'gemini', '--effort', 'high'],
+      undefined,
+      gemini,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('# Evaluation: gemini:gemini-3.5-flash:high');
+    expect(result.stdout).toContain('per 20 utterances');
+    expect(gemini.asked).toEqual(Array.from({ length: 7 }, () => 'gemini-3.5-flash:HIGH'));
+
+    const swept = silentGemini();
+    const sweep = await run(
+      [
+        'sweep',
+        '--corpus',
+        corpusDir(),
+        '--translator',
+        'gemini',
+        '--efforts',
+        'low',
+        '--model',
+        'gemini-x',
+      ],
+      undefined,
+      swept,
+    );
+    expect(sweep.stdout).toContain('# Effort sweep: gemini-x');
+    expect(new Set(swept.asked)).toEqual(new Set(['gemini-x:LOW']));
+    const notLlm = await run(['sweep', '--corpus', corpusDir(), '--translator', 'rules']);
+    expect(notLlm.code).toBe(2);
+    expect(notLlm.stderr).toContain("sweep runs claude or gemini, not 'rules'");
+  });
+
+  it('picks the second opinion: as asked, else the translator, else whichever key is set', async () => {
+    const root = corpusDir();
+    // The oracle has claims (indexes, assignments), so the verifier gets asked.
+    const asked = silentGemini();
+    await run(
+      [
+        'run',
+        '--corpus',
+        root,
+        '--translator',
+        'oracle',
+        '--validator',
+        'verified',
+        '--verifier',
+        'gemini',
+      ],
+      silentClaude(),
+      asked,
+    );
+    expect(asked.asked[0]).toBe('gemini-3.1-flash-lite:none');
+
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    const keyed = silentGemini();
+    await run(
+      ['run', '--corpus', root, '--translator', 'oracle', '--validator', 'verified'],
+      undefined,
+      keyed,
+    );
+    expect(keyed.asked.length).toBeGreaterThan(0);
+    vi.stubEnv('GEMINI_API_KEY', '');
+    vi.stubEnv('GOOGLE_API_KEY', '');
+    const none = await run([
+      'run',
+      '--corpus',
+      root,
+      '--translator',
+      'oracle',
+      '--validator',
+      'verified',
+    ]);
+    expect(none.stderr).toContain('claude needs ANTHROPIC_API_KEY');
+    const noGemini = await run(['run', '--corpus', root, '--translator', 'gemini']);
+    expect(noGemini.stderr).toContain('gemini needs GEMINI_API_KEY');
+    vi.unstubAllEnvs();
+
+    const bad = await run([
+      'run',
+      '--corpus',
+      root,
+      '--validator',
+      'verified',
+      '--verifier',
+      'gpt',
+    ]);
+    expect(bad.stderr).toContain("unknown verifier 'gpt'; use claude or gemini");
   });
 
   it('needs an API key for Claude', async () => {

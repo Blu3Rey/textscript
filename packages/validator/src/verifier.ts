@@ -1,10 +1,12 @@
-// The optional second opinion (ROADMAP.md S8): a cheaper model call that
-// answers "do these words say this code?" for nodes the lexicon can't
-// judge, such as an index or an assignment's shape. On by default in the
-// eval, behind a flag at runtime until its cost and benefit are measured.
+// The optional second opinion (ROADMAP.md S8): a cheap model call (Claude
+// Haiku or Gemini Flash-Lite) that answers "do these words say this code?"
+// for nodes the lexicon can't judge, such as an index or an assignment's
+// shape. On by default in the eval, behind a flag at runtime until its cost
+// and benefit are measured.
 
 import type { MessageCreateParamsNonStreaming } from '@anthropic-ai/sdk/resources/beta/messages/messages';
-import type { MessagesApi } from '@textscript/translator';
+import { FinishReason } from '@google/genai';
+import type { GeminiModelsApi, MessagesApi } from '@textscript/translator';
 import { z } from 'zod';
 import type { Claim } from './validate';
 
@@ -45,49 +47,31 @@ const VerdictsSchema = z.object({
   verdicts: z.array(z.object({ claim: z.number().int(), supported: z.boolean() })),
 });
 
-export interface ClaudeVerifierOptions {
-  messages: MessagesApi;
-  model?: string;
-  maxTokens?: number;
-}
-
 /**
- * A verifier that asks Claude about all of a batch's claims in one call.
- * If the call fails, is refused or is cut off, or leaves a claim out, the
- * claim stands: the second opinion only ever holds more back.
+ * Asks a model about claims through `ask`, which returns the answer's text
+ * or undefined if there's no usable answer. If the call fails, or the
+ * answer is unusable or leaves a claim out, the claim stands: the second
+ * opinion only ever holds more back.
  */
-export function createClaudeVerifier(options: ClaudeVerifierOptions): Verifier {
-  const model = options.model ?? VERIFIER_MODEL;
+function verifyWith(name: string, ask: (prompt: string) => Promise<string | undefined>): Verifier {
   return {
-    name: `claude:${model}`,
+    name,
     async verify(claims) {
       if (claims.length === 0) return [];
-      const params: MessageCreateParamsNonStreaming = {
-        model,
-        max_tokens: options.maxTokens ?? 4000,
-        output_config: { format: { type: 'json_schema', schema: VERDICTS_JSON_SCHEMA } },
-        system: INSTRUCTIONS,
-        messages: [
-          {
-            role: 'user',
-            content: claims
-              .map(
-                (claim, i) =>
-                  `Claim ${String(i + 1)}\nWords: ${JSON.stringify(claim.words)}\nCode: ${claim.code}`,
-              )
-              .join('\n\n'),
-          },
-        ],
-      };
+      const prompt = claims
+        .map(
+          (claim, i) =>
+            `Claim ${String(i + 1)}\nWords: ${JSON.stringify(claim.words)}\nCode: ${claim.code}`,
+        )
+        .join('\n\n');
       const verdicts = claims.map(() => true);
-      let reply;
+      let text: string | undefined;
       try {
-        reply = await options.messages.create(params);
+        text = await ask(prompt);
       } catch {
         return verdicts;
       }
-      if (reply.stop_reason !== 'end_turn') return verdicts;
-      const text = reply.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
+      if (text === undefined) return verdicts;
       let json: unknown;
       try {
         json = JSON.parse(text);
@@ -102,4 +86,57 @@ export function createClaudeVerifier(options: ClaudeVerifierOptions): Verifier {
       return verdicts;
     },
   };
+}
+
+export interface ClaudeVerifierOptions {
+  messages: MessagesApi;
+  model?: string;
+  maxTokens?: number;
+}
+
+/** A verifier that asks Claude about all of a batch's claims in one call. */
+export function createClaudeVerifier(options: ClaudeVerifierOptions): Verifier {
+  const model = options.model ?? VERIFIER_MODEL;
+  return verifyWith(`claude:${model}`, async (prompt) => {
+    const params: MessageCreateParamsNonStreaming = {
+      model,
+      max_tokens: options.maxTokens ?? 4000,
+      output_config: { format: { type: 'json_schema', schema: VERDICTS_JSON_SCHEMA } },
+      system: INSTRUCTIONS,
+      messages: [{ role: 'user', content: prompt }],
+    };
+    const reply = await options.messages.create(params);
+    if (reply.stop_reason !== 'end_turn') return undefined;
+    return reply.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
+  });
+}
+
+export const GEMINI_VERIFIER_MODEL = 'gemini-3.1-flash-lite';
+
+export interface GeminiVerifierOptions {
+  models: GeminiModelsApi;
+  model?: string;
+  maxTokens?: number;
+}
+
+/** A verifier that asks Gemini about all of a batch's claims in one call. */
+export function createGeminiVerifier(options: GeminiVerifierOptions): Verifier {
+  const model = options.model ?? GEMINI_VERIFIER_MODEL;
+  return verifyWith(`gemini:${model}`, async (prompt) => {
+    const reply = await options.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        systemInstruction: INSTRUCTIONS,
+        responseMimeType: 'application/json',
+        responseJsonSchema: VERDICTS_JSON_SCHEMA,
+        maxOutputTokens: options.maxTokens ?? 4000,
+      },
+    });
+    const candidate = reply.candidates?.[0];
+    if (candidate?.finishReason !== FinishReason.STOP) return undefined;
+    return (candidate.content?.parts ?? [])
+      .flatMap((part) => (part.thought === true || part.text === undefined ? [] : [part.text]))
+      .join('');
+  });
 }

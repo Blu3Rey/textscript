@@ -44,6 +44,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClaudeVerifier, validatedTranslator } from '@textscript/validator';
 
 const verifier = createClaudeVerifier({ messages: new Anthropic().beta.messages }); // Claude Haiku 4.5
+// or: createGeminiVerifier({ models: new GoogleGenAI({ apiKey }).models }) // Gemini 3.1 Flash-Lite
 const translator = validatedTranslator(claudeTranslator, { verifier });
 // translation.heldBack lists what was held back, for the UI
 ```

@@ -1,20 +1,24 @@
 # @textscript/server
 
-A stateless HTTP API that runs the Claude translator, so the API key stays
-on the server and never reaches the browser
-([ADR-012](../../docs/adr/012-translator.md)).
+A stateless HTTP API that runs an LLM translator (Claude or Gemini), so
+the API key stays on the server and never reaches the browser
+([ADR-012](../../docs/adr/012-translator.md),
+[ADR-014](../../docs/adr/014-llm-providers.md)).
 
 ```sh
 ANTHROPIC_API_KEY=… pnpm --filter @textscript/server start
+GEMINI_API_KEY=… pnpm --filter @textscript/server start
 ```
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | (required) | Read by the Anthropic SDK |
-| `TEXTSCRIPT_MODEL` | `claude-opus-5-5` | Model |
-| `TEXTSCRIPT_EFFORT` | `medium` | `low`, `medium`, `high`, `xhigh` or `max` |
+| `ANTHROPIC_API_KEY` | | Claude key, read by the Anthropic SDK |
+| `GEMINI_API_KEY` | | Gemini key (`GOOGLE_API_KEY` also works) |
+| `TEXTSCRIPT_PROVIDER` | the provider whose key is set, Anthropic first | `anthropic` or `gemini` |
+| `TEXTSCRIPT_MODEL` | `claude-opus-5-5` or `gemini-3.5-flash` | Model |
+| `TEXTSCRIPT_EFFORT` | `medium` | `low`, `medium`, `high`, `xhigh` or `max` (Gemini's thinking level) |
 | `PORT` | `8787` | Port to listen on |
-| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5, one call per batch with claims) |
+| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5 or Gemini 3.1 Flash-Lite, one call per batch with claims) |
 
 ## Routes
 

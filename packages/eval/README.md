@@ -24,15 +24,18 @@ Translators:
 - `oracle` replays gold.
 - `rules` is the phrase-pattern baseline.
 - `filler` replays gold and fills every hole with made-up code.
-- `claude` is the LLM translator.
+- `claude` and `gemini` are the LLM translators, one per provider.
 
 Every batch goes through the provenance validator first
 ([ADR-013](../../docs/adr/013-provenance-validator.md)). `--validator`
 picks how:
 
 - `lexical` is the default.
-- `verified` adds a second opinion from Claude Haiku 4.5. It is the
-  default for `claude` and needs an API key.
+- `verified` adds a second opinion from a cheap model. It is the
+  default for `claude` and `gemini` and needs an API key. `--verifier
+  claude` uses Claude Haiku 4.5; `--verifier gemini` uses Gemini 3.1
+  Flash-Lite. The default is the translator's provider, else whichever
+  key is set.
 - `off` skips validation.
 
 With a validator, the report adds rejection, downgrade and false-rejection
@@ -46,22 +49,29 @@ The rules translator is gated in CI by `pnpm check:eval` against
 `corpus/baselines/rules.json`. After an intended change, record a new
 baseline with `--write-baseline` and check the diff.
 
-### The Claude translator
+### The LLM translators
 
-`claude` needs `ANTHROPIC_API_KEY` in the environment. It leaves out the
-four training problems its few-shot examples come from, and translates
-four walkthroughs at once (`--concurrency`).
+`claude` needs `ANTHROPIC_API_KEY` in the environment. `gemini` needs
+`GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Both share the prompt, examples,
+retry and salvage ([ADR-014](../../docs/adr/014-llm-providers.md)). Both
+leave out the four training problems their few-shot examples come from,
+and translate four walkthroughs at once (`--concurrency`). For Gemini,
+`--effort` sets the thinking level.
 
 ```sh
 pnpm eval run --translator claude --split test               # the held-out set
+pnpm eval run --translator gemini --split test
 pnpm eval run --translator claude --effort low --model claude-opus-5-5 --out eval-report
+pnpm eval run --translator gemini --model gemini-3.1-pro-preview --effort high
 pnpm eval sweep --split test --efforts low,medium,high --out sweep
+pnpm eval sweep --translator gemini --split test
 ```
 
 The report adds latency (p50, p95) and cost, including cost per 20
 utterances. `sweep` prints one row per effort. To gate the LLM translator,
-record `corpus/baselines/claude.json` with `--write-baseline`; the manual
-**Eval (LLM)** workflow then fails if it regresses.
+record `corpus/baselines/claude.json` or `corpus/baselines/gemini.json`
+with `--write-baseline`. The manual **Eval (LLM)** workflow then fails if
+it regresses.
 
 From code:
 

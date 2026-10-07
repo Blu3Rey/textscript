@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@google/genai": "^2.27.0",
     "@textscript/cli": "workspace:*",
     "@textscript/core": "workspace:*",
     "@textscript/render-python": "workspace:*",

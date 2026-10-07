@@ -1,11 +1,20 @@
 import type { MessageCreateParamsNonStreaming } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { compileCommands } from '@textscript/commands';
 import { createUtterance, emptySession } from '@textscript/core';
-import type { MessagesApi, ModelReply, Translator } from '@textscript/translator';
+import { FinishReason, type GenerateContentParameters } from '@google/genai';
+import type {
+  GeminiModelsApi,
+  GeminiReply,
+  MessagesApi,
+  ModelReply,
+  Translator,
+} from '@textscript/translator';
 import { describe, expect, it } from 'vitest';
 import {
   checkBatch,
   createClaudeVerifier,
+  createGeminiVerifier,
+  GEMINI_VERIFIER_MODEL,
   validatedTranslator,
   VERIFIER_MODEL,
   type Claim,
@@ -181,6 +190,68 @@ describe('the Claude verifier', () => {
     ]) {
       expect(
         await createClaudeVerifier({ messages: api(answer), model: 'm' }).verify(claims),
+      ).toEqual([true, true]);
+    }
+  });
+});
+
+function geminiReply(text: string, finishReason = FinishReason.STOP): GeminiReply {
+  return {
+    candidates: [
+      {
+        finishReason,
+        content: { role: 'model', parts: [{ text: 'hmm', thought: true }, { text }] },
+      },
+    ],
+  };
+}
+
+function gemini(
+  answer: GeminiReply | Error,
+): GeminiModelsApi & { requests: GenerateContentParameters[] } {
+  const requests: GenerateContentParameters[] = [];
+  return {
+    requests,
+    generateContent(params) {
+      requests.push(params);
+      return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
+    },
+  };
+}
+
+describe('the Gemini verifier', () => {
+  it('asks about every claim in one structured call to Flash-Lite', async () => {
+    const models = gemini(
+      geminiReply(
+        JSON.stringify({
+          verdicts: [
+            { claim: 2, supported: false },
+            { claim: 1, supported: true },
+          ],
+        }),
+      ),
+    );
+    const verifier = createGeminiVerifier({ models });
+    expect(verifier.name).toBe(`gemini:${GEMINI_VERIFIER_MODEL}`);
+    expect(await verifier.verify(claims)).toEqual([true, false]);
+    expect(models.requests[0]).toMatchObject({
+      model: 'gemini-3.1-flash-lite',
+      contents:
+        'Claim 1\nWords: "set x to one"\nCode: x = 1\n\nClaim 2\nWords: "the list"\nCode: nums[0]',
+      config: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
+    });
+    expect(await verifier.verify([])).toEqual([]);
+  });
+
+  it('lets claims stand when the call fails, stops early, or answers badly', async () => {
+    for (const answer of [
+      new Error('network'),
+      geminiReply('{}', FinishReason.SAFETY),
+      { candidates: [] },
+      geminiReply('nope'),
+    ]) {
+      expect(
+        await createGeminiVerifier({ models: gemini(answer), model: 'm' }).verify(claims),
       ).toEqual([true, true]);
     }
   });

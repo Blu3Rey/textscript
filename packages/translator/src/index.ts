@@ -10,15 +10,32 @@ export {
   type EncodeResult,
 } from './answer';
 export {
+  claudeBackend,
   createClaudeTranslator,
   DEFAULT_MODEL,
   PRICES,
-  TranslatorError,
   type ClaudeTranslatorOptions,
-  type Effort,
   type MessagesApi,
   type ModelReply,
 } from './claude';
+export {
+  createGeminiTranslator,
+  GEMINI_DEFAULT_MODEL,
+  GEMINI_PRICES,
+  geminiBackend,
+  type GeminiModelsApi,
+  type GeminiReply,
+  type GeminiTranslatorOptions,
+} from './gemini';
+export {
+  createLlmTranslator,
+  TranslatorError,
+  type Conversation,
+  type Effort,
+  type LlmBackend,
+  type LlmTranslatorOptions,
+  type Price,
+} from './llm';
 export { numberedWords, packProblem, packTurn } from './context';
 export { systemPrompt, type Example, type ExampleStep } from './prompt';
 export {
