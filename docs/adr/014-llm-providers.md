@@ -74,6 +74,16 @@ Where providers are chosen:
 - **Server.** `apps/server` reads `TEXTSCRIPT_PROVIDER`. Without it, it
   uses whichever key is set, Anthropic first.
 - **Keys.** Gemini reads `GEMINI_API_KEY`, or `GOOGLE_API_KEY`.
+- **Local models.** `createOllamaTranslator` and `createOllamaVerifier`
+  use the official `ollama` client's `chat` with `stream: false`, and the
+  answer schema as `format`. Ollama truncates silently when a prompt
+  exceeds its context window, and its default window is a few thousand
+  tokens. The prompt with its examples is about 7,000 tokens before the
+  turn, so the adapter always sets `num_ctx` (16384 by default). `think`
+  is passed only when set, since models disagree on its values. Usage is
+  reported with a cost of zero. Ollama is chosen only when asked for (`--translator
+  ollama`, `TEXTSCRIPT_PROVIDER=ollama`), and its second opinion uses the
+  same model, so nothing else needs pulling.
 - **Retries.** The Gemini SDK doesn't retry unless asked to.
   `GEMINI_HTTP_OPTIONS` retries 408, 429 and 5xx responses up to five
   times with backoff. The eval runs one Gemini walkthrough at a time by

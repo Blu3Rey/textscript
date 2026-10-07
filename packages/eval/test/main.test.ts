@@ -4,7 +4,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FinishReason } from '@google/genai';
-import type { GeminiModelsApi, MessagesApi, ModelReply } from '@textscript/translator';
+import type {
+  GeminiModelsApi,
+  MessagesApi,
+  ModelReply,
+  OllamaChatApi,
+} from '@textscript/translator';
+import type { ChatRequest } from 'ollama';
 import { describe, expect, it, vi } from 'vitest';
 import { main } from '../src/main';
 import { INCOMPLETE, INCOMPLETE_GOLD, PROBLEM, TERSE, TERSE_GOLD } from './helpers';
@@ -26,7 +32,12 @@ function corpusDir(extra: Record<string, string> = {}): string {
   return root;
 }
 
-async function run(argv: string[], messages?: MessagesApi, gemini?: GeminiModelsApi) {
+async function run(
+  argv: string[],
+  messages?: MessagesApi,
+  gemini?: GeminiModelsApi,
+  ollama?: OllamaChatApi,
+) {
   let stdout = '';
   let stderr = '';
   const code = await main(argv, {
@@ -34,8 +45,30 @@ async function run(argv: string[], messages?: MessagesApi, gemini?: GeminiModels
     stderr: (t) => (stderr += t),
     ...(messages ? { messages } : {}),
     ...(gemini ? { gemini } : {}),
+    ...(ollama ? { ollama } : {}),
   });
   return { code, stdout, stderr };
+}
+
+/** A local model that understands nothing, and records the requests it got. */
+function silentOllama(): OllamaChatApi & { requests: ChatRequest[] } {
+  const requests: ChatRequest[] = [];
+  return {
+    requests,
+    chat(request) {
+      requests.push(request);
+      const verifier = JSON.stringify(request.format ?? {}).includes('verdicts');
+      return Promise.resolve({
+        message: {
+          role: 'assistant',
+          content: verifier ? '{"verdicts":[]}' : '{"commands":[],"unparsed":[]}',
+        },
+        done_reason: 'stop',
+        prompt_eval_count: 100,
+        eval_count: 10,
+      });
+    },
+  };
 }
 
 /** A Gemini API that understands nothing, and records the models and thinking levels asked for. */
@@ -285,7 +318,108 @@ describe('textscript-eval', () => {
     expect(new Set(swept.asked)).toEqual(new Set(['gemini-x:LOW']));
     const notLlm = await run(['sweep', '--corpus', corpusDir(), '--translator', 'rules']);
     expect(notLlm.code).toBe(2);
-    expect(notLlm.stderr).toContain("sweep runs claude or gemini, not 'rules'");
+    expect(notLlm.stderr).toContain("sweep runs claude, gemini or ollama, not 'rules'");
+  });
+
+  it('runs a local model through Ollama, with its own second opinion, at no cost', async () => {
+    const root = corpusDir();
+    const ollama = silentOllama();
+    const result = await run(
+      ['run', '--corpus', root, '--translator', 'ollama', '--model', 'gpt-oss:20b'],
+      undefined,
+      undefined,
+      ollama,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('# Evaluation: ollama:gpt-oss:20b');
+    expect(result.stdout).toContain('Cost $0.0000 ($0.0000 per 20 utterances)');
+    const translations = ollama.requests.filter(
+      (r) => !JSON.stringify(r.format).includes('verdicts'),
+    );
+    expect(translations).toHaveLength(7);
+    expect(translations[0]).toMatchObject({ model: 'gpt-oss:20b', options: { num_ctx: 16384 } });
+    expect(translations[0]).not.toHaveProperty('think');
+
+    const thinking = silentOllama();
+    await run(
+      [
+        'run',
+        '--corpus',
+        root,
+        '--translator',
+        'ollama',
+        '--think',
+        'false',
+        '--context-length',
+        '32768',
+      ],
+      undefined,
+      undefined,
+      thinking,
+    );
+    expect(thinking.requests[0]).toMatchObject({ think: false, options: { num_ctx: 32768 } });
+    const effort = silentOllama();
+    await run(
+      ['run', '--corpus', root, '--translator', 'ollama', '--effort', 'max', '--validator', 'off'],
+      undefined,
+      undefined,
+      effort,
+    );
+    expect(effort.requests[0]?.think).toBe('high');
+
+    // The oracle's claims go to the local model when asked.
+    const verifier = silentOllama();
+    await run(
+      [
+        'run',
+        '--corpus',
+        root,
+        '--translator',
+        'oracle',
+        '--validator',
+        'verified',
+        '--verifier',
+        'ollama',
+      ],
+      undefined,
+      undefined,
+      verifier,
+    );
+    expect(verifier.requests[0]?.model).toBe('qwen3:8b');
+
+    const swept = silentOllama();
+    const sweep = await run(
+      [
+        'sweep',
+        '--corpus',
+        root,
+        '--translator',
+        'ollama',
+        '--efforts',
+        'low',
+        '--validator',
+        'off',
+      ],
+      undefined,
+      undefined,
+      swept,
+    );
+    expect(sweep.stdout).toContain('# Effort sweep: qwen3:8b');
+    expect(swept.requests[0]?.think).toBe('low');
+
+    for (const [argv, message] of [
+      [['--think', 'maybe'], "unknown think 'maybe'"],
+      [['--context-length', '100'], '--context-length needs a whole number of tokens'],
+    ] as const) {
+      const bad = await run(
+        ['run', '--corpus', root, '--translator', 'ollama', ...argv],
+        undefined,
+        undefined,
+        silentOllama(),
+      );
+      expect(bad.code).toBe(2);
+      expect(bad.stderr).toContain(message);
+    }
   });
 
   it('says why batches were rejected, grouping messages that differ only in numbers', async () => {
@@ -379,7 +513,7 @@ describe('textscript-eval', () => {
       '--verifier',
       'gpt',
     ]);
-    expect(bad.stderr).toContain("unknown verifier 'gpt'; use claude or gemini");
+    expect(bad.stderr).toContain("unknown verifier 'gpt'; use claude, gemini or ollama");
   });
 
   it('needs an API key for Claude', async () => {

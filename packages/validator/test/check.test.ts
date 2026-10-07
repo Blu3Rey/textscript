@@ -7,13 +7,16 @@ import type {
   GeminiReply,
   MessagesApi,
   ModelReply,
+  OllamaChatApi,
   Translator,
 } from '@textscript/translator';
+import type { ChatRequest } from 'ollama';
 import { describe, expect, it } from 'vitest';
 import {
   checkBatch,
   createClaudeVerifier,
   createGeminiVerifier,
+  createOllamaVerifier,
   GEMINI_VERIFIER_MODEL,
   validatedTranslator,
   VERIFIER_MODEL,
@@ -254,5 +257,36 @@ describe('the Gemini verifier', () => {
         await createGeminiVerifier({ models: gemini(answer), model: 'm' }).verify(claims),
       ).toEqual([true, true]);
     }
+  });
+});
+
+describe('the Ollama verifier', () => {
+  it('asks a local model about every claim in one structured call', async () => {
+    const requests: ChatRequest[] = [];
+    const ollama = (content: string, done_reason = 'stop'): OllamaChatApi => ({
+      chat(request) {
+        requests.push(request);
+        return Promise.resolve({
+          message: { role: 'assistant', content },
+          done_reason,
+          prompt_eval_count: 1,
+          eval_count: 1,
+        });
+      },
+    });
+    const verdicts = JSON.stringify({ verdicts: [{ claim: 1, supported: false }] });
+    const verifier = createOllamaVerifier({ ollama: ollama(verdicts) });
+    expect(verifier.name).toBe('ollama:qwen3:8b');
+    expect(await verifier.verify(claims)).toEqual([false, true]);
+    expect(requests[0]).toMatchObject({
+      model: 'qwen3:8b',
+      stream: false,
+      format: { type: 'object' },
+      options: { num_ctx: 8192 },
+    });
+    expect(requests[0]?.messages?.[1]?.content).toContain('Claim 2\nWords: "the list"');
+    expect(
+      await createOllamaVerifier({ ollama: ollama(verdicts, 'length'), model: 'm' }).verify(claims),
+    ).toEqual([true, true]);
   });
 });

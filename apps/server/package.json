@@ -23,6 +23,7 @@
     "@textscript/translator": "workspace:*",
     "@textscript/validator": "workspace:*",
     "hono": "^4.13.13",
+    "ollama": "^0.6.4",
     "tsx": "^4.23.15",
     "zod": "^4.6.5"
   }

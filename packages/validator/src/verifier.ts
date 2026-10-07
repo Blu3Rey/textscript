@@ -1,12 +1,17 @@
 // The optional second opinion (ROADMAP.md S8): a cheap model call (Claude
-// Haiku or Gemini Flash-Lite) that answers "do these words say this code?"
+// Haiku, Gemini Flash-Lite or a local Ollama model) that answers "do these words say this code?"
 // for nodes the lexicon can't judge, such as an index or an assignment's
 // shape. On by default in the eval, behind a flag at runtime until its cost
 // and benefit are measured.
 
 import type { MessageCreateParamsNonStreaming } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { FinishReason } from '@google/genai';
-import type { GeminiModelsApi, MessagesApi } from '@textscript/translator';
+import {
+  OLLAMA_DEFAULT_MODEL,
+  type GeminiModelsApi,
+  type MessagesApi,
+  type OllamaChatApi,
+} from '@textscript/translator';
 import { z } from 'zod';
 import type { Claim } from './validate';
 
@@ -138,5 +143,30 @@ export function createGeminiVerifier(options: GeminiVerifierOptions): Verifier {
     return (candidate.content?.parts ?? [])
       .flatMap((part) => (part.thought === true || part.text === undefined ? [] : [part.text]))
       .join('');
+  });
+}
+
+export interface OllamaVerifierOptions {
+  ollama: OllamaChatApi;
+  /** Defaults to the translator's default local model. */
+  model?: string;
+  contextLength?: number;
+}
+
+/** A verifier that asks a local model, through Ollama, about all of a batch's claims. */
+export function createOllamaVerifier(options: OllamaVerifierOptions): Verifier {
+  const model = options.model ?? OLLAMA_DEFAULT_MODEL;
+  return verifyWith(`ollama:${model}`, async (prompt) => {
+    const reply = await options.ollama.chat({
+      model,
+      messages: [
+        { role: 'system', content: INSTRUCTIONS },
+        { role: 'user', content: prompt },
+      ],
+      stream: false,
+      format: VERDICTS_JSON_SCHEMA,
+      options: { num_ctx: options.contextLength ?? 8192 },
+    });
+    return reply.done_reason === 'length' ? undefined : reply.message.content;
   });
 }

@@ -1,6 +1,7 @@
 # @textscript/server
 
-A stateless HTTP API that runs an LLM translator (Claude or Gemini), so
+A stateless HTTP API that runs an LLM translator (Claude, Gemini, or a
+local model through Ollama), so
 the API key stays on the server and never reaches the browser
 ([ADR-012](../../docs/adr/012-translator.md),
 [ADR-014](../../docs/adr/014-llm-providers.md)).
@@ -8,17 +9,21 @@ the API key stays on the server and never reaches the browser
 ```sh
 ANTHROPIC_API_KEY=… pnpm --filter @textscript/server start
 GEMINI_API_KEY=… pnpm --filter @textscript/server start
+TEXTSCRIPT_PROVIDER=ollama TEXTSCRIPT_MODEL=qwen3:8b pnpm --filter @textscript/server start
 ```
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | | Claude key, read by the Anthropic SDK |
 | `GEMINI_API_KEY` | | Gemini key (`GOOGLE_API_KEY` also works) |
-| `TEXTSCRIPT_PROVIDER` | the provider whose key is set, Anthropic first | `anthropic` or `gemini` |
-| `TEXTSCRIPT_MODEL` | `claude-opus-5-5` or `gemini-3.5-flash` | Model |
+| `TEXTSCRIPT_PROVIDER` | the provider whose key is set, Anthropic first | `anthropic`, `gemini` or `ollama` |
+| `TEXTSCRIPT_MODEL` | `claude-opus-5-5`, `gemini-3.5-flash` or `qwen3:8b` | Model |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Where Ollama runs |
+| `TEXTSCRIPT_THINK` | the model's default | Ollama: `true`, `false`, `low`, `medium` or `high` |
+| `TEXTSCRIPT_CONTEXT_LENGTH` | `16384` | Ollama's context window in tokens |
 | `TEXTSCRIPT_EFFORT` | `medium` | `low`, `medium`, `high`, `xhigh` or `max` (Gemini's thinking level) |
 | `PORT` | `8787` | Port to listen on |
-| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5 or Gemini 3.1 Flash-Lite, one call per batch with claims) |
+| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5, Gemini 3.1 Flash-Lite, or the same local model; one call per batch with claims) |
 
 ## Routes
 

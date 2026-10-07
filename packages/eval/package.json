@@ -25,6 +25,7 @@
     "@textscript/render-python": "workspace:*",
     "@textscript/translator": "workspace:*",
     "@textscript/validator": "workspace:*",
+    "ollama": "^0.6.4",
     "tsx": "^4.23.15"
   }
 }

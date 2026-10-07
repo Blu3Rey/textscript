@@ -5,17 +5,22 @@ import { formatCode } from '@textscript/cli';
 import { PYTHON_BUILTINS } from '@textscript/render-python';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
+import { Ollama } from 'ollama';
 import {
   createClaudeTranslator,
   createGeminiTranslator,
+  createOllamaTranslator,
   DEFAULT_MODEL,
   emptyTranslator,
   GEMINI_DEFAULT_MODEL,
   GEMINI_HTTP_OPTIONS,
+  OLLAMA_DEFAULT_CONTEXT,
+  OLLAMA_DEFAULT_MODEL,
   rulesTranslator,
   type Effort,
   type GeminiModelsApi,
   type MessagesApi,
+  type OllamaChatApi,
   type Translator,
 } from '@textscript/translator';
 import { examples } from '@textscript/translator/examples';
@@ -23,10 +28,12 @@ import {
   checkBatch,
   createClaudeVerifier,
   createGeminiVerifier,
+  createOllamaVerifier,
   GEMINI_VERIFIER_MODEL,
   VERIFIER_MODEL,
   type ValidationInput,
   type ValidationResult,
+  type Verifier,
 } from '@textscript/validator';
 import { agreement } from './agreement';
 import { STYLES, SPLITS, type CorpusIssue, type Split, type Style } from './corpus/corpus';
@@ -44,11 +51,19 @@ export interface Io {
   messages?: MessagesApi;
   /** The Gemini API; by default a client that reads GEMINI_API_KEY (or GOOGLE_API_KEY). */
   gemini?: GeminiModelsApi;
+  /** A local Ollama server; by default the one at OLLAMA_HOST or localhost:11434. */
+  ollama?: OllamaChatApi;
 }
 
-type Provider = 'claude' | 'gemini';
+type Provider = 'claude' | 'gemini' | 'ollama';
 
-const PROVIDERS: readonly Provider[] = ['claude', 'gemini'];
+const PROVIDERS: readonly Provider[] = ['claude', 'gemini', 'ollama'];
+
+const DEFAULT_MODELS: Readonly<Record<Provider, string>> = {
+  claude: DEFAULT_MODEL,
+  gemini: GEMINI_DEFAULT_MODEL,
+  ollama: OLLAMA_DEFAULT_MODEL,
+};
 
 const EFFORTS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -66,29 +81,40 @@ Commands:
                                (default: every file in <corpus>/agreement/).
   examples [--out <file>]      Print (or write) the LLM translator's few-shot
                                examples, made from training-split gold.
-  sweep                        Run an LLM translator (claude, or gemini with
-                               --translator gemini) at several efforts and
-                               compare quality, latency and cost.
+  sweep                        Run an LLM translator (claude by default, or
+                               --translator gemini or ollama) at several
+                               efforts and compare quality, latency and cost.
+                               For ollama the efforts are thinking levels.
 
 Options:
   --corpus <dir>               Corpus directory (default: corpus)
-  --translator <name>          empty, oracle, rules, filler, claude or gemini
-                               (default: empty). filler replays gold and fills
-                               every hole with made-up code, to test the
-                               validator. claude needs ANTHROPIC_API_KEY,
-                               gemini needs GEMINI_API_KEY; both leave out
-                               the problems their examples come from.
+  --translator <name>          empty, oracle, rules, filler, claude, gemini or
+                               ollama (default: empty). filler replays gold
+                               and fills every hole with made-up code, to test
+                               the validator. claude needs ANTHROPIC_API_KEY,
+                               gemini needs GEMINI_API_KEY, ollama needs a
+                               local Ollama server (OLLAMA_HOST, default
+                               http://127.0.0.1:11434). LLM runs leave out the
+                               problems their examples come from.
   --validator <mode>           lexical (the default), verified (adds a
-                               second opinion; the default for claude and
-                               gemini) or off
+                               second opinion; the default for LLM
+                               translators) or off
   --verifier <provider>        Who gives the second opinion: claude
-                               (${VERIFIER_MODEL}) or gemini
-                               (${GEMINI_VERIFIER_MODEL}). Defaults to the
+                               (${VERIFIER_MODEL}), gemini
+                               (${GEMINI_VERIFIER_MODEL}) or ollama (the
+                               --model of an ollama run, else
+                               ${OLLAMA_DEFAULT_MODEL}). Defaults to the
                                translator's provider, else whichever key is set.
   --model <id>                 LLM model (default: ${DEFAULT_MODEL} for claude,
-                               ${GEMINI_DEFAULT_MODEL} for gemini)
-  --effort <level>             Effort, or Gemini's thinking level:
-                               ${EFFORTS.join(', ')} (default: medium)
+                               ${GEMINI_DEFAULT_MODEL} for gemini,
+                               ${OLLAMA_DEFAULT_MODEL} for ollama)
+  --effort <level>             Effort, or the thinking level for gemini and
+                               ollama: ${EFFORTS.join(', ')} (default: medium;
+                               for ollama, the model's own default)
+  --think <value>              Ollama only: true, false, low, medium or high.
+                               Not every model accepts every value.
+  --context-length <n>         Ollama only: context window in tokens
+                               (default: ${String(OLLAMA_DEFAULT_CONTEXT)})
   --efforts <level,...>        Efforts to sweep (default: low,medium,high)
   --concurrency <n>            Walkthroughs translated at once (default: 1;
                                4 for claude)
@@ -127,6 +153,8 @@ const VALUE_OPTIONS = new Set([
   'concurrency',
   'validator',
   'verifier',
+  'think',
+  'context-length',
 ]);
 
 function parseArgs(argv: readonly string[]): Args {
@@ -186,6 +214,11 @@ function filterFrom(options: Map<string, string>): RunFilter {
   };
 }
 
+function effortOption(options: Map<string, string>): Effort | undefined {
+  const value = options.get('effort');
+  return value === undefined ? undefined : effortFrom(value);
+}
+
 function effortFrom(value: string): Effort {
   const effort = EFFORTS.find((e) => e === value);
   if (effort === undefined)
@@ -217,26 +250,76 @@ function providerOf(name: string | undefined): Provider | undefined {
   return PROVIDERS.find((p) => p === name);
 }
 
+function ollamaFrom(io: Io): OllamaChatApi {
+  return io.ollama ?? new Ollama({ host: process.env['OLLAMA_HOST'] ?? 'http://127.0.0.1:11434' });
+}
+
+type Think = boolean | 'low' | 'medium' | 'high';
+
+/** Ollama's `think`: as given with --think, else from an effort, else the model's default. */
+function thinkFrom(options: Map<string, string>, effort: Effort | undefined): Think | undefined {
+  const value = options.get('think');
+  switch (value) {
+    case undefined:
+      if (effort === undefined) return undefined;
+      return effort === 'low' || effort === 'medium' ? effort : 'high';
+    case 'true':
+      return true;
+    case 'false':
+      return false;
+    case 'low':
+    case 'medium':
+    case 'high':
+      return value;
+    default:
+      throw new UsageError(`unknown think '${value}'; use true, false, low, medium or high`);
+  }
+}
+
+function contextLengthFrom(options: Map<string, string>): number | undefined {
+  const value = options.get('context-length');
+  if (value === undefined) return undefined;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1024)
+    throw new UsageError('--context-length needs a whole number of tokens, at least 1024');
+  return n;
+}
+
+/** An LLM translator; `effort` is undefined when nobody asked for one. */
 function llmTranslator(
   provider: Provider,
   options: Map<string, string>,
   io: Io,
-  effort: Effort,
+  effort: Effort | undefined,
 ): Translator {
   const model = options.get('model');
-  return provider === 'claude'
-    ? createClaudeTranslator({
+  switch (provider) {
+    case 'claude':
+      return createClaudeTranslator({
         messages: messagesFrom(io),
         model: model ?? DEFAULT_MODEL,
-        effort,
-        examples,
-      })
-    : createGeminiTranslator({
-        models: geminiFrom(io),
-        model: model ?? GEMINI_DEFAULT_MODEL,
-        effort,
+        effort: effort ?? 'medium',
         examples,
       });
+    case 'gemini':
+      return createGeminiTranslator({
+        models: geminiFrom(io),
+        model: model ?? GEMINI_DEFAULT_MODEL,
+        effort: effort ?? 'medium',
+        examples,
+      });
+    case 'ollama': {
+      const think = thinkFrom(options, effort);
+      const contextLength = contextLengthFrom(options);
+      return createOllamaTranslator({
+        ollama: ollamaFrom(io),
+        model: model ?? OLLAMA_DEFAULT_MODEL,
+        examples,
+        ...(think === undefined ? {} : { think }),
+        ...(contextLength === undefined ? {} : { contextLength }),
+      });
+    }
+  }
 }
 
 function translatorFrom(
@@ -245,8 +328,7 @@ function translatorFrom(
 ): Translator | ((gold: CompiledGold) => Translator) {
   const name = options.get('translator') ?? 'empty';
   const provider = providerOf(name);
-  if (provider !== undefined)
-    return llmTranslator(provider, options, io, effortFrom(options.get('effort') ?? 'medium'));
+  if (provider !== undefined) return llmTranslator(provider, options, io, effortOption(options));
   switch (name) {
     case 'empty':
       return emptyTranslator;
@@ -271,7 +353,7 @@ function verifierProvider(options: Map<string, string>, io: Io): Provider {
   if (asked !== undefined) {
     const provider = providerOf(asked);
     if (provider === undefined)
-      throw new UsageError(`unknown verifier '${asked}'; use ${PROVIDERS.join(' or ')}`);
+      throw new UsageError(`unknown verifier '${asked}'; use claude, gemini or ollama`);
     return provider;
   }
   const translator = providerOf(options.get('translator'));
@@ -279,6 +361,20 @@ function verifierProvider(options: Map<string, string>, io: Io): Provider {
   const claude = io.messages !== undefined || Boolean(process.env['ANTHROPIC_API_KEY']);
   const gemini = io.gemini !== undefined || Boolean(geminiKey());
   return !claude && gemini ? 'gemini' : 'claude';
+}
+
+function verifierFor(provider: Provider, options: Map<string, string>, io: Io): Verifier {
+  switch (provider) {
+    case 'claude':
+      return createClaudeVerifier({ messages: messagesFrom(io) });
+    case 'gemini':
+      return createGeminiVerifier({ models: geminiFrom(io) });
+    case 'ollama': {
+      // The model already loaded for an ollama run, so nothing else is pulled.
+      const model = options.get('translator') === 'ollama' ? options.get('model') : undefined;
+      return createOllamaVerifier({ ollama: ollamaFrom(io), ...(model ? { model } : {}) });
+    }
+  }
 }
 
 /** The validator for a run: lexical by default, with a second opinion for an LLM translator. */
@@ -290,10 +386,7 @@ function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Vali
     case 'lexical':
       return (input) => checkBatch(input);
     case 'verified': {
-      const verifier =
-        verifierProvider(options, io) === 'claude'
-          ? createClaudeVerifier({ messages: messagesFrom(io) })
-          : createGeminiVerifier({ models: geminiFrom(io) });
+      const verifier = verifierFor(verifierProvider(options, io), options, io);
       return (input) => checkBatch(input, { verifier });
     }
     default:
@@ -302,8 +395,8 @@ function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Vali
 }
 
 /**
- * Walkthroughs at once: one for Gemini, whose free tier allows only a few
- * requests a minute; four for Claude.
+ * Walkthroughs at once: four for Claude; one for Gemini, whose free tier
+ * allows only a few requests a minute, and for a local model.
  */
 function defaultConcurrency(translator: string | undefined): number {
   const provider = providerOf(translator);
@@ -448,7 +541,7 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
   const translator = options.get('translator') ?? 'claude';
   const provider = providerOf(translator);
   if (provider === undefined)
-    throw new UsageError(`sweep runs claude or gemini, not '${translator}'`);
+    throw new UsageError(`sweep runs claude, gemini or ollama, not '${translator}'`);
   const efforts = (list(options.get('efforts')) ?? ['low', 'medium', 'high']).map(effortFrom);
   const rows: string[] = [];
   for (const effort of efforts) {
@@ -479,7 +572,7 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
   }
   io.stdout(
     [
-      `# Effort sweep: ${options.get('model') ?? (provider === 'claude' ? DEFAULT_MODEL : GEMINI_DEFAULT_MODEL)}`,
+      `# Effort sweep: ${options.get('model') ?? DEFAULT_MODELS[provider]}`,
       '',
       '| Effort | Faithful | Gaps kept | Coverage | Placement | Exact | Rejected | Held back | False rejections | p50 | p95 | Cost per 20 utterances |',
       '|---|---|---|---|---|---|---|---|---|---|---|---|',

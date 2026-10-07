@@ -20,6 +20,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@textscript/commands": "workspace:*"
+    "@textscript/commands": "workspace:*",
+    "ollama": "^0.6.4"
   }
 }

@@ -29,6 +29,15 @@ export {
   type GeminiTranslatorOptions,
 } from './gemini';
 export {
+  createOllamaTranslator,
+  OLLAMA_DEFAULT_CONTEXT,
+  OLLAMA_DEFAULT_MODEL,
+  ollamaBackend,
+  type OllamaChatApi,
+  type OllamaReply,
+  type OllamaTranslatorOptions,
+} from './ollama';
+export {
   createLlmTranslator,
   TranslatorError,
   type Conversation,
