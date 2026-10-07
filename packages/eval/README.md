@@ -18,8 +18,29 @@ pnpm eval agree                              # second annotations vs gold
 pnpm eval examples --out packages/translator/src/examples.json
 ```
 
-Translators: `empty` (does nothing), `oracle` (replays gold), `rules` (the
-phrase-pattern baseline) and `claude`.
+Translators:
+
+- `empty` does nothing.
+- `oracle` replays gold.
+- `rules` is the phrase-pattern baseline.
+- `filler` replays gold and fills every hole with made-up code.
+- `claude` is the LLM translator.
+
+Every batch goes through the provenance validator first
+([ADR-013](../../docs/adr/013-provenance-validator.md)). `--validator`
+picks how:
+
+- `lexical` is the default.
+- `verified` adds a second opinion from Claude Haiku 4.5. It is the
+  default for `claude` and needs an API key.
+- `off` skips validation.
+
+With a validator, the report adds rejection, downgrade and false-rejection
+rates. A false rejection is gold-supported output that was held back; the
+target is under 5%. Failing steps also list what was held back.
+
+`oracle` measures false rejections. `filler` measures how many invented
+fills get through: its gap preservation should stay at 100%.
 
 The rules translator is gated in CI by `pnpm check:eval` against
 `corpus/baselines/rules.json`. After an intended change, record a new

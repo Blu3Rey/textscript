@@ -27,6 +27,9 @@ The Claude translator works like this:
 
 Words a translator can't encode come back as `unparsedSpans`. Apps call
 `withUnparsedNotes(context, translation)` to keep them visible as notes.
+Before applying a batch, run it through `@textscript/validator`
+(`validatedTranslator`). That holds back what the words don't say and
+lists it in `translation.heldBack`.
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk';

@@ -332,7 +332,7 @@ function compareWith(
     producedChanged: Set<NodeId>;
     producedGaps: Map<NodeId, Set<string>>;
   },
-): Omit<StepComparison, 'alternative' | 'asked'> {
+): Omit<StepComparison, 'alternative' | 'asked'> & { supportedIds: Set<NodeId> } {
   const alignment: Alignment = align(gold.after.program, produced.program);
   const renderedGold = new Rendered(gold.after.program);
   const goldUnits = producedUnits(before.program, gold.after.program, renderedGold);
@@ -383,6 +383,9 @@ function compareWith(
     [...ids].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
 
   return {
+    supportedIds: new Set(
+      counted.filter((unit) => unit.type === 'node' && supportedUnit(unit)).map((u) => u.node.id),
+    ),
     goldUnits: goldUnits.length,
     covered: goldUnits.length - missing.length,
     missing: outermost(missing, parents(gold.after.program)).filter(
@@ -428,6 +431,16 @@ export function compareStep(
   result: { document: IrDocument; batch: EditBatch },
   options: { inputs: readonly string[] },
 ): StepComparison {
+  return compareStepDetailed(original, goldAnswers, result, options).comparison;
+}
+
+/** `compareStep`, plus the IDs of produced nodes the chosen gold answer supports. */
+export function compareStepDetailed(
+  original: IrDocument,
+  goldAnswers: readonly GoldAnswer[],
+  result: { document: IrDocument; batch: EditBatch },
+  options: { inputs: readonly string[] },
+): { comparison: StepComparison; supportedIds: Set<NodeId> } {
   const normalize = (document: IrDocument): IrDocument => ({
     ...document,
     program: normalizeProgram(document.program),
@@ -453,15 +466,18 @@ export function compareStep(
   };
   const asking = alternatives.map((alt) => asks(alt.batch));
   const expected = asking.every(Boolean) ? 'yes' : asking.some(Boolean) ? 'either' : 'no';
-  let best: StepComparison | undefined;
+  let best: { comparison: StepComparison; supportedIds: Set<NodeId> } | undefined;
   let bestScore = -Infinity;
   for (const [alternative, gold] of alternatives.entries()) {
-    const result = compareWith(before, gold, produced.document, context);
+    const { supportedIds, ...result } = compareWith(before, gold, produced.document, context);
     const score =
       -1000 * result.filled.length + result.covered + 2 * result.supported - result.producedUnits;
     if (score > bestScore) {
       bestScore = score;
-      best = { alternative, ...result, asked: { actual: asks(produced.batch), expected } };
+      best = {
+        comparison: { alternative, ...result, asked: { actual: asks(produced.batch), expected } },
+        supportedIds,
+      };
     }
   }
   if (best === undefined) throw new Error('A gold step needs at least one alternative');

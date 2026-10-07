@@ -37,6 +37,27 @@ export interface Metrics {
     costUsd: number | null;
     costPer20: number | null;
   };
+  /** Set when a validator ran (docs/adr/013). */
+  validation: {
+    /** Batches the validator held something back from. */
+    rejection: Ratio;
+    /** Checked nodes and field changes that were held back. */
+    downgrade: Ratio;
+    /** Gold-supported units of the unvalidated output that were held back. */
+    falseRejection: Ratio;
+  } | null;
+}
+
+/** What the validator did to one step's batch. */
+export interface StepValidation {
+  /** Nodes and field changes checked. */
+  checked: number;
+  heldBack: { code: string; proposed: string; message: string; falseRejection: boolean }[];
+  /** Units of the unvalidated output a gold answer supports, and how many were held back. */
+  supportedUnits: number;
+  falselyHeld: number;
+  /** Nodes the lexicon couldn't judge (sent to the verifier, if any). */
+  claims: number;
 }
 
 /** What metrics need from one step. */
@@ -46,6 +67,7 @@ export interface ScoredStep {
   rejected?: { code: string; message: string };
   latencyMs: number;
   usage?: TranslationUsage;
+  validation?: StepValidation;
 }
 
 export function ratio(numerator: number, denominator: number): Ratio {
@@ -121,5 +143,23 @@ export function computeMetrics(steps: readonly ScoredStep[]): Metrics {
       costUsd,
       costPer20: costUsd === null || steps.length === 0 ? null : (costUsd / steps.length) * 20,
     },
+    validation: validationMetrics(steps),
+  };
+}
+
+function validationMetrics(steps: readonly ScoredStep[]): Metrics['validation'] {
+  const validated = steps.flatMap((s) => (s.validation ? [s.validation] : []));
+  if (validated.length === 0) return null;
+  const total = (f: (v: StepValidation) => number) => validated.reduce((n, v) => n + f(v), 0);
+  return {
+    rejection: ratio(validated.filter((v) => v.heldBack.length > 0).length, validated.length),
+    downgrade: ratio(
+      total((v) => v.heldBack.length),
+      total((v) => v.checked),
+    ),
+    falseRejection: ratio(
+      total((v) => v.falselyHeld),
+      total((v) => v.supportedUnits),
+    ),
   };
 }

@@ -43,6 +43,16 @@ const TranslationSchema = z.strictObject({
   trace: z
     .strictObject({ attempts: z.number(), salvaged: z.boolean(), errors: z.array(z.string()) })
     .exactOptional(),
+  heldBack: z
+    .array(
+      z.strictObject({
+        code: z.string(),
+        proposed: z.string(),
+        message: z.string(),
+        spans: z.array(SpanSchema),
+      }),
+    )
+    .exactOptional(),
 });
 
 export type WireResult<T> = { ok: true; value: T } | { ok: false; issues: string[] };

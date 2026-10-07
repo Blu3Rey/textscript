@@ -534,6 +534,20 @@ The rules baseline scores 65.2% faithfulness, 100% gap preservation and
 
 #### S8: Provenance validator and faithfulness guardrails
 
+**Status:** ✅ Built ([ADR-013](docs/adr/013-provenance-validator.md)).
+Measured on the whole corpus with the lexical validator:
+
+- **False rejections:** 1.4% on gold.
+- **The `filler` adversary** fills every hole with made-up code. It keeps
+  66% of gaps without the validator and 99% with it, 98% on the
+  incomplete walkthroughs.
+- **What gets through:** the remaining fills use words that were said, in
+  another role. The Haiku second opinion is built, but it needs a run
+  with an API key, like the S7 LLM criteria. The exit criterion for the
+  LLM translator is measured with
+  `pnpm eval run --translator claude --split test`, which validates with
+  the second opinion by default.
+
 **Goal:** Make "don't fill gaps" a rule that is **checked**, not just a request in a prompt.
 
 **Deliverables**

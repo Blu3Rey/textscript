@@ -204,6 +204,33 @@ describe('textscript-eval', () => {
     }
   });
 
+  it('validates by default, with a second opinion on request, or not at all', async () => {
+    const root = corpusDir();
+    const lexical = await run(['run', '--corpus', root, '--translator', 'filler']);
+    expect(lexical.stdout).toContain('## Validator');
+    expect(lexical.stdout).toContain('| False rejections: gold-supported units held back |');
+    const off = await run([
+      'run',
+      '--corpus',
+      root,
+      '--translator',
+      'filler',
+      '--validator',
+      'off',
+    ]);
+    expect(off.stdout).not.toContain('## Validator');
+    const claude = silentClaude();
+    const verified = await run(
+      ['run', '--corpus', root, '--translator', 'oracle', '--validator', 'verified'],
+      claude,
+    );
+    expect(verified.code).toBe(0);
+    expect(claude.efforts.length).toBeGreaterThan(0);
+    const bad = await run(['run', '--corpus', root, '--validator', 'strict']);
+    expect(bad.code).toBe(2);
+    expect(bad.stderr).toContain("unknown validator 'strict'");
+  });
+
   it('needs an API key for Claude', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '');
     const result = await run(['run', '--corpus', corpusDir(), '--translator', 'claude']);

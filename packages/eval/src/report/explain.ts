@@ -13,7 +13,8 @@ export type ReasonKind =
   | 'placement'
   | 'asked'
   | 'not-asked'
-  | 'unstable';
+  | 'unstable'
+  | 'held-back';
 
 export interface Reason {
   kind: ReasonKind;
@@ -45,6 +46,12 @@ export function explain(step: StepResult): Reason[] {
     reasons.push({
       kind: 'unsupported',
       text: `Produced, but not in any gold answer: ${code(ref)}.`,
+    });
+  }
+  for (const held of step.validation?.heldBack ?? []) {
+    reasons.push({
+      kind: 'held-back',
+      text: `Held back (${held.code}${held.falseRejection ? ', which a gold answer supports' : ''}): ${held.message}.`,
     });
   }
   for (const ref of c.missing) {
