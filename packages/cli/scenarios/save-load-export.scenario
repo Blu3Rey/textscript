@@ -1,0 +1,32 @@
+# :save writes the session log, :load replays it, :export writes the code.
+:inputs nums
+
+say Sum the numbers.
+add root:
+    total = 0
+    for num~loopvar in nums:
+        total += num
+    return total
+
+say Wait, skip the negative ones.
+wrap n9: if num >= 0:
+:save session.json
+:export total.py
+
+say Then something we'll undo after loading.
+add root start: print("hi")
+:load session.json
+expect code:
+    total = 0
+    for num in nums:
+        if num >= 0:
+            total += num
+    return total
+:log
+:undo
+expect code:
+    total = 0
+    for num in nums:
+        total += num
+    return total
+:ir n9

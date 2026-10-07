@@ -1,0 +1,39 @@
+# Undo and redo work on whole utterances, and new edits clear the redo stack.
+
+say Start a running total at zero.
+add root: total = 0
+
+say Loop over the prices.
+add root: for price~loopvar in prices:
+    total += price
+expect code:
+    total = 0
+    for price in prices:
+        total += price
+
+:undo
+expect code:
+    total = 0
+
+:undo
+expect gaps none
+:undo
+expect error nothing-to-undo
+
+:redo
+:redo
+expect code:
+    total = 0
+    for price in prices:
+        total += price
+
+:undo
+say Return the total.
+add root: return total
+:commit
+:redo
+expect error nothing-to-redo
+expect code:
+    total = 0
+    return total
+:log

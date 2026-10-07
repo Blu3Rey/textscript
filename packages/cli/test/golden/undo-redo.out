@@ -1,0 +1,109 @@
+# Undo and redo work on whole utterances, and new edits clear the redo stack.
+> say Start a running total at zero.
+u1: 0:Start 1:a 2:running 3:total 4:at 5:zero 6:.
+
+> add root: total = 0
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ total = 0
+──
+WARN001     n3   `total` is set up but never used.  "Start a running total at zero."
+
+> say Loop over the prices.
+u2: 0:Loop 1:over 2:the 3:prices 4:.
+
+> add root: for price~loopvar in prices:
+>     total += price
+✓ add_stmt → u2 (pending, 1 ops)
+n2 │ total = 0
+n5 │ for price in prices:
+n9 │     total += price
+──
+GAP001      n7   `prices` is used but never set up.  "Loop over the prices."
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     total = 0
+>     for price in prices:
+>         total += price
+
+> :undo
+✓ undo
+n2 │ total = 0
+──
+WARN001     n3   `total` is set up but never used.  "Start a running total at zero."
+
+> expect code:
+>     total = 0
+
+> :undo
+✓ undo
+(nothing yet)
+──
+(no gaps)
+
+> expect gaps none
+
+> :undo
+✗ nothing-to-undo: There is nothing to undo
+
+> expect error nothing-to-undo
+
+> :redo
+✓ redo
+n2 │ total = 0
+──
+WARN001     n3   `total` is set up but never used.  "Start a running total at zero."
+
+> :redo
+✓ redo
+n2 │ total = 0
+n5 │ for price in prices:
+n9 │     total += price
+──
+GAP001      n7   `prices` is used but never set up.  "Loop over the prices."
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     total = 0
+>     for price in prices:
+>         total += price
+
+> :undo
+✓ undo
+n2 │ total = 0
+──
+WARN001     n3   `total` is set up but never used.  "Start a running total at zero."
+
+> say Return the total.
+u3: 0:Return 1:the 2:total 3:.
+
+> add root: return total
+✓ add_stmt → u3 (pending, 1 ops)
+ n2 │ total = 0
+n12 │ return total
+──
+(no gaps)
+
+> :commit
+✓ committed u3 (1 ops)
+
+> :redo
+✗ nothing-to-redo: There is nothing to redo
+
+> expect error nothing-to-redo
+
+> expect code:
+>     total = 0
+>     return total
+
+> :log
+u1  "Start a running total at zero."  add_stmt
+u2  "Loop over the prices."  add_stmt
+undo
+undo
+redo
+redo
+undo
+u3  "Return the total."  add_stmt
+
+-- ok

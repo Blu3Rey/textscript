@@ -1,0 +1,82 @@
+# The worked example from ROADMAP.md §3.6: contains-duplicate, in four steps.
+> :inputs nums
+inputs: nums
+
+> say Loop through the list of numbers.
+u1: 0:Loop 1:through 2:the 3:list 4:of 5:numbers 6:.
+
+> add root: for num~loopvar@5:6 in nums@3:6:
+>     ...
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ for num in nums:
+n6 │     ⟨body not described⟩
+──
+GAP002  h1  n6   Nothing is described inside the loop over `nums`.  "Loop through the list of numbers."
+(1 inferred: n3; :diag all shows them)
+
+> expect gaps GAP002
+
+> say If we've already seen the number, return true.
+u2: 0:If 1:we've 2:already 3:seen 4:the 5:number 6:, 7:return 8:true 9:.
+
+> fill h1:
+>     if num in seen:
+>         return True
+✓ fill_hole → u2 (pending, 1 ops)
+ n2 │ for num in nums:
+ n7 │     if num in seen:
+n12 │         return True
+──
+GAP003      n1   The solution doesn't say what it returns when it reaches the end.
+GAP001      n10  `seen` is used but never set up.  "If we've already seen the number, return true."
+(1 inferred: n3; :diag all shows them)
+
+> expect gaps GAP001 GAP003
+
+> say Oh, we keep a set called seen, empty at the start.
+u3: 0:Oh 1:, 2:we 3:keep 4:a 5:set 6:called 7:seen 8:, 9:empty 10:at 11:the 12:start 13:.
+
+> add root start: seen = set()
+✓ add_stmt → u3 (pending, 1 ops)
+n14 │ seen = set()
+ n2 │ for num in nums:
+ n7 │     if num in seen:
+n12 │         return True
+──
+GAP003      n1   The solution doesn't say what it returns when it reaches the end.
+(1 inferred: n3; :diag all shows them)
+
+> expect gaps GAP003
+
+> say Otherwise add it to the set.
+u4: 0:Otherwise 1:add 2:it 3:to 4:the 5:set 6:.
+
+> set n7.orelse = seen.add(num)  # ~synonym
+✓ update_field → u4 (pending, 1 ops)
+n14 │ seen = set()
+ n2 │ for num in nums:
+ n7 │     if num in seen:
+n12 │         return True
+    │     else:
+n18 │         seen.add(num)
+──
+GAP003      n1   The solution doesn't say what it returns when it reaches the end.
+(2 inferred: n3 n18; :diag all shows them)
+
+> expect gaps GAP003
+
+> expect code:
+>     seen = set()
+>     for num in nums:
+>         if num in seen:
+>             return True
+>         else:
+>             seen.add(num)
+
+> :log
+u1  "Loop through the list of numbers."  add_stmt
+u2  "If we've already seen the number, return true."  fill_hole
+u3  "Oh, we keep a set called seen, empty at the start."  add_stmt
+u4  "Otherwise add it to the set."  update_field (pending)
+
+-- ok

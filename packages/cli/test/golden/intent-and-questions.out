@@ -1,0 +1,73 @@
+# Steps said only in words stay as words (GAP009); open questions are listed.
+> :inputs intervals
+inputs: intervals
+
+> say Sort the intervals by start, then merge the overlapping ones.
+u1: 0:Sort 1:the 2:intervals 3:by 4:start 5:, 6:then 7:merge 8:the 9:overlapping 10:ones 11:.
+
+> add root:
+>     intent sort the intervals by their start
+>     merged = []
+>     for interval~loopvar in intervals:
+>         intent merge interval into the last one if they overlap
+>     return merged
+✓ add_stmt, add_stmt, add_stmt, add_stmt → u1 (pending, 4 ops)
+ n2 │ ⟨sort the intervals by their start⟩
+ n3 │ merged = []
+ n6 │ for interval in intervals:
+n10 │     ⟨merge interval into the last one if they overlap⟩
+n11 │ return merged
+──
+GAP009      n2   This step is described in words but not how it works: "sort the intervals by their start".  "Sort the intervals by start, then merge the overlapping ones."
+GAP009      n10  This step is described in words but not how it works: "merge interval into the last one if they overlap".  "Sort the intervals by start, then merge the overlapping ones."
+(1 inferred: n7; :diag all shows them)
+
+> expect gaps GAP009 GAP009
+
+> say Does "overlap" include intervals that only touch?
+u2: 0:Does 1:" 2:overlap 3:" 4:include 5:intervals 6:that 7:only 8:touch 9:?
+
+> ask Do touching intervals count as overlapping? -- n10
+✓ ask_clarification → u2 (pending, 1 ops)
+ n2 │ ⟨sort the intervals by their start⟩
+ n3 │ merged = []
+ n6 │ for interval in intervals:
+n10 │     ⟨merge interval into the last one if they overlap⟩
+n11 │ return merged
+──
+GAP009      n2   This step is described in words but not how it works: "sort the intervals by their start".  "Sort the intervals by start, then merge the overlapping ones."
+GAP009      n10  This step is described in words but not how it works: "merge interval into the last one if they overlap".  "Sort the intervals by start, then merge the overlapping ones."
+(1 inferred: n7; :diag all shows them)
+? Do touching intervals count as overlapping? (n10)
+
+> say Sorting is intervals.sort with a key on the start.
+u3: 0:Sorting 1:is 2:intervals 3:. 4:sort 5:with 6:a 7:key 8:on 9:the 10:start 11:.
+
+> replace n2: intervals.sort(key=?value"the start of each interval")
+✗ syntax: Line 1: Expected ",", found "="
+
+> expect error syntax
+
+> replace n2: intervals.sort(?value"by the start of each interval")
+✓ replace_node → u3 (pending, 1 ops)
+n13 │ intervals.sort(⟨by the start of each interval⟩)
+ n3 │ merged = []
+ n6 │ for interval in intervals:
+n10 │     ⟨merge interval into the last one if they overlap⟩
+n11 │ return merged
+──
+GAP005  h1  n17  This value isn't described: by the start of each interval.
+GAP009      n10  This step is described in words but not how it works: "merge interval into the last one if they overlap".  "Sort the intervals by start, then merge the overlapping ones."
+(1 inferred: n7; :diag all shows them)
+
+> expect gaps GAP005 GAP009
+
+> :coverage
+✓ approach described
+✓ inputs: named (intervals)
+✓ returns: all-paths
+✗ edge cases noted: 0
+✗ complexity noted: 0
+  open gaps: 2
+
+-- ok

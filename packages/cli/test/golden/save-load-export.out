@@ -1,0 +1,128 @@
+# :save writes the session log, :load replays it, :export writes the code.
+> :inputs nums
+inputs: nums
+
+> say Sum the numbers.
+u1: 0:Sum 1:the 2:numbers 3:.
+
+> add root:
+>     total = 0
+>     for num~loopvar in nums:
+>         total += num
+>     return total
+✓ add_stmt, add_stmt, add_stmt → u1 (pending, 3 ops)
+ n2 │ total = 0
+ n5 │ for num in nums:
+ n9 │     total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> say Wait, skip the negative ones.
+u2: 0:Wait 1:, 2:skip 3:the 4:negative 5:ones 6:.
+
+> wrap n9: if num >= 0:
+✓ wrap_nodes → u2 (pending, 1 ops)
+ n2 │ total = 0
+ n5 │ for num in nums:
+n14 │     if num >= 0:
+ n9 │         total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> :save session.json
+✓ saved 2 events to session.json
+
+> :export total.py
+✓ wrote total.py (5 lines)
+
+> say Then something we'll undo after loading.
+u3: 0:Then 1:something 2:we'll 3:undo 4:after 5:loading 6:.
+
+> add root start: print("hi")
+✓ add_stmt → u3 (pending, 1 ops)
+n20 │ print("hi")
+ n2 │ total = 0
+ n5 │ for num in nums:
+n14 │     if num >= 0:
+ n9 │         total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> :load session.json
+✓ loaded 2 events from session.json
+ n2 │ total = 0
+ n5 │ for num in nums:
+n14 │     if num >= 0:
+ n9 │         total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     total = 0
+>     for num in nums:
+>         if num >= 0:
+>             total += num
+>     return total
+
+> :log
+u1  "Sum the numbers."  add_stmt, add_stmt, add_stmt
+u2  "Wait, skip the negative ones."  wrap_nodes
+
+> :undo
+✓ undo
+ n2 │ total = 0
+ n5 │ for num in nums:
+ n9 │     total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     total = 0
+>     for num in nums:
+>         total += num
+>     return total
+
+> :ir n9
+{
+  "kind": "Update",
+  "id": "n9",
+  "target": {
+    "kind": "Name",
+    "id": "n10",
+    "name": "total",
+    "provenance": [
+      {
+        "utteranceId": "u1",
+        "start": 0,
+        "end": 4
+      }
+    ]
+  },
+  "op": "+=",
+  "value": {
+    "kind": "Name",
+    "id": "n11",
+    "name": "num",
+    "provenance": [
+      {
+        "utteranceId": "u1",
+        "start": 0,
+        "end": 4
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "utteranceId": "u1",
+      "start": 0,
+      "end": 4
+    }
+  ]
+}
+
+-- ok

@@ -219,6 +219,42 @@ describe('apply', () => {
       ]);
     });
 
+    it("are assigned op by op, so adding an op never changes an earlier op's IDs", () => {
+      const doc = base();
+      const first = { op: 'remove_node' as const, node: nth(doc, 'Return', 0).id };
+      const second = {
+        op: 'add_stmt' as const,
+        parent: doc.program.id,
+        position: { at: 'end' as const },
+        stmt: breakStmt('t1'),
+      };
+      const alone = apply(doc, { utteranceId: 'u1', ops: [first] });
+      const withMore = apply(doc, { utteranceId: 'u1', ops: [first, second] });
+      if (!alone.ok || !withMore.ok) throw new Error('expected both to apply');
+      // The hole left by the removal has the same ID either way.
+      expect(nth(withMore.document, 'BlockHole', 1).id).toBe(
+        nth(alone.document, 'BlockHole', 1).id,
+      );
+    });
+
+    it('refuse references to a temporary ID defined by a later op', () => {
+      const doc = base();
+      rejected(
+        doc,
+        'invalid-temp-id',
+        [
+          { op: 'set_label', node: 't1', label: 'x' },
+          {
+            op: 'add_stmt',
+            parent: doc.program.id,
+            position: { at: 'end' },
+            stmt: breakStmt('t1'),
+          },
+        ],
+        0,
+      );
+    });
+
     it('may not survive into the document', () => {
       const doc = base();
       // A RefHole candidate list is rewritten too, but a bare temp ID in a

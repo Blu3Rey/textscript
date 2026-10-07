@@ -1,0 +1,41 @@
+# A while loop with two pointers and an if/elif/else chain.
+:inputs nums, target
+
+say Put a left pointer at the start and a right pointer at the end.
+add root:
+    left = 0
+    right = len(nums) - 1
+expect gaps WARN001 WARN001
+
+say While they haven't crossed, look at the sum.
+add root:
+    while left < right:
+        total = nums[left] + nums[right]
+        if total == target:
+            return [left, right]
+        elif total < target:
+            left += 1
+        else:
+            right -= 1
+expect gaps GAP003
+
+say If they cross, there's no pair, so return an empty list.
+add root: return []
+expect gaps none
+note root complexity: O(n) time once sorted.
+note root edge-case: Assumes nums is sorted.
+:coverage
+expect code:
+    # Complexity: O(n) time once sorted.
+    # Edge case: Assumes nums is sorted.
+    left = 0
+    right = len(nums) - 1
+    while left < right:
+        total = nums[left] + nums[right]
+        if total == target:
+            return [left, right]
+        elif total < target:
+            left += 1
+        else:
+            right -= 1
+    return []

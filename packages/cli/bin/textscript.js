@@ -5,7 +5,8 @@ import { register } from 'tsx/esm/api';
 
 register();
 const { main } = await import('../src/main.ts');
-process.exitCode = main(process.argv.slice(2), {
-  stdout: (text) => process.stdout.write(text),
-  stderr: (text) => process.stderr.write(text),
+process.exitCode = await main(process.argv.slice(2), {
+  stdin: process.stdin,
+  stdout: process.stdout,
+  stderr: process.stderr,
 });

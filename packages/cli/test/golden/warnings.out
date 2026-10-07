@@ -1,0 +1,105 @@
+# Warnings: things that are stated but look wrong.
+> say Write a function f with two inputs, both called x.
+u1: 0:Write 1:a 2:function 3:f 4:with 5:two 6:inputs 7:, 8:both 9:called 10:x 11:.
+
+> add root: def f(x, x):
+>     return x
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ def f(x, x):
+n7 │     return x
+──
+WARN007     n5   The function `f` has two inputs named `x`.  "Write a function f with two inputs, both called x."
+
+> expect gaps WARN007
+
+> say Inside, return, then print something.
+u2: 0:Inside 1:, 2:return 3:, 4:then 5:print 6:something 7:.
+
+> add n2: print(x)
+✓ add_stmt → u2 (pending, 1 ops)
+n2 │ def f(x, x):
+n7 │     return x
+n9 │     print(x)
+──
+WARN007     n5   The function `f` has two inputs named `x`.  "Write a function f with two inputs, both called x."
+WARN002     n9   This step comes after `return` and can never run.  "Inside, return, then print something."
+
+> expect gaps WARN007 WARN002
+
+> say Outside any loop, break.
+u3: 0:Outside 1:any 2:loop 3:, 4:break 5:.
+
+> add root: break
+✓ add_stmt → u3 (pending, 1 ops)
+ n2 │ def f(x, x):
+ n7 │     return x
+ n9 │     print(x)
+    │
+    │
+n13 │ break
+──
+WARN007     n5   The function `f` has two inputs named `x`.  "Write a function f with two inputs, both called x."
+WARN002     n9   This step comes after `return` and can never run.  "Inside, return, then print something."
+WARN006     n13  `break` is not inside a loop.  "Outside any loop, break."
+
+> expect gaps WARN007 WARN002 WARN006
+
+> say After that, use total before setting it up, then set it.
+u4: 0:After 1:that 2:, 3:use 4:total 5:before 6:setting 7:it 8:up 9:, 10:then 11:set 12:it 13:.
+
+> add root:
+>     print(total)
+>     total = 0
+✓ add_stmt, add_stmt → u4 (pending, 2 ops)
+ n2 │ def f(x, x):
+ n7 │     return x
+ n9 │     print(x)
+    │
+    │
+n13 │ break
+n14 │ print(total)
+n18 │ total = 0
+──
+WARN007     n5   The function `f` has two inputs named `x`.  "Write a function f with two inputs, both called x."
+WARN002     n9   This step comes after `return` and can never run.  "Inside, return, then print something."
+WARN006     n13  `break` is not inside a loop.  "Outside any loop, break."
+WARN002     n14  This step comes after `break` and can never run.  "After that, use total before setting it up, then set it."
+WARN005     n17  `total` is used before it is set up.  "After that, use total before setting it up, then set it."
+
+> expect gaps WARN007 WARN002 WARN006 WARN002 WARN005
+
+> say Set up a value, and also a different one inside a function.
+u5: 0:Set 1:up 2:a 3:value 4:, 5:and 6:also 7:a 8:different 9:one 10:inside 11:a 12:function 13:.
+
+> add root:
+>     limit = 10
+>     def g():
+>         limit = 5
+>         return limit
+✓ add_stmt, add_stmt → u5 (pending, 2 ops)
+ n2 │ def f(x, x):
+ n7 │     return x
+ n9 │     print(x)
+    │
+    │
+n13 │ break
+n14 │ print(total)
+n18 │ total = 0
+n21 │ limit = 10
+    │
+    │
+n24 │ def g():
+n27 │     limit = 5
+n30 │     return limit
+──
+WARN007     n5   The function `f` has two inputs named `x`.  "Write a function f with two inputs, both called x."
+WARN002     n9   This step comes after `return` and can never run.  "Inside, return, then print something."
+WARN006     n13  `break` is not inside a loop.  "Outside any loop, break."
+WARN002     n14  This step comes after `break` and can never run.  "After that, use total before setting it up, then set it."
+WARN005     n17  `total` is used before it is set up.  "After that, use total before setting it up, then set it."
+WARN001     n22  `limit` is set up but never used.  "Set up a value, and also a different one inside a function."
+WARN003     n28  `limit` is set up inside the function `g`, hiding the `limit` outside it.  "Set up a value, and also a different one inside a function."
+
+> expect gaps WARN007 WARN002 WARN006 WARN002 WARN005 WARN001 WARN003
+
+-- ok

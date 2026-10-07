@@ -1,9 +1,12 @@
-// Replaces temporary IDs (`t1`, `t2`, …) in a batch with permanent ones.
+// Replaces temporary IDs (`t1`, `t2`, …) with permanent ones.
 //
 // Every node or note whose `id` is temporary gets the next permanent ID, in
-// the order they appear in the batch. References to them (`parent`, `node`,
-// `before`, …, and RefHole `candidates`) are rewritten to match. Only those
-// keys are touched, so a string literal that happens to read "t1" is safe.
+// the order they appear. References to them (`parent`, `node`, `before`, …,
+// and RefHole `candidates`) are rewritten to match. Only those keys are
+// touched, so a string literal that happens to read "t1" is safe.
+//
+// The applier resolves one op at a time, sharing `assigned` across the
+// batch, so an op's IDs depend only on the ops before it.
 
 import type { IdAllocator } from '../ir/ids';
 import { TEMP_ID_PATTERN } from '../ir/schema';
@@ -24,8 +27,11 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export function resolveTempIds(batch: unknown, ids: IdAllocator): TempIdResult {
-  const assigned = new Map<string, string>();
+export function resolveTempIds(
+  batch: unknown,
+  ids: IdAllocator,
+  assigned = new Map<string, string>(),
+): TempIdResult {
   let problem: string | undefined;
 
   const collect = (value: unknown) => {
@@ -47,7 +53,7 @@ export function resolveTempIds(batch: unknown, ids: IdAllocator): TempIdResult {
     if (!TEMP_ID_PATTERN.test(id)) return id;
     const permanent = assigned.get(id);
     if (permanent === undefined) {
-      problem ??= `Temporary ID ${id} is referenced but not given to any node in the batch`;
+      problem ??= `Temporary ID ${id} is referenced but not given to any node before it`;
       return id;
     }
     return permanent;

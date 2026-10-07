@@ -1,0 +1,25 @@
+# Notes record edge cases and complexity; the coverage summary counts them.
+:inputs nums
+
+say Return the largest number.
+add root:
+    best = nums[0]
+    for num~loopvar in nums:
+        if num > best:
+            best = num
+    return best
+:coverage
+
+say If the list is empty there's no answer; that's an edge case.
+note n2 edge-case: An empty list has no largest number.
+
+say It's one pass, so linear time.
+note root complexity: O(n) time, O(1) space.
+note n7: Could use max(), but this shows the loop.
+show
+:coverage
+
+say Scratch the remark about max.
+unnote n23
+expect gaps none
+:coverage

@@ -1,0 +1,38 @@
+# Mistakes are reported and change nothing; the pending batch stays as it was.
+
+say Set x to one.
+add root: x = 1
+
+frobnicate
+expect error unknown-command
+add root x = 2
+expect error usage
+add root: x = = 2
+expect error syntax
+fill h1: 3
+expect error bad-ref
+remove n99
+expect error bad-ref
+set n2.flavor = 3
+expect error invalid-field
+rename n2 y
+expect error not-a-name
+rename n3 2fast
+expect error invalid-name
+op {"op": "remove_node"}
+expect error invalid-batch
+op not json
+expect error usage
+note n2 spicy: hot
+expect error usage
+:revert
+expect error usage
+:export
+expect error usage
+:load missing.json
+expect error read-failed
+expect gaps WARN001
+expect code:
+    x = 1
+:log
+

@@ -1,0 +1,41 @@
+# Two sum, described inside a function, with a dictionary of seen values.
+
+say Write a function two_sum that takes the numbers and a target.
+add root: def two_sum(nums, target):
+    ...
+expect gaps WARN001 WARN001 GAP002
+
+say Go through each index i of the numbers.
+fill h1:
+    for i~indexvar in range(len(nums)~range-bounds):
+        ...
+expect gaps WARN001 GAP002
+
+say Work out what we still need: the target minus the current number.
+fill h1: need = target - nums[i]
+expect gaps WARN001
+
+say If we've seen what we need, return both indices.
+add n8:
+    if need in seen:
+        return [seen[need], i]
+expect gaps GAP001 GAP003
+
+say We keep a dictionary called seen, empty at the start.
+add n2 start: seen = {}
+expect gaps GAP003
+
+say After checking, remember this number's index.
+add n8: seen[nums[i]] = i
+expect gaps GAP003
+expect code:
+    def two_sum(nums, target):
+        seen = {}
+        for i in range(len(nums)):
+            need = target - nums[i]
+            if need in seen:
+                return [seen[need], i]
+            seen[nums[i]] = i
+
+# Nobody said what to return when no pair adds up, so GAP003 stays open.
+:coverage

@@ -1,0 +1,89 @@
+# Mistakes are reported and change nothing; the pending batch stays as it was.
+> say Set x to one.
+u1: 0:Set 1:x 2:to 3:one 4:.
+
+> add root: x = 1
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ x = 1
+──
+WARN001     n3   `x` is set up but never used.  "Set x to one."
+
+> frobnicate
+✗ unknown-command: Unknown command "frobnicate"; :help lists them
+
+> expect error unknown-command
+
+> add root x = 2
+✗ usage: Write add <parent> [position]: <statements>
+
+> expect error usage
+
+> add root: x = = 2
+✗ syntax: Line 1: Unexpected "="
+
+> expect error syntax
+
+> fill h1: 3
+✗ bad-ref: There is no hole h1; there are 0 holes
+
+> expect error bad-ref
+
+> remove n99
+✗ bad-ref: There is no node n99
+
+> expect error bad-ref
+
+> set n2.flavor = 3
+✗ invalid-field: Assign has no field "flavor" that update_field can change
+
+> expect error invalid-field
+
+> rename n2 y
+✗ not-a-name: Assign n2 is not a name
+
+> expect error not-a-name
+
+> rename n3 2fast
+✗ invalid-name: "2fast" is not a valid name
+
+> expect error invalid-name
+
+> op {"op": "remove_node"}
+✗ invalid-batch: node: Invalid input: expected string, received undefined
+
+> expect error invalid-batch
+
+> op not json
+✗ usage: Write op <json>
+
+> expect error usage
+
+> note n2 spicy: hot
+✗ usage: Note tags are general, edge-case, complexity
+
+> expect error usage
+
+> :revert
+✗ usage: Write :revert <utterance-id>
+
+> expect error usage
+
+> :export
+✗ usage: Give a file path
+
+> expect error usage
+
+> :load missing.json
+✗ read-failed: Can't read missing.json: ENOENT: missing.json
+
+> expect error read-failed
+
+> expect gaps WARN001
+
+> expect code:
+>     x = 1
+
+> :log
+u1  "Set x to one."  add_stmt (pending)
+
+-- ok

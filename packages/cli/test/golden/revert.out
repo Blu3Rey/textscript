@@ -1,0 +1,155 @@
+# :revert undoes one earlier utterance and keeps everything said after it.
+# It refuses when something said later changed what it added.
+> :inputs words
+inputs: words
+
+> say Count the words with a dictionary.
+u1: 0:Count 1:the 2:words 3:with 4:a 5:dictionary 6:.
+
+> add root: counts = {}
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ counts = {}
+──
+WARN001     n3   `counts` is set up but never used.  "Count the words with a dictionary."
+
+> say For each word, add one to its count.
+u2: 0:For 1:each 2:word 3:, 4:add 5:one 6:to 7:its 8:count 9:.
+
+> add root: for word~loopvar in words:
+>     counts[word] += 1
+✓ add_stmt → u2 (pending, 1 ops)
+n2 │ counts = {}
+n5 │ for word in words:
+n9 │     counts[word] += 1
+──
+(1 inferred: n6; :diag all shows them)
+
+> say Then print how many distinct words there were.
+u3: 0:Then 1:print 2:how 3:many 4:distinct 5:words 6:there 7:were 8:.
+
+> add root: print(len(counts))
+✓ add_stmt → u3 (pending, 1 ops)
+ n2 │ counts = {}
+ n5 │ for word in words:
+ n9 │     counts[word] += 1
+n14 │ print(len(counts))
+──
+(1 inferred: n6; :diag all shows them)
+
+> say Actually, never mind the printing.
+u4: 0:Actually 1:, 2:never 3:mind 4:the 5:printing 6:.
+
+> :revert u3
+✓ reverted u3
+n2 │ counts = {}
+n5 │ for word in words:
+n9 │     counts[word] += 1
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     counts = {}
+>     for word in words:
+>         counts[word] += 1
+
+> :revert u3
+✗ already-reverted: The edit of u3 has already been reverted
+
+> expect error already-reverted
+
+> :revert u9
+✗ nothing-to-revert: No edit from u9 is in effect
+
+> expect error nothing-to-revert
+
+> say Also keep the longest word.
+u5: 0:Also 1:keep 2:the 3:longest 4:word 5:.
+
+> add root start: longest = ""
+✓ add_stmt → u5 (pending, 1 ops)
+n20 │ longest = ""
+ n2 │ counts = {}
+ n5 │ for word in words:
+ n9 │     counts[word] += 1
+──
+WARN001     n21  `longest` is set up but never used.  "Also keep the longest word."
+(1 inferred: n6; :diag all shows them)
+
+> label n20 longest so far
+✓ set_label → u5 (pending, 2 ops)
+n20 │ longest = ""
+ n2 │ counts = {}
+ n5 │ for word in words:
+ n9 │     counts[word] += 1
+──
+WARN001     n21  `longest` is set up but never used.  "Also keep the longest word."
+(1 inferred: n6; :diag all shows them)
+
+> add n5: longest = max(longest, word)
+✓ add_stmt → u5 (pending, 3 ops)
+n20 │ longest = ""
+ n2 │ counts = {}
+ n5 │ for word in words:
+ n9 │     counts[word] += 1
+n23 │     longest = max(longest, word)
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     longest = ""
+>     counts = {}
+>     for word in words:
+>         counts[word] += 1
+>         longest = max(longest, word)
+
+> say Start the longest word at None instead.
+u6: 0:Start 1:the 2:longest 3:word 4:at 5:None 6:instead 7:.
+
+> set @longest-so-far.value = None
+✓ update_field → u6 (pending, 1 ops)
+n20 │ longest = None
+ n2 │ counts = {}
+ n5 │ for word in words:
+ n9 │     counts[word] += 1
+n23 │     longest = max(longest, word)
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect gaps none
+
+> say And drop the longest word altogether.
+u7: 0:And 1:drop 2:the 3:longest 4:word 5:altogether 6:.
+
+> remove @longest-so-far
+✓ remove_node → u7 (pending, 1 ops)
+ n2 │ counts = {}
+ n5 │ for word in words:
+ n9 │     counts[word] += 1
+n23 │     longest = max(longest, word)
+──
+WARN005     n27  `longest` is used before it is set up.  "Also keep the longest word."
+(1 inferred: n6; :diag all shows them)
+
+> remove n23
+✓ remove_node → u7 (pending, 2 ops)
+n2 │ counts = {}
+n5 │ for word in words:
+n9 │     counts[word] += 1
+──
+(1 inferred: n6; :diag all shows them)
+
+> :revert u5
+✗ revert-conflict: The edit of u5 can't be reverted after what was changed since: No node with ID n23
+
+> expect error revert-conflict
+
+> :log
+u1  "Count the words with a dictionary."  add_stmt
+u2  "For each word, add one to its count."  add_stmt
+u3  "Then print how many distinct words there were."  add_stmt
+revert u3  "Actually, never mind the printing."
+u5  "Also keep the longest word."  add_stmt, set_label, add_stmt
+u6  "Start the longest word at None instead."  update_field
+u7  "And drop the longest word altogether."  remove_node, remove_node
+
+-- ok
