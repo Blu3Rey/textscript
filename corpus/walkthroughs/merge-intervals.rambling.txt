@@ -1,0 +1,12 @@
+---
+problem: merge-intervals
+style: rambling
+---
+Okay, so, um, the thing is, overlapping intervals are only easy to spot when they're in order, right?
+So first I sort the intervals by their start time, um, smallest first.
+Then I have a result list, I'll call it out, and it starts empty.
+I put the first interval into out, um, just to get going.
+Then I loop through the rest of the intervals, from the second one on, calling each one cur, and, uh, I call the last one in out last.
+If cur's start is at most last's end, they overlap, so, um, last's end becomes the max of the two ends.
+Otherwise, um, no overlap, so I just add cur to the end of out.
+And then I return out, and, uh, the sort makes it n log n overall.

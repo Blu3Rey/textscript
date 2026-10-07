@@ -1,0 +1,12 @@
+---
+problem: course-schedule
+style: rambling
+---
+Okay, um, so this is really, like, a cycle detection problem, right, if the prerequisites loop around you can never finish.
+So first I'll build a graph, uh, a defaultdict of lists, and for each pair in prerequisites I add pair[1] to graph[pair[0]].
+Then, um, I need a state for each course, so a list called state with num_courses zeros, where zero means unvisited, one means visiting, and two means done.
+And a recursive function, visit, that takes a course c, and, uh, if state[c] is one we've hit a cycle so return False, and if state[c] is two, return True.
+Otherwise set state[c] to one, then go through each prereq p in graph[c], and if visit of p comes back false, return False.
+After that loop, um, state[c] becomes two, and we return True.
+And then in the main part I just go through every course, call it i, from zero up to num_courses, and, um, if visit of i is false, return False.
+And if we get through all of them, yeah, return True.

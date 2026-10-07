@@ -1,0 +1,24 @@
+step 1
+add root: prev = head
+
+step 2
+set n2.value = None
+add root: curr = head
+
+step 3
+add root:
+    while curr is not None:
+        nxt = curr.next
+
+step 4
+add n9:
+    curr.next = prev
+    prev = curr
+    curr = nxt
+
+step 5
+rename n15 next_node
+
+step 6
+add root: return prev
+expect gaps none

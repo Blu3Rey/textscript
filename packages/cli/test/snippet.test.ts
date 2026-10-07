@@ -179,6 +179,15 @@ describe('annotations', () => {
 describe('expressions', () => {
   it.each([
     ['-5 ** 2', { kind: 'UnaryOp', op: '-', operand: { kind: 'BinOp', op: '**' } }],
+    [
+      '-0()',
+      {
+        kind: 'UnaryOp',
+        op: '-',
+        operand: { kind: 'Call', callee: { kind: 'Literal', value: 0 } },
+      },
+    ],
+    ['-2[0]', { kind: 'UnaryOp', op: '-', operand: { kind: 'Index' } }],
     ['(-5) ** 2', { kind: 'BinOp', left: { kind: 'Literal', value: -5 } }],
     ['x is None', { kind: 'Compare', op: '==', right: { value: null } }],
     ['x is not None', { kind: 'Compare', op: '!=' }],

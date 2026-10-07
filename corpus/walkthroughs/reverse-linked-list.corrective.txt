@@ -1,0 +1,10 @@
+---
+problem: reverse-linked-list
+style: corrective
+---
+I'll keep a pointer called prev, and set it to head to start.
+Actually no, prev should start as None, and then a second pointer curr starts at head.
+While curr is not None, I save curr.next in a variable called nxt.
+Then I point curr.next back at prev, move prev up to curr, and move curr up to nxt.
+Hmm, let me rename nxt to next_node so it reads better.
+When the loop ends, prev is the new head, so return prev.

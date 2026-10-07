@@ -463,6 +463,8 @@ criteria** (the definition of done) and **Risks**.
 
 #### S6: Walkthrough corpus and evaluation harness
 
+**Status:** ✅ Done ([ADR-011](docs/adr/011-corpus-and-evaluation.md))
+
 **Goal:** Measure translation quality from the first LLM call onward. This
 segment **comes before the translator** on purpose.
 

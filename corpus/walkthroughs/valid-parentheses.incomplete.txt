@@ -1,0 +1,9 @@
+---
+problem: valid-parentheses
+style: incomplete
+---
+Stack is an empty list, and pairs is a dictionary mapping close paren to open paren, close square to open square, and close curly to open curly.
+Loop over each character ch in s.
+If ch is in pairs, it's a closer, so pop the stack, and if what we popped isn't pairs of ch, return false.
+Otherwise push ch onto the stack.
+At the end, return True if the stack is empty.

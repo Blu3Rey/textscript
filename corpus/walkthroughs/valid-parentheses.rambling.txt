@@ -1,0 +1,12 @@
+---
+problem: valid-parentheses
+style: rambling
+---
+Okay, so, um, brackets have to close in the reverse order they opened, which, uh, kind of screams stack to me.
+So I'll have a stack, which is just an empty list, and, um, a dictionary called pairs where close paren maps to open paren, close square to open square, and close curly to open curly.
+Then, uh, I go through the string one character at a time, and I'll call it c.
+If c is in pairs, so it's a closing one, um, then if the stack is empty or the top of the stack isn't pairs of c, return false.
+Otherwise, um, it matched, so I pop the top off the stack.
+And for anything else, so the openers, I just push it onto the stack.
+And at the very end, um, it's only valid if nothing's left, so I return whether the stack is empty.
+That's O of n time, and, uh, O of n space for the stack.

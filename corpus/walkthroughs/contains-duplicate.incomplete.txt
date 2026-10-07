@@ -1,0 +1,8 @@
+---
+problem: contains-duplicate
+style: incomplete
+---
+Loop through the list of numbers.
+If we've already seen the number, return true.
+Oh, we keep a set called seen, empty at the start.
+Otherwise add it to the set.

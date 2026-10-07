@@ -1,0 +1,10 @@
+---
+problem: two-sum
+style: corrective
+---
+I'll keep a list called seen of the numbers I've visited.
+Actually no, make seen a dictionary, so I can look up each number's index.
+Loop through nums with index i, starting from one.
+Wait, start i at zero, not one.
+For each i, if target minus nums[i] is a key in seen, return seen of that and i.
+After the check, record seen[nums[i]] = i.

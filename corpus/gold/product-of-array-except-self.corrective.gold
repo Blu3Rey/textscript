@@ -1,0 +1,48 @@
+step 1
+add root: output = [0] * len(nums)
+expect gaps WARN001
+
+step 2
+set n6.value = 1
+expect gaps WARN001
+
+step 3
+add root:
+    product = 1
+    for i in range(len(nums)~range-bounds):
+        ...
+expect gaps GAP002 WARN001 WARN001
+
+step 4
+fill h1:
+    output[i] = product
+    product *= nums[i]
+expect gaps none
+
+step 5
+add root:
+    product = 1
+    for i in range(len(nums) - 1, -1, -1):
+        ...
+expect gaps GAP002
+
+step 6
+fill h1:
+    output[i] *= product
+    product *= nums[i]
+expect gaps none
+
+step 7
+add root: return output
+expect code:
+    output = [1] * len(nums)
+    product = 1
+    for i in range(len(nums)):
+        output[i] = product
+        product *= nums[i]
+    product = 1
+    for i in range(len(nums) - 1, -1, -1):
+        output[i] *= product
+        product *= nums[i]
+    return output
+expect gaps none

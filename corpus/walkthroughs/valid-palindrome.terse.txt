@@ -1,0 +1,8 @@
+---
+problem: valid-palindrome
+style: terse
+---
+Empty list chars.
+For each ch in s: if ch is alphanumeric, append ch lowercased to chars.
+Return chars == chars[::-1].
+O(n) time, O(n) extra space.

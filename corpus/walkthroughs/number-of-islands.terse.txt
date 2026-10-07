@@ -1,0 +1,10 @@
+---
+problem: number-of-islands
+style: terse
+---
+Count at zero; directions is the list [[1, 0], [-1, 0], [0, 1], [0, -1]].
+Loop r over indices of grid, c over indices of grid[r]; if grid[r][c] isn't 1, continue.
+Otherwise: count plus one, set grid[r][c] to 0, stack is [[r, c]].
+While stack: cell is stack.pop(); for each d in directions, nr is cell[0] plus d[0], nc is cell[1] plus d[1].
+If nr, nc is in bounds and grid[nr][nc] is 1: set it to 0, append [nr, nc] to stack.
+Return count.

@@ -1,0 +1,30 @@
+# Left out: what reverse returns after the recursive case. new_head is
+# never returned, so the function's "otherwise" path ends without a
+# return (GAP003), and new_head is set up but never used (WARN001).
+
+step 1
+add root: def reverse(node):
+    ...
+expect gaps WARN001 GAP002
+
+step 2
+fill h1:
+    if node is None or node.next is None:
+        return node
+expect gaps GAP003
+
+step 3
+set n7.orelse = new_head = reverse(node.next)
+or
+add n2: new_head = reverse(node.next)
+expect gaps GAP003 WARN001
+
+step 4
+add n7.orelse:
+    node.next.next = node
+    node.next = None
+expect gaps GAP003 WARN001
+
+step 5
+add root: return reverse(head)
+expect gaps GAP003 WARN001

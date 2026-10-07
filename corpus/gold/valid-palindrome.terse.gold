@@ -1,0 +1,18 @@
+step 1
+add root: chars = []
+expect gaps WARN001
+
+step 2
+add root:
+    for ch in s:
+        if ch.isalnum():
+            chars.append(ch.lower())
+expect gaps none
+
+step 3
+add root: return chars == chars[::-1]
+expect gaps none
+
+step 4
+note root complexity: O(n) time, O(n) extra space
+expect gaps none

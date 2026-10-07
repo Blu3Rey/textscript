@@ -1,0 +1,48 @@
+step 1
+add root:
+    nums.sort()
+    res = []
+expect gaps WARN001
+or
+add root:
+    nums = sorted(nums)
+    res = []
+expect gaps WARN001
+
+step 2
+add root: for i in range(len(nums)~range-bounds):
+    if i > 0 and nums[i] == nums[i - 1]:
+        continue
+expect gaps WARN001
+
+step 3
+add n9:
+    lo = i + 1
+    hi = len(nums) - 1
+expect gaps WARN001 WARN001 WARN001
+
+step 4
+add n9: while lo < hi:
+    total = nums[i] + nums[lo] + nums[hi]
+expect gaps WARN001 WARN001
+
+step 5
+add n43:
+    if total < 0:
+        lo += 1
+    elif total > 0:
+        hi -= 1
+expect gaps WARN001
+
+step 6
+set n61.orelse = res.append([nums[i], nums[lo], nums[hi]])
+add n61.orelse:
+    lo += 1
+    hi -= 1
+    while lo < hi and nums[lo] == nums[lo - 1]:
+        lo += 1
+expect gaps none
+
+step 7
+add root: return res
+expect gaps none

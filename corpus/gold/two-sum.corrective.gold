@@ -1,0 +1,26 @@
+step 1
+add root: seen = []
+
+step 2
+set n2.value = {}
+
+step 3
+add root: for i in range(1, len(nums)):
+    ...
+
+step 4
+set n6.start = 0
+
+step 5
+fill h1:
+    if target - nums[i] in seen:
+        return [seen[target - nums[i]], i]
+
+step 6
+add n6: seen[nums[i]] = i
+expect code:
+    seen = {}
+    for i in range(0, len(nums)):
+        if target - nums[i] in seen:
+            return [seen[target - nums[i]], i]
+        seen[nums[i]] = i

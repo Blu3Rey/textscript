@@ -1,0 +1,7 @@
+---
+problem: kth-largest-element
+style: terse
+---
+Heap is the first k of nums; heapify it.
+For each num in nums from index k on: if num is greater than heap[0], heapreplace(heap, num).
+Return heap[0].

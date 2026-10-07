@@ -1,0 +1,38 @@
+# The first utterance gives the reason for sorting; the sort itself is
+# step 2. How to sort by start isn't said (a key function), so it stays an
+# intent.
+step 1
+or
+note root general: overlapping intervals are only easy to spot when they're in order
+
+step 2
+add root: intent sort the intervals by their start time, smallest first
+expect gaps GAP009
+
+step 3
+add root: out = []
+expect gaps GAP009 WARN001
+
+step 4
+add root: out.append(intervals[0])  # ~synonym
+expect gaps GAP009
+
+step 5
+add root: for cur in intervals[1:]:
+    last = out[-1]
+expect gaps GAP009 WARN001
+
+step 6
+add n11:
+    if cur[0] <= last[1]:
+        last[1] = max(last[1], cur[1])
+expect gaps GAP009
+
+step 7
+set n22.orelse = out.append(cur)  # ~synonym
+expect gaps GAP009
+
+step 8
+add root: return out
+note root complexity: the sort makes it n log n overall
+expect gaps GAP009

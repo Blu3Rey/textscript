@@ -1,0 +1,21 @@
+step 1
+add root:
+    slow = head
+    fast = head
+expect gaps WARN001 WARN001
+
+step 2
+add root:
+    while fast is not None and fast.next is not None:
+        slow = slow.next
+        fast = fast.next.next
+
+step 3
+add n8:
+    if slow == fast:
+        return True
+expect gaps GAP003
+
+step 4
+add root: return False
+expect gaps none

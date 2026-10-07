@@ -1,0 +1,51 @@
+# Left out: where islands starts (it is never set up, GAP001), what the
+# answer is (nothing is returned; the analyzer has no gap for a program
+# that never returns a value), and what "off the grid" means (GAP004).
+
+step 1
+add root: visited = set()
+expect gaps WARN001
+
+step 2
+add root: def explore(row, col):
+    ...
+expect gaps WARN001 WARN001 WARN001 GAP002
+
+step 3
+fill h1:
+    if ?cond"the cell is off the grid" or grid[row][col] == 0 or (row, col) in visited:
+        return
+expect gaps GAP004
+
+step 4
+set n11.orelse = visited.add((row, col))  # ~synonym
+add n11.orelse:
+    explore(row + 1, col)
+    explore(row - 1, col)
+    explore(row, col + 1)
+    explore(row, col - 1)
+or
+add n5:
+    visited.add((row, col))  # ~synonym
+    explore(row + 1, col)
+    explore(row - 1, col)
+    explore(row, col + 1)
+    explore(row, col - 1)
+expect gaps GAP004
+
+step 5
+add root:
+    for r in range(len(grid)~range-bounds):
+        for c in range(len(grid[r])~range-bounds):
+            if grid[r][c] == 1 and (r, c) not in visited:
+                islands += 1
+                explore(r, c)
+expect gaps GAP004 GAP001
+or
+add root:
+    for r in range(len(grid)~range-bounds):
+        for c in range(len(grid[r])~range-bounds):
+            if grid[r][c] == 1 and (r, c) not in visited:
+                islands = islands + 1
+                explore(r, c)
+expect gaps GAP004 WARN005

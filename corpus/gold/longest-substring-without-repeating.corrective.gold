@@ -1,0 +1,40 @@
+step 1
+add root: window = []
+expect gaps WARN001
+
+step 2
+add root:
+    left = 0
+    best = 1
+expect gaps WARN001 WARN001 WARN001
+
+step 3
+set n2.value = set()
+expect gaps WARN001 WARN001 WARN001
+
+step 4
+set n8.value = 0
+expect gaps WARN001 WARN001 WARN001
+
+step 5
+add root: for right in range(len(s)):
+    while s[right] in window:
+        window.remove(s[left])
+        left += 1
+expect gaps WARN001
+or
+add root: for right in range(len(s)):
+    while s[right] in window:
+        window.remove(s[left])
+        left = left + 1
+expect gaps WARN001
+
+step 6
+add n13:
+    window.add(s[right])  # ~synonym
+    best = max(best, right - left + 1)
+expect gaps none
+
+step 7
+add root: return best
+expect gaps none

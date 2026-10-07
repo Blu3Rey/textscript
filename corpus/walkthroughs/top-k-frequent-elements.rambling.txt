@@ -1,0 +1,12 @@
+---
+problem: top-k-frequent-elements
+style: rambling
+---
+Okay, um, so I think the first thing is I need, like, how many times each number shows up, so I'll keep a dictionary, let's call it counts.
+And it starts out empty, yeah.
+Then I go through nums, and for each number I set counts of it to, um, counts dot get of it with zero, plus one.
+Now, uh, rather than sorting, I kind of want to do a bucket thing, so I make a list called buckets, empty for now.
+And then for each i from zero up to and including the length of nums, I append an empty list to buckets, so the index is the frequency.
+Then, um, for each num in counts, so each distinct number, I append num to the bucket at index counts of num.
+Okay and then I make an empty list called result, and I walk the buckets from the last index down to zero, adding everything in buckets at i onto the end of result.
+And, uh, right after adding, if result has at least k numbers, I return it.

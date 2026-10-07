@@ -1,0 +1,12 @@
+---
+problem: two-sum
+style: rambling
+---
+Okay, um, so the brute force would be checking every pair, but that's slow, so let me think.
+So basically I want to remember the numbers I've already looked at, like in a hash map, and I'll call it seen, mapping each number to where it was.
+And it starts out empty, obviously.
+Then I go through the array, index by index, so like i goes from zero up to the length.
+For each one I figure out what I need, which is the target minus the current number, I'll call that complement.
+And if complement is already in seen, um, then we're done, we return the index we stored for it and the current index i.
+If it's not there, yeah, then I just put the current number into seen with its index.
+And that's basically it, it's one pass, so linear time.

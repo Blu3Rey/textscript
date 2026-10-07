@@ -1,0 +1,10 @@
+---
+problem: valid-palindrome
+style: incomplete
+---
+I'll use two pointers, left at the start of the string and right at its last character.
+While left is less than right, keep going.
+If the character at left isn't alphanumeric, move left forward one and skip to the next round.
+Same check for right, except right moves back one.
+Then if the lowercase versions of the two characters are different, return false.
+Otherwise move left up one and right down one.

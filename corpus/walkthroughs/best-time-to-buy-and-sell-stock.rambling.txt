@@ -1,0 +1,11 @@
+---
+problem: best-time-to-buy-and-sell-stock
+style: rambling
+---
+Okay so, um, we buy on one day and sell on some later day, and the brute force is like checking every pair of days, which is n squared, so let's not.
+Instead I'll, uh, keep track of the cheapest price so far, call it lowest, and it starts as the very first price.
+And, um, best is the best profit so far, and that starts at zero.
+So then I walk through the prices, one at a time.
+For each price, um, I work out profit as the price minus lowest, and if profit is bigger than best, best becomes profit.
+And also, uh, if the price is lower than lowest, then lowest becomes the price.
+And at the end, um, return best, and that's it, one pass, so O of n.

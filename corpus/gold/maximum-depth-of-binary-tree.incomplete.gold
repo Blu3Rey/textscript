@@ -1,0 +1,50 @@
+# Left out: the starting value of depth (a hole, GAP005), and what to do
+# when root is None (an empty tree puts None in the queue). The second
+# omission has no gap code; nothing in the gold handles it.
+
+step 1
+add root: queue = deque([root])
+expect gaps GAP001 WARN001
+
+step 2
+add root: depth = ?value"starting value"
+expect gaps GAP001 WARN001 WARN001 GAP005
+
+step 3
+add root:
+    while queue:
+        depth += 1
+        for i~indexvar in range(len(queue)):
+            ...
+or
+add root:
+    while len(queue) > 0:
+        depth += 1
+        for i~indexvar in range(len(queue)):
+            ...
+or
+add root:
+    while queue:
+        depth = depth + 1
+        for i~indexvar in range(len(queue)):
+            ...
+or
+add root:
+    while len(queue) > 0:
+        depth = depth + 1
+        for i~indexvar in range(len(queue)):
+            ...
+expect gaps GAP001 GAP005 GAP002
+
+step 4
+fill h2:
+    node = queue.popleft()
+    if node.left is not None:
+        queue.append(node.left)
+    if node.right is not None:
+        queue.append(node.right)
+expect gaps GAP001 GAP005
+
+step 5
+add root: return depth
+expect gaps GAP001 GAP005

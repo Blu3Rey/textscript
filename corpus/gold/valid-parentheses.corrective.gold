@@ -1,0 +1,52 @@
+step 1
+add root: stack = set()
+expect gaps WARN001
+
+step 2
+set n2.value = []
+expect gaps WARN001
+
+step 3
+add root: match = {'(': ')', '[': ']', '{': '}'}
+expect gaps WARN001 WARN001
+
+step 4
+add root:
+    for char in s:
+        if char in match:
+            stack.append(match[char])  # ~synonym
+expect gaps none
+
+step 5
+replace n22:
+    if char in match:
+        stack.append(match[char])  # ~synonym
+    elif not stack or stack.pop() != char:
+        return False
+expect gaps GAP003
+or
+replace n22:
+    if char in match:
+        stack.append(match[char])  # ~synonym
+    elif len(stack) == 0 or stack.pop() != char:
+        return False
+expect gaps GAP003
+or
+set n22.orelse =
+    if not stack or stack.pop() != char:
+        return False
+or
+set n22.orelse =
+    if len(stack) == 0 or stack.pop() != char:
+        return False
+expect gaps GAP003
+
+step 6
+add root: return True
+expect gaps none
+
+step 7
+set n54.value = not stack
+or
+set n54.value = len(stack) == 0
+expect gaps none

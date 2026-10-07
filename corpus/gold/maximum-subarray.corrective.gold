@@ -1,0 +1,35 @@
+step 1
+add root:
+    current = 0
+    best = 0
+
+step 2
+set n2.value = nums[0]
+set n5.value = nums[0]
+
+step 3
+add root: for i~indexvar in range(1, len(nums)):
+    ...
+expect gaps WARN001 WARN001 GAP002
+
+step 4
+fill h1: current += nums[i]
+or
+fill h1: current = current + nums[i]
+
+step 5
+replace n22: current = max(nums[i], current + nums[i])
+
+step 6
+add n14: best = max(best, current)
+
+step 7
+add root: return best
+expect gaps none
+expect code:
+    current = nums[0]
+    best = nums[0]
+    for i in range(1, len(nums)):
+        current = max(nums[i], current + nums[i])
+        best = max(best, current)
+    return best

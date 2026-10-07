@@ -1,0 +1,37 @@
+# The first utterance is the idea behind the approach, not a step.
+step 1
+expect gaps none
+or
+note root general: with a cycle we eventually land on a node we've already been to
+
+step 2
+add root: visited = set()
+expect gaps WARN001
+
+step 3
+add root: node = head
+expect gaps WARN001 WARN001
+
+step 4
+add root:
+    while node is not None:
+        if node in visited:
+            return True
+expect gaps GAP003
+
+step 5
+set n13.orelse = visited.add(node)  # ~synonym
+add n13.orelse: node = node.next
+or
+add n8:
+    visited.add(node)  # ~synonym
+    node = node.next
+expect gaps GAP003
+
+step 6
+add root: return False
+expect gaps none
+
+step 7
+note root complexity: O(n) extra space because of the set
+expect gaps none

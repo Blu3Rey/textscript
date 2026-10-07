@@ -1,0 +1,21 @@
+# Left out: the starting values of prev and curr (the base cases).
+step 1
+add root:
+    prev = ?value"starting value of prev"
+    curr = ?value"starting value of curr"
+expect gaps WARN001 WARN001 GAP005 GAP005
+
+step 2
+add root: for i in range(2, n + 1):
+    ways = prev + curr
+expect gaps GAP005 GAP005 WARN001
+
+step 3
+add n8:
+    prev = curr
+    curr = ways
+expect gaps GAP005 GAP005
+
+step 4
+add root: return curr
+expect gaps GAP005 GAP005

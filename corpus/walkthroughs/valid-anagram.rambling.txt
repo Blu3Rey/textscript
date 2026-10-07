@@ -1,0 +1,10 @@
+---
+problem: valid-anagram
+style: rambling
+---
+Okay, um, so an anagram is basically the same letters just shuffled around, right, so my first thought is, like, sorting.
+But, uh, before that, if the lengths of s and t aren't equal, then, yeah, we can just return false straight away.
+Okay so then I sort s, like sorted of s, and I'll call that sorted_s.
+And, um, same thing for t, sorted of t, and call it sorted_t.
+And then basically I just return whether sorted_s equals sorted_t, like that comparison itself is the answer.
+So that's, uh, n log n because of the sorting, and, yeah, that's pretty much it.

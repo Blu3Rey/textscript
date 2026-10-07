@@ -1,0 +1,74 @@
+# The first utterance frames the problem; it is not a step.
+step 1
+expect gaps none
+or
+note root general: this is a cycle detection problem: if the prerequisites loop around you can never finish
+
+step 2
+add root:
+    graph = defaultdict(list)
+    for pair in prerequisites:
+        graph[pair[0]].append(pair[1])  # ~synonym
+expect gaps GAP001
+
+step 3
+add root: state = [0] * num_courses
+note n20 general: zero means unvisited, one means visiting, and two means done
+expect gaps GAP001 WARN001
+
+step 4
+add root:
+    def visit(c):
+        if state[c] == 1:
+            return False
+        if state[c] == 2:
+            return True
+expect gaps GAP001 GAP003
+
+step 5
+set n40.orelse = state[c] = 1
+add n40.orelse:
+    for p in graph[c]:
+        if not visit(p):
+            return False
+or
+set n40.orelse = state[c] = 1
+add n40.orelse:
+    for p in graph[c]:
+        if visit(p) == False:
+            return False
+or
+add n27:
+    state[c] = 1
+    for p in graph[c]:
+        if not visit(p):
+            return False
+or
+add n27:
+    state[c] = 1
+    for p in graph[c]:
+        if visit(p) == False:
+            return False
+expect gaps GAP001 GAP003
+
+step 6
+add n40.orelse:
+    state[c] = 2
+    return True
+expect gaps GAP001
+
+step 7
+add root:
+    for i in range(0, num_courses):
+        if not visit(i):
+            return False
+or
+add root:
+    for i in range(0, num_courses):
+        if visit(i) == False:
+            return False
+expect gaps GAP001 GAP003
+
+step 8
+add root: return True
+expect gaps GAP001

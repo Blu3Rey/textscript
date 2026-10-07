@@ -1,0 +1,11 @@
+---
+problem: maximum-subarray
+style: corrective
+---
+I'll keep a running sum called current and the best sum called best, both starting at zero.
+Actually no, zero is wrong if every number is negative, so start both of them at nums[0].
+Then loop over the indices from one up to the length of nums.
+At each index, add nums[i] to current.
+Hmm, no, that never drops a bad prefix; current should be the max of nums[i] and current plus nums[i].
+Then best is the max of best and current.
+Return best at the end.

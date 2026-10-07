@@ -1,0 +1,27 @@
+{
+  "name": "@textscript/eval",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Walkthrough corpus loader, evaluation runner, metrics and reports.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "textscript": {
+    "runtime": "node"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "bin": {
+    "textscript-eval": "./bin/eval.js"
+  },
+  "dependencies": {
+    "@textscript/cli": "workspace:*",
+    "@textscript/core": "workspace:*",
+    "@textscript/render-python": "workspace:*",
+    "@textscript/translator": "workspace:*",
+    "tsx": "^4.23.15"
+  }
+}

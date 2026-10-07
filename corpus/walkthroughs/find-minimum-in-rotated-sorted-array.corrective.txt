@@ -1,0 +1,11 @@
+---
+problem: find-minimum-in-rotated-sorted-array
+style: corrective
+---
+lo is zero and hi is the last index.
+While lo is less than or equal to hi, take mid as lo plus hi floor-divided by two.
+Actually make the loop condition strictly less than, otherwise it never stops.
+If nums[mid] is greater than nums[hi], the minimum is somewhere to the right of mid, so lo becomes mid plus one.
+Otherwise hi becomes mid minus one.
+No, hi should become just mid, because mid itself could be the minimum.
+When the loop ends, return nums[lo].

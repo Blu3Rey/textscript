@@ -1,0 +1,39 @@
+# Left out: how mid is computed from low and high (only "the middle index"
+# is said, GAP005), and what to return when target isn't found (the loop
+# can end without a return, GAP003).
+
+step 1
+add root:
+    low = 0
+    high = len(nums) - 1
+expect gaps WARN001 WARN001
+
+step 2
+add root: while low <= high:
+    mid = ?value"the middle index"
+expect gaps GAP005 WARN001
+
+step 3
+add n12:
+    if nums[mid] == target:
+        return mid
+expect gaps GAP005 GAP003
+
+# The previous branch returns, so an elif chain and a separate if after it
+# are equally faithful.
+step 4
+add n12:
+    if nums[mid] > target:
+        high = mid - 1
+    else:
+        low = mid + 1
+expect gaps GAP005 GAP003
+or
+replace n20:
+    if nums[mid] == target:
+        return mid
+    elif nums[mid] > target:
+        high = mid - 1
+    else:
+        low = mid + 1
+expect gaps GAP005 GAP003

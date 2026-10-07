@@ -1,0 +1,25 @@
+# Left out: how big is "too big" (the size limit k is never mentioned, so
+# the condition is a hole, GAP004), and the answer: nothing is returned.
+# The analyzer has no gap for a program that never returns a value, so the
+# missing return shows up only as the absence of a return.
+
+step 1
+add root: heap = []
+expect gaps WARN001
+
+step 2
+add root: for num~loopvar in nums:
+    heapq.heappush(heap, num)
+expect gaps GAP001
+
+step 3
+add n5:
+    if ?cond"the heap gets too big":
+        heapq.heappop(heap)
+expect gaps GAP001 GAP004
+
+step 4
+expect gaps GAP001 GAP004
+or
+note n2 general: the heap only ever holds the biggest numbers we've seen
+expect gaps GAP001 GAP004

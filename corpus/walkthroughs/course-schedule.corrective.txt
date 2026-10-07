@@ -1,0 +1,11 @@
+---
+problem: course-schedule
+style: corrective
+---
+First, a defaultdict of lists called graph, and a list indegree with num_courses zeros in it.
+For each pair in prerequisites, append pair[1] to graph[pair[0]], and add one to indegree[pair[1]].
+Hmm, no, I have that backwards: graph[pair[1]] should get pair[0], and the one to bump is indegree[pair[0]].
+Then a deque called queue, and for each i in range of num_courses, if indegree[i] is zero, append i to the queue.
+Also a counter taken, starting at zero.
+While the queue isn't empty, popleft into course, add one to taken, and for each neighbor in graph[course], subtract one from indegree[neighbor], and if that hits zero, append neighbor to the queue.
+At the end, return whether taken equals num_courses.

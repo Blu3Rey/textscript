@@ -1,0 +1,25 @@
+step 1
+add root:
+    min_price = float('inf')
+    best = 0
+
+step 2
+add root:
+    for price in prices:
+        if price < min_price:
+            min_price = price
+
+step 3
+replace n12:
+    if price < min_price:
+        min_price = price
+    elif price - min_price > best:
+        best = price - min_price
+or
+set n12.orelse =
+    if price - min_price > best:
+        best = price - min_price
+
+step 4
+add root: return best
+expect gaps none

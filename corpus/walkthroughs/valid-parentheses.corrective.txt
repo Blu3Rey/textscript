@@ -1,0 +1,11 @@
+---
+problem: valid-parentheses
+style: corrective
+---
+Keep a set called stack for the open brackets.
+No wait, order matters here, so make stack a list instead.
+Also a dictionary called match: open paren to close paren, open square to close square, open curly to close curly.
+For each char in s, if char is a key in match, push match of char onto the stack.
+Otherwise, if the stack is empty or what we pop off isn't char, return false.
+After the loop, return true.
+Actually no, leftover brackets were never closed, so return whether the stack is empty.

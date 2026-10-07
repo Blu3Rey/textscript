@@ -1,0 +1,9 @@
+---
+problem: merge-two-sorted-lists
+style: terse
+---
+Recursive function merge taking a and b.
+If a is None, return b; if b is None, return a.
+If a.val is less than b.val: a.next is merge of a.next and b, then return a.
+Else b.next is merge of a and b.next, return b.
+Answer: return merge of list1 and list2.

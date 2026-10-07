@@ -1,0 +1,21 @@
+step 1
+add root: write = 0
+expect gaps WARN001
+
+step 2
+add root:
+    for num in nums:
+        if num != 0:
+            nums[write] = num
+            write += 1
+expect gaps none
+
+step 3
+add root:
+    for i in range(write, len(nums)):
+        nums[i] = 0
+expect gaps none
+
+step 4
+note root complexity: in place, O(n), O(1) extra
+expect gaps none

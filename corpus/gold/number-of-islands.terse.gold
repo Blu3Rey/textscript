@@ -1,0 +1,59 @@
+# "In bounds" is never spelled out, so that part of the condition stays a
+# hole (GAP004).
+
+step 1
+add root:
+    count = 0
+    directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+expect gaps WARN001 WARN001
+
+step 2
+add root:
+    for r in range(len(grid)~range-bounds):
+        for c in range(len(grid[r])~range-bounds):
+            if grid[r][c] != 1:
+                continue
+
+expect gaps WARN001 WARN001
+
+step 3
+set n34.orelse = count += 1
+add n34.orelse:
+    grid[r][c] = 0
+    stack = [[r, c]]
+or
+set n34.orelse = count = count + 1
+add n34.orelse:
+    grid[r][c] = 0
+    stack = [[r, c]]
+or
+add n26:
+    count += 1
+    grid[r][c] = 0
+    stack = [[r, c]]
+or
+add n26:
+    count = count + 1
+    grid[r][c] = 0
+    stack = [[r, c]]
+expect gaps WARN001 WARN001
+
+step 4
+add n34.orelse:
+    while stack:
+        cell = stack.pop()
+        for d in directions:
+            nr = cell[0] + d[0]
+            nc = cell[1] + d[1]
+expect gaps WARN001 WARN001
+
+step 5
+add n69:
+    if ?cond"nr, nc is in bounds" and grid[nr][nc] == 1:
+        grid[nr][nc] = 0
+        stack.append([nr, nc])
+expect gaps GAP004
+
+step 6
+add root: return count
+expect gaps GAP004

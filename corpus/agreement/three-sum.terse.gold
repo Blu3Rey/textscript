@@ -1,0 +1,53 @@
+step 1
+add root:
+    nums.sort()
+    res = []
+or
+add root:
+    nums = sorted(nums)
+    res = []
+
+step 2
+add root:
+    for i in range(len(nums)~range-bounds):
+        if i > 0 and nums[i] == nums[i - 1]:
+            continue
+
+step 3
+add n9:
+    lo = i + 1
+    hi = len(nums) - 1
+or
+add n9:
+    lo = i + 1
+    hi = ?value"the last index"
+
+step 4
+add n9:
+    while lo < hi:
+        total = nums[i] + nums[lo] + nums[hi]
+
+step 5
+add n43:
+    if total < 0:
+        lo += 1
+    elif total > 0:
+        hi -= 1
+or
+add n43:
+    if total < 0:
+        lo += 1
+    if total > 0:
+        hi -= 1
+
+step 6
+set n61.orelse =
+    res.append([nums[i], nums[lo], nums[hi]])
+    lo += 1
+    hi -= 1
+    while lo < hi and nums[lo] == nums[lo - 1]:
+        lo += 1
+
+step 7
+add root: return res
+expect gaps none

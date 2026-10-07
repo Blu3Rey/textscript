@@ -1,0 +1,8 @@
+---
+problem: first-unique-character
+style: terse
+---
+Dict counts, empty.
+For each ch in s, counts[ch] = counts.get(ch, 0) + 1.
+Second pass: loop i over the indices of s; if counts[s[i]] is 1, return i.
+After the loop, return -1.

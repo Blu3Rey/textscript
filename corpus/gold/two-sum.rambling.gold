@@ -1,0 +1,38 @@
+# The brute-force remark in the first utterance is not part of the
+# approach, so it changes nothing. Keeping it as a note is equally faithful.
+step 1
+or
+note root general: the brute force checks every pair, which is slow
+
+step 2
+add root: seen = {}
+
+# Restates step 2.
+step 3
+
+step 4
+add root: for i in range(0, len(nums)):
+    ...
+
+step 5
+fill h1: complement = target - nums[i]
+
+step 6
+add n5:
+    if complement in seen:
+        return [seen[complement], i]
+
+# "If it's not there" after a branch that returns: a statement after the
+# if, an else, or the stated if are equally faithful.
+step 7
+add n5: seen[nums[i]] = i
+or
+set n20.orelse = seen[nums[i]] = i
+or
+add n5:
+    if complement not in seen:
+        seen[nums[i]] = i
+
+step 8
+note root complexity: one pass, so linear time
+expect gaps GAP003

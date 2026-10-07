@@ -1,0 +1,24 @@
+# Left out: what to return when no number repeats. This is the worked
+# example from ROADMAP.md §3.6: nobody says "return False", so GAP003 stays.
+
+step 1
+add root: for num~loopvar in nums:
+    ...
+expect gaps GAP002
+
+step 2
+fill h1:
+    if num in seen:
+        return True
+expect gaps GAP001 GAP003
+
+step 3
+add root start: seen = set()
+expect gaps GAP003
+
+step 4
+set n7.orelse = seen.add(num)  # ~synonym
+expect gaps GAP003
+or
+add n2: seen.add(num)  # ~synonym
+expect gaps GAP003

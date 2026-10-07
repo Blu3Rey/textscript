@@ -1,0 +1,11 @@
+---
+problem: fizz-buzz
+style: rambling
+---
+Okay, so, um, I'll make an empty list called answer, to, like, collect the strings.
+Then I go from one up to n, including n, so i in range one to n plus one.
+Um, first I check, if i is divisible by fifteen, like i mod fifteen is zero, I append FizzBuzz.
+Otherwise if it's divisible by three, append Fizz, and, uh, otherwise if it's divisible by five, append Buzz.
+And if it's none of those, I just append the number turned into a string, so str of i.
+Oh, and the order matters, fifteen has to be checked first, which, yeah, it is.
+Then return answer at the end, and that's O(n).

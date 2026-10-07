@@ -1,0 +1,12 @@
+---
+problem: container-with-most-water
+style: rambling
+---
+Okay so, um, the naive thing would be trying every pair of lines, but I think we can do better, maybe with two pointers.
+So I'll have, uh, left starting at index zero and right starting at the very last index, and then a variable best, um, best starts at zero.
+Then, okay, while left is less than right, I compute the area, which is, like, the width, so right minus left, times the smaller of the two heights.
+And then best becomes the max of best and that area, yeah.
+Now the key part, um, whichever side is shorter, we move that one in, so if height at left is less than height at right, left goes up by one, otherwise right goes down by one.
+Because, like, the shorter line is what limits the area, so moving the taller one can't help, right.
+And when they meet, um, we just return best.
+So that's, uh, O(n), since every step moves one of the pointers.

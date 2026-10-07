@@ -1,0 +1,8 @@
+---
+problem: kth-largest-element
+style: incomplete
+---
+I'll keep a min-heap called heap, starting as an empty list.
+Go through the numbers and push each one onto the heap with heapq.heappush.
+If the heap gets too big, pop the smallest off with heapq.heappop.
+That way the heap only ever holds the biggest numbers we've seen.

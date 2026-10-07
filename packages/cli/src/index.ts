@@ -8,6 +8,7 @@ export {
   type FileSystem,
 } from './console/console';
 export { runRepl, type ReplOptions } from './console/repl';
+export { formatCode, formatDiagnostics, holes } from './console/view';
 export {
   runScript,
   splitScript,

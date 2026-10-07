@@ -1,0 +1,9 @@
+---
+problem: merge-intervals
+style: terse
+---
+Sort intervals by start.
+merged starts as an empty list.
+For each interval: if merged is empty or interval[0] > merged[-1][1], append interval to merged.
+Else merged[-1][1] = max(merged[-1][1], interval[1]).
+Return merged.

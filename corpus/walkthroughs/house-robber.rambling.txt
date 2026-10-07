@@ -1,0 +1,11 @@
+---
+problem: house-robber
+style: rambling
+---
+Okay, um, so the catch is you can't take two neighbors, so, like, at every house you either rob it or you skip it.
+So I'll keep two values, uh, prev and curr, which are, um, the best totals up to the house before last and up to the last house, and both of them start at zero.
+Then I go through each amount in nums, um, one house at a time.
+And for each one I figure out, um, best, which is the max of curr, that's skipping this house, and prev plus amount, that's robbing it.
+Then, uh, prev becomes curr, and curr becomes best, so they kind of slide forward.
+And, yeah, I keep doing that till I run out of houses.
+Then curr is the answer, so I return curr, and it's linear time, constant space.

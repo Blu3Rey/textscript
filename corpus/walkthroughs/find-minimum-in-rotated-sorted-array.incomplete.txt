@@ -1,0 +1,9 @@
+---
+problem: find-minimum-in-rotated-sorted-array
+style: incomplete
+---
+The array is sorted except for one spot where it drops, so I'll just scan for that drop.
+Walk through the indices of nums starting at one.
+If nums[i] is smaller than the element right before it, that's where the rotation happened.
+And the smaller one is the minimum, so return nums[i] right there.
+That's linear time, which is fine for this.

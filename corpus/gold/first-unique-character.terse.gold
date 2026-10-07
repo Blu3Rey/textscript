@@ -1,0 +1,20 @@
+step 1
+add root: counts = {}
+expect gaps WARN001
+
+step 2
+add root:
+    for ch in s:
+        counts[ch] = counts.get(ch, 0) + 1
+expect gaps none
+
+step 3
+add root:
+    for i in range(len(s)~range-bounds):
+        if counts[s[i]] == 1:
+            return i
+expect gaps GAP003
+
+step 4
+add root: return -1
+expect gaps none

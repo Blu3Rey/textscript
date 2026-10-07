@@ -1,0 +1,12 @@
+---
+problem: merge-two-sorted-lists
+style: rambling
+---
+Okay, so, um, both lists are already sorted, which is nice, so I think I can kind of just zip them together as I go.
+So I'll make a dummy node, like a ListNode with zero in it, and a pointer called tail that starts at the dummy.
+Then, uh, while list1 is not None and list2 is not None, I compare the two front values.
+If list1's val is less than or equal to list2's val, I hook list1 onto tail.next, and then list1 moves to list1.next.
+Otherwise it's the same thing but for list2, so tail.next is list2 and list2 moves to its next.
+And either way, after that, um, tail moves up to tail.next.
+When the loop's done one of them might still have nodes, so if list1 is not None, tail.next is list1, otherwise tail.next is list2.
+And then, yeah, I return dummy.next, and that's it, it's linear in the total number of nodes.

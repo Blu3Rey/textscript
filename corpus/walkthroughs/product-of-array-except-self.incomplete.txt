@@ -1,0 +1,10 @@
+---
+problem: product-of-array-except-self
+style: incomplete
+---
+Make a list called answer, the same length as nums, filled with ones.
+Keep a running product called left.
+Go left to right over the indices i of nums: set answer at i to left, then multiply left by nums at i.
+Then a second running product called right, starting at one.
+Go from the last index down to zero, multiply answer at i by right, and then multiply right by nums at i.
+Return answer.

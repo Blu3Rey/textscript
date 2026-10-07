@@ -1,0 +1,20 @@
+step 1
+add root: seen = set()
+
+step 2
+add root:
+    for num in nums:
+        if num in seen:
+            return True
+        else:
+            seen.add(num)
+or
+add root:
+    for num in nums:
+        if num in seen:
+            return True
+        seen.add(num)
+
+step 3
+add root: return False
+expect gaps none

@@ -1,0 +1,52 @@
+# The first utterance names the approach but no step of it. Keeping it as
+# a note is equally faithful.
+step 1
+expect gaps none
+or
+note root general: it's sorted, so binary search
+expect gaps none
+
+step 2
+add root:
+    lo = 0
+    hi = len(nums) - 1
+expect gaps WARN001 WARN001
+
+# "We keep narrowing it down" restates the loop.
+step 3
+add root: while lo <= hi:
+    ...
+expect gaps GAP002
+
+step 4
+fill h1: mid = (lo + hi) // 2
+expect gaps WARN001
+
+step 5
+add n12:
+    if nums[mid] == target:
+        return mid
+expect gaps GAP003
+
+# The first branch returns, so an elif chain and a separate if after it
+# are equally faithful.
+step 6
+replace n25:
+    if nums[mid] == target:
+        return mid
+    elif nums[mid] < target:
+        lo = mid + 1
+    else:
+        hi = mid - 1
+expect gaps GAP003
+or
+add n12:
+    if nums[mid] < target:
+        lo = mid + 1
+    else:
+        hi = mid - 1
+expect gaps GAP003
+
+step 7
+add root: return -1
+expect gaps none

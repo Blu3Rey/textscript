@@ -1,0 +1,35 @@
+step 1
+add root: best = [float("inf")] * amount
+
+step 2
+replace n7: amount + 1
+
+step 3
+add root: best[0] = 0
+
+step 4
+add root:
+    for coin in coins:
+        for x in range(coin, amount + 1):
+            best[x] = min(best[x], best[x - coin] + 1)
+or
+add root:
+    for coin in coins:
+        for x in range(coin, amount + 1):
+            best[x] = min(best[x], best[x - coin]) + 1
+
+step 5
+add root: return best[amount]
+expect gaps none
+
+step 6
+replace n43:
+    if best[amount] == float("inf"):
+        return -1
+    else:
+        return best[amount]
+or
+add root before n43:
+    if best[amount] == float("inf"):
+        return -1
+expect gaps none

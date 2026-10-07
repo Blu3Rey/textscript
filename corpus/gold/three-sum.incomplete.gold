@@ -1,0 +1,72 @@
+# Left out: setting up result (it's appended to but never created, GAP001),
+# what to return at the end, and how duplicate triples are avoided (only
+# mentioned, so it's an edge-case note). There is no return anywhere, so
+# the analyzer has no GAP003 to report for the missing one; the gold just
+# has no return node.
+
+step 1
+add root: nums.sort()
+expect gaps none
+or
+add root: nums = sorted(nums)
+expect gaps none
+
+step 2
+add root: for i in range(len(nums)~range-bounds):
+    ...
+expect gaps GAP002
+
+step 3
+fill h1:
+    left = i + 1
+    right = len(nums) - 1
+expect gaps WARN001 WARN001
+
+step 4
+add n6: while left < right:
+    total = nums[i] + nums[left] + nums[right]
+expect gaps WARN001
+
+step 5
+add n25:
+    if total == 0:
+        result.append([nums[i], nums[left], nums[right]])
+        left += 1
+        right -= 1
+expect gaps GAP001
+or
+add n25:
+    if total == 0:
+        result.append([nums[i], nums[left], nums[right]])
+        left = left + 1
+        right = right - 1
+expect gaps GAP001
+
+# Adding an elif to an existing if: the console has no command for it, so
+# the step replaces the if with the same first branch plus the new ones.
+step 6
+replace n43:
+    if total == 0:
+        result.append([nums[i], nums[left], nums[right]])
+        left += 1
+        right -= 1
+    elif total < 0:
+        left += 1
+    else:
+        right -= 1
+expect gaps GAP001
+or
+replace n43:
+    if total == 0:
+        result.append([nums[i], nums[left], nums[right]])
+        left += 1
+        right -= 1
+    elif total < 0:
+        left = left + 1
+    else:
+        right = right - 1
+expect gaps GAP001
+
+step 7
+note root edge-case: the same triple can't show up twice in the answer
+expect gaps GAP001

@@ -13,8 +13,9 @@ interviews.
 Milestone M1, the deterministic engine, is done (segments S0–S5): the IR,
 the Python renderer, edit operations with undo and the session log, the
 analyzer that reports gaps, and a developer console that drives all of it by
-hand. Next is milestone M2, starting with S6: a corpus of walkthroughs to
-measure translation against before any language model is involved.
+hand. Milestone M2 has started: S6 added a corpus of 30 interview problems
+with annotated walkthroughs ([corpus/](corpus/README.md)) and the runner
+that scores a translator against it. Next is S7, the translator itself.
 See [ROADMAP.md](ROADMAP.md) for the architecture and the full plan.
 
 ## Getting started

@@ -1,0 +1,12 @@
+---
+problem: product-of-array-except-self
+style: rambling
+---
+Okay so, um, since I can't divide, the idea is, like, products from the left side and products from the right side.
+So, first, let me just call the length n, so n is len of nums.
+Then I'll make a list, um, prefix, that's n ones, and, uh, another list suffix, also n ones.
+Then for i from one up to n, prefix at i is prefix at i minus one times nums at i minus one.
+And, similarly, going backwards, for i from n minus two down to zero, suffix at i is suffix at i plus one times nums at i plus one.
+Then, um, I build the result, which is, like, an empty list called result.
+And for each i in range n, I append prefix at i times suffix at i to result.
+And, yeah, return result, and that's linear time and linear space.

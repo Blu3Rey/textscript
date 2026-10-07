@@ -1,0 +1,11 @@
+---
+problem: three-sum
+style: terse
+---
+Sort nums. Result list res.
+Loop i over the indices; skip when i > 0 and nums[i] equals nums[i - 1].
+lo is i + 1, hi is the last index.
+While lo < hi, total is nums[i] + nums[lo] + nums[hi].
+Total under zero, lo += 1; over zero, hi -= 1.
+Else append [nums[i], nums[lo], nums[hi]] to res, lo += 1, hi -= 1, then while lo < hi and nums[lo] == nums[lo - 1], lo += 1.
+Return res.

@@ -1,0 +1,7 @@
+---
+problem: contains-duplicate
+style: terse
+---
+Set called seen, starts empty.
+For each num in nums: if num is in seen return True, otherwise add num to seen.
+After the loop, return False.

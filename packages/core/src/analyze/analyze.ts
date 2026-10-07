@@ -343,7 +343,12 @@ export function analyze(program: Program, options: AnalyzeOptions = {}): Analysi
     }
 
     const firstSet = Math.min(...symbol.definitions.map((d) => d.order));
-    const early = symbol.uses.find((use) => use.scope === symbol.scope && use.order < firstSet);
+    // A problem input is set up before the code starts, so reassigning it
+    // (`nums = sorted(nums)`) doesn't make earlier uses early.
+    const isInput = symbol.scope === program.id && inputs.has(symbol.name);
+    const early = isInput
+      ? undefined
+      : symbol.uses.find((use) => use.scope === symbol.scope && use.order < firstSet);
     const earlyNode = early && nodeOf(early.nodeId);
     if (earlyNode !== undefined) {
       report('WARN005', earlyNode, `${code(symbol.name)} is used before it is set up.`, {

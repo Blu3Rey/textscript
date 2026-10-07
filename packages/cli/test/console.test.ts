@@ -87,6 +87,24 @@ describe('Console', () => {
     expect(run(c, 'set n2 value').error?.code).toBe('usage');
   });
 
+  it('sets a block of several statements, written inline or below', () => {
+    const { c } = consoleWith('say Branch.', 'add root:\n  if x:\n    a = 1');
+    expect(run(c, 'set n2.orelse = b = 2\n    c = 3').error).toBeUndefined();
+    expect(
+      run(c, 'expect code:\n  if x:\n      a = 1\n  else:\n      b = 2\n      c = 3').status,
+    ).toBe('ok');
+    expect(
+      run(c, 'set n2.orelse =\n      d = 4\n      if y:\n          e = 5').error,
+    ).toBeUndefined();
+    expect(run(c, 'fill h1:\n  ...').error?.code).toBe('bad-ref');
+    expect(
+      run(
+        c,
+        'expect code:\n  if x:\n      a = 1\n  else:\n      d = 4\n      if y:\n          e = 5',
+      ).status,
+    ).toBe('ok');
+  });
+
   it('sets a statement block with set', () => {
     const { c } = consoleWith('say Loop.', 'add root: while x:\n  ...');
     expect(run(c, 'set n2.body = y = 1').status).toBe('ok');
@@ -210,6 +228,17 @@ describe('Console', () => {
     const result = run(c, ':load log.json');
     expect(result.error?.code).toBe('bad-log');
     expect(result.text).toContain("Event 0 doesn't replay");
+  });
+
+  it('continues an existing session', () => {
+    const { c } = consoleWith('say A.', 'add root: a = 1', ':commit');
+    const next = new Console({ fs: memoryFs(), session: { state: c.state, events: c.events } });
+    expect(run(next, 'say B.').text).toBe('u2: 0:B 1:.');
+    run(next, 'add root: b = 2');
+    run(next, ':commit');
+    expect(next.events).toHaveLength(2);
+    expect(c.events).toHaveLength(1);
+    expect(run(next, 'expect code:\n  a = 1\n  b = 2').status).toBe('ok');
   });
 
   it('prints help and quits', () => {

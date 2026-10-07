@@ -1,0 +1,22 @@
+# "Brute force" names the approach, not a step. Keeping it as a note is
+# equally faithful.
+step 1
+add root: res = []
+expect gaps WARN001
+or
+note root general: brute force
+add root: res = []
+expect gaps WARN001
+
+step 2
+add root: for i in range(0, len(nums) - k + 1):
+    res.append(max(nums[i:i + k]))
+expect gaps none
+
+step 3
+add root: return res
+expect gaps none
+
+step 4
+note root complexity: O(n times k) time, fine for small k
+expect gaps none

@@ -38,6 +38,7 @@ pnpm check
 | `pnpm check:python` | Parses every golden `.py` file with Python's `ast` |
 | `pnpm new-package <name>` | Scaffolds a package (`--node` to allow Node APIs) |
 | `pnpm textscript --help` | Runs the developer CLI |
+| `pnpm eval check` | Checks the walkthrough corpus (see [corpus/README.md](corpus/README.md)) |
 
 ## Repository layout
 
@@ -46,8 +47,10 @@ packages/          libraries; each exports TypeScript source from src/index.ts
   core/            IR, edit operations, history, analysis (only dependency: Zod)
   render-python/   IR → Python source + source map
   cli/             developer console
+  translator/      the Translator interface (implementations from S7)
+  eval/            corpus loader, evaluation runner, metrics, reports
 apps/              deployable apps (web UI, API server); from S10
-corpus/            evaluation problems and walkthroughs; from S6
+corpus/            interview problems, walkthroughs and gold annotations
 docs/adr/          architecture decision records
 scripts/           repo tooling
 ```

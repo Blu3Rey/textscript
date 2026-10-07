@@ -1,0 +1,11 @@
+---
+problem: binary-search
+style: rambling
+---
+Okay, so, um, since it's sorted, I'm thinking binary search, that's kind of the natural thing here.
+So I keep, uh, two bounds, lo at zero and hi at, um, the last index, so the length minus one.
+And, like, while lo is less than or equal to hi, we keep going, we keep narrowing it down.
+Each time I take the middle, call it mid, which is lo plus hi, um, divided by two, integer division.
+If nums at mid is the target, then, um, we found it, return mid.
+Otherwise if it's smaller than the target, the answer has to be on the right, so lo becomes mid plus one, and, uh, else hi becomes mid minus one.
+And if the loop finishes without finding it, we return negative one, yeah.

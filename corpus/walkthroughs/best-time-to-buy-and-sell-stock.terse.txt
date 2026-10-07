@@ -1,0 +1,8 @@
+---
+problem: best-time-to-buy-and-sell-stock
+style: terse
+---
+min_price starts at infinity, best at zero.
+For each price: if price is less than min_price, min_price = price.
+Otherwise, if price minus min_price beats best, best becomes that difference.
+Return best.

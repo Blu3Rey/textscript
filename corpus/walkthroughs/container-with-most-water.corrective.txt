@@ -1,0 +1,11 @@
+---
+problem: container-with-most-water
+style: corrective
+---
+The answer goes in a variable called most, starting at zero.
+Pointers i and j, i at zero and j at the length of height.
+Sorry, j starts at the length minus one, the last index.
+Loop while i is less than j.
+Inside, water is j minus i times the larger of height[i] and height[j].
+No wait, the smaller one, so min, not max, and then most is the max of most and water.
+Then move whichever pointer has the shorter line, i up by one if height[i] is smaller, otherwise j down by one, and return most after the loop.

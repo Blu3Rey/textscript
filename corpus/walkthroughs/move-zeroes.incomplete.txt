@@ -1,0 +1,8 @@
+---
+problem: move-zeroes
+style: incomplete
+---
+I'll use a pointer called slow for the spot where the next non-zero number should go.
+Then scan with a second pointer, fast, over every index of nums.
+When nums at fast isn't zero, swap nums at fast with nums at slow.
+After the swap, bump slow by one.

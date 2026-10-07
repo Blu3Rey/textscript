@@ -1,0 +1,66 @@
+# Left out: what to return once the pointers meet without finding a
+# mismatch (the "it is a palindrome" answer). The loop can end with no
+# return, so GAP003 stays open.
+
+step 1
+add root:
+    left = 0
+    right = len(s) - 1
+expect gaps WARN001 WARN001
+
+step 2
+add root: while left < right:
+    ...
+expect gaps GAP002
+
+step 3
+fill h1:
+    if not s[left].isalnum():
+        left += 1
+        continue
+expect gaps none
+or
+fill h1:
+    if not s[left].isalnum():
+        left = left + 1
+        continue
+expect gaps none
+
+# "Same check" mirrors the previous utterance, with the one stated change.
+step 4
+add n12:
+    if not s[right].isalnum():
+        right -= 1
+        continue
+expect gaps none
+or
+add n12:
+    if not s[right].isalnum():
+        right = right - 1
+        continue
+expect gaps none
+
+step 5
+add n12:
+    if s[left].lower() != s[right].lower():
+        return False
+expect gaps GAP003
+
+step 6
+set n42.orelse = left += 1
+add n42.orelse: right -= 1
+expect gaps GAP003
+or
+add n12:
+    left += 1
+    right -= 1
+expect gaps GAP003
+or
+set n42.orelse = left = left + 1
+add n42.orelse: right = right - 1
+expect gaps GAP003
+or
+add n12:
+    left = left + 1
+    right = right - 1
+expect gaps GAP003

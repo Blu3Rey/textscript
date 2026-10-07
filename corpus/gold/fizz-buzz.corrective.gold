@@ -1,0 +1,46 @@
+step 1
+add root: out = []
+expect gaps WARN001
+
+step 2
+add root:
+    for i in range(0, n):
+        ...
+expect gaps GAP002 WARN001
+
+step 3
+set n5.start = 1
+set n5.stop = n + 1
+expect gaps GAP002 WARN001
+
+step 4
+fill h1:
+    if i % 3 == 0 and i % 5 == 0:
+        out.append("FizzBuzz")
+    elif i % 3 == 0:
+        out.append("Fizz")
+    elif i % 5 == 0:
+        out.append("Buzz")
+    else:
+        out.append(str(i))
+expect gaps none
+
+step 5
+set n15.cond = i % 15 == 0
+expect gaps none
+
+step 6
+add root: return out
+expect code:
+    out = []
+    for i in range(1, n + 1):
+        if i % 15 == 0:
+            out.append("FizzBuzz")
+        elif i % 3 == 0:
+            out.append("Fizz")
+        elif i % 5 == 0:
+            out.append("Buzz")
+        else:
+            out.append(str(i))
+    return out
+expect gaps none

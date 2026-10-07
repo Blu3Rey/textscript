@@ -1,0 +1,52 @@
+# The brute-force remark and the "maybe two pointers" plan in the first
+# utterance aren't steps yet, so they change nothing. Keeping them as a
+# note is equally faithful.
+step 1
+or
+note root general: trying every pair is naive; maybe two pointers
+
+step 2
+add root:
+    left = 0
+    right = len(height) - 1
+    best = 0
+expect gaps WARN001 WARN001 WARN001
+
+step 3
+add root: while left < right:
+    area = (right - left) * min(height[left], height[right])
+expect gaps WARN001 WARN001
+
+step 4
+add n15: best = max(best, area)
+expect gaps none
+
+step 5
+add n15:
+    if height[left] < height[right]:
+        left += 1
+    else:
+        right -= 1
+expect gaps none
+or
+add n15:
+    if height[left] < height[right]:
+        left = left + 1
+    else:
+        right = right - 1
+expect gaps none
+
+# The reason for the rule is a comment on it, not a step.
+step 6
+note n40 general: the shorter line limits the area, so moving the taller one can't help
+expect gaps none
+or
+expect gaps none
+
+step 7
+add root: return best
+expect gaps none
+
+step 8
+note root complexity: O(n), since every step moves one of the pointers
+expect gaps none

@@ -1,0 +1,10 @@
+---
+problem: top-k-frequent-elements
+style: incomplete
+---
+I'll tally how often each value appears in a dictionary named freq.
+For each num in nums, freq of num becomes its current count, defaulting to zero, plus one.
+Then copy the keys of freq into a list called candidates.
+Sort candidates by their frequency, most frequent first.
+Then return the first few of candidates.
+That's n log n overall because of the sort.

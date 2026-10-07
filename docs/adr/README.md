@@ -17,6 +17,7 @@ the old one.
 | [008](008-edit-operations-and-sessions.md) | Edit operations, inverses and the session log | Accepted (temporary-ID order refined by 010) |
 | [009](009-gap-analysis.md) | Gap analysis and coverage | Accepted |
 | [010](010-developer-console.md) | Developer console and scenario scripts | Accepted |
+| [011](011-corpus-and-evaluation.md) | Walkthrough corpus and evaluation | Accepted |
 
 ## Writing a new ADR
 
