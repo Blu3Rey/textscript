@@ -54,9 +54,16 @@ baseline with `--write-baseline` and check the diff.
 `claude` needs `ANTHROPIC_API_KEY` in the environment. `gemini` needs
 `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Both share the prompt, examples,
 retry and salvage ([ADR-014](../../docs/adr/014-llm-providers.md)). Both
-leave out the four training problems their few-shot examples come from,
-and translate four walkthroughs at once (`--concurrency`). For Gemini,
-`--effort` sets the thinking level.
+leave out the four training problems their few-shot examples come from.
+For Gemini, `--effort` sets the thinking level.
+
+Claude translates four walkthroughs at once. Gemini translates one at a
+time, since its free tier allows only a few requests a minute; on a paid
+key, raise it with `--concurrency 4`. The Gemini client retries rate
+limits and server errors with backoff.
+
+When batches are rejected (an API error, a refusal, a batch `apply` didn't
+accept), the run prints the most common reasons.
 
 ```sh
 pnpm eval run --translator claude --split test               # the held-out set

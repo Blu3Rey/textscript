@@ -21,6 +21,7 @@ export {
 export {
   createGeminiTranslator,
   GEMINI_DEFAULT_MODEL,
+  GEMINI_HTTP_OPTIONS,
   GEMINI_PRICES,
   geminiBackend,
   type GeminiModelsApi,

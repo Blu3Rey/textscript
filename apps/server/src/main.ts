@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import {
   createClaudeTranslator,
   createGeminiTranslator,
+  GEMINI_HTTP_OPTIONS,
   type Effort,
   type Translator,
 } from '@textscript/translator';
@@ -49,6 +50,7 @@ export function translatorFrom(env: NodeJS.ProcessEnv): Translator {
   } else {
     const models = new GoogleGenAI({
       apiKey: env['GEMINI_API_KEY'] ?? env['GOOGLE_API_KEY'] ?? '',
+      httpOptions: GEMINI_HTTP_OPTIONS,
     }).models;
     translator = createGeminiTranslator({ models, ...settings });
     if (verify) verifier = createGeminiVerifier({ models });

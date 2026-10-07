@@ -288,6 +288,43 @@ describe('textscript-eval', () => {
     expect(notLlm.stderr).toContain("sweep runs claude or gemini, not 'rules'");
   });
 
+  it('says why batches were rejected, grouping messages that differ only in numbers', async () => {
+    let call = 0;
+    const limited: GeminiModelsApi = {
+      generateContent: () =>
+        Promise.reject(new Error(`429 RESOURCE_EXHAUSTED: retry in ${String(30 + call++)}s`)),
+    };
+    const result = await run(
+      ['run', '--corpus', corpusDir(), '--translator', 'gemini', '--validator', 'off'],
+      undefined,
+      limited,
+    );
+    expect(result.stdout).toContain(
+      'Rejected batches, by reason:\n  7× translator-error: 429 RESOURCE_EXHAUSTED: retry in 30s\n',
+    );
+    const swept = await run(
+      [
+        'sweep',
+        '--corpus',
+        corpusDir(),
+        '--translator',
+        'gemini',
+        '--efforts',
+        'low',
+        '--validator',
+        'off',
+      ],
+      undefined,
+      limited,
+    );
+    expect(swept.stderr).toContain('7× translator-error: 429 RESOURCE_EXHAUSTED');
+    const long = await run(['run', '--corpus', corpusDir(), '--translator', 'gemini'], undefined, {
+      generateContent: () => Promise.reject(new Error('x'.repeat(400))),
+    });
+    expect(long.stdout).toMatch(/\n {2}7× translator-error: x+…\n/);
+    expect(long.stdout.split('\n').find((line) => line.includes('7×'))).toHaveLength(306);
+  });
+
   it('picks the second opinion: as asked, else the translator, else whichever key is set', async () => {
     const root = corpusDir();
     // The oracle has claims (indexes, assignments), so the verifier gets asked.

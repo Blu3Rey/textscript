@@ -74,6 +74,12 @@ Where providers are chosen:
 - **Server.** `apps/server` reads `TEXTSCRIPT_PROVIDER`. Without it, it
   uses whichever key is set, Anthropic first.
 - **Keys.** Gemini reads `GEMINI_API_KEY`, or `GOOGLE_API_KEY`.
+- **Retries.** The Gemini SDK doesn't retry unless asked to.
+  `GEMINI_HTTP_OPTIONS` retries 408, 429 and 5xx responses up to five
+  times with backoff. The eval runs one Gemini walkthrough at a time by
+  default, because free-tier keys allow only a few requests a minute. The
+  first real run, without these, rejected almost every batch within
+  milliseconds.
 
 ## Consequences
 

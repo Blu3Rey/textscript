@@ -11,6 +11,7 @@ import {
   DEFAULT_MODEL,
   emptyTranslator,
   GEMINI_DEFAULT_MODEL,
+  GEMINI_HTTP_OPTIONS,
   rulesTranslator,
   type Effort,
   type GeminiModelsApi,
@@ -90,7 +91,7 @@ Options:
                                ${EFFORTS.join(', ')} (default: medium)
   --efforts <level,...>        Efforts to sweep (default: low,medium,high)
   --concurrency <n>            Walkthroughs translated at once (default: 1;
-                               4 for claude and gemini)
+                               4 for claude)
   --split <train|test>         Only this split
   --problem <id,...>           Only these problems
   --style <style,...>          Only these styles (${STYLES.join(', ')})
@@ -208,7 +209,7 @@ function geminiFrom(io: Io): GeminiModelsApi {
   if (io.gemini) return io.gemini;
   const apiKey = geminiKey();
   if (!apiKey) throw new UsageError('gemini needs GEMINI_API_KEY in the environment');
-  return new GoogleGenAI({ apiKey }).models;
+  return new GoogleGenAI({ apiKey, httpOptions: GEMINI_HTTP_OPTIONS }).models;
 }
 
 /** The provider an LLM translator name stands for, if it is one. */
@@ -300,6 +301,39 @@ function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Vali
   }
 }
 
+/**
+ * Walkthroughs at once: one for Gemini, whose free tier allows only a few
+ * requests a minute; four for Claude.
+ */
+function defaultConcurrency(translator: string | undefined): number {
+  const provider = providerOf(translator);
+  return provider === 'claude' ? 4 : 1;
+}
+
+/**
+ * Why batches were rejected, most common first, with a count: an API
+ * error, a refusal, or a batch `apply` didn't accept. Numbers are blanked
+ * when grouping, so "retry in 31s" and "retry in 32s" count as one.
+ */
+export function rejectionReasons(result: RunResult, limit = 5): string[] {
+  const groups = new Map<string, { count: number; example: string }>();
+  for (const step of result.steps) {
+    if (step.rejected === undefined) continue;
+    const example = `${step.rejected.code}: ${step.rejected.message}`.replaceAll(/\s+/g, ' ');
+    const key = example.replaceAll(/\d+/g, '#').slice(0, 160);
+    const group = groups.get(key);
+    if (group) group.count++;
+    else groups.set(key, { count: 1, example });
+  }
+  return [...groups.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map(({ count, example }) => {
+      const text = example.length > 300 ? `${example.slice(0, 300)}…` : example;
+      return `  ${String(count)}× ${text}`;
+    });
+}
+
 function concurrencyFrom(options: Map<string, string>, fallback: number): number {
   const value = options.get('concurrency');
   if (value === undefined) return fallback;
@@ -362,7 +396,7 @@ async function run(corpus: Corpus, options: Map<string, string>, io: Io): Promis
   const result = await runEval(corpus, {
     translator: translatorFrom(options, io),
     filter: runFilter(corpus, options, llm),
-    concurrency: concurrencyFrom(options, llm ? 4 : 1),
+    concurrency: concurrencyFrom(options, defaultConcurrency(options.get('translator'))),
     ...(validator ? { validator } : {}),
   });
   const report = markdownReport(result);
@@ -374,6 +408,8 @@ async function run(corpus: Corpus, options: Map<string, string>, io: Io): Promis
   io.stdout(
     `\n${String(failing)} steps don't match${out === undefined ? '; use --out for details' : `; details in ${join(out, 'report.md')}`}.\n`,
   );
+  const reasons = rejectionReasons(result);
+  if (reasons.length > 0) io.stdout(`\nRejected batches, by reason:\n${reasons.join('\n')}\n`);
 
   const written = options.get('write-baseline');
   if (written !== undefined) {
@@ -420,7 +456,7 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
     const result = await runEval(corpus, {
       translator: llmTranslator(provider, options, io, effort),
       filter: runFilter(corpus, options, true),
-      concurrency: concurrencyFrom(options, 4),
+      concurrency: concurrencyFrom(options, defaultConcurrency(translator)),
       ...(validator ? { validator } : {}),
     });
     const out = options.get('out');
@@ -438,6 +474,8 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
       )} |`,
     );
     io.stderr(`${effort}: done (${String(m.steps)} steps)\n`);
+    const reasons = rejectionReasons(result);
+    if (reasons.length > 0) io.stderr(`Rejected batches, by reason:\n${reasons.join('\n')}\n`);
   }
   io.stdout(
     [

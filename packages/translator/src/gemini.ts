@@ -17,6 +17,7 @@ import {
   type Content,
   type GenerateContentParameters,
   type GenerateContentResponse,
+  type HttpOptions,
 } from '@google/genai';
 import { ANSWER_JSON_SCHEMA } from './answer';
 import { packProblem, packTurn } from './context';
@@ -37,6 +38,13 @@ import { systemPrompt } from './prompt';
 import type { Translator } from './translator';
 
 export const GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash';
+
+/**
+ * Options for `new GoogleGenAI({ apiKey, httpOptions })`. The SDK doesn't
+ * retry unless asked to; this retries rate limits (429), timeouts and
+ * server errors up to five times, backing off from one second to a minute.
+ */
+export const GEMINI_HTTP_OPTIONS: HttpOptions = { retryOptions: { attempts: 5 } };
 
 /** What the translator reads from a response. `GenerateContentResponse` has all of it. */
 export type GeminiReply = Pick<
