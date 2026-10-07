@@ -146,6 +146,22 @@ The LLM translator is gated by a manually started workflow
 and gates against `corpus/baselines/claude.json` once that file has been
 recorded.
 
+### After the first local runs
+
+qwen3:14b through Ollama ran on the test split. In about 12 of its 29
+failing steps, nothing was applied. Most of these were "Otherwise …"
+utterances: the prompt said `add <if>.orelse:`, which failed when the
+`if` had no `else` yet. That command now creates the `else`, and
+`<program>.orelse` is an error instead of adding to the top level.
+
+The prompt now also says where edits go:
+
+- change one field with `set` rather than rebuilding the statement;
+- put "after the loop" in the block that holds the loop;
+- add at the end unless the words say otherwise.
+
+The eval report shows why a model's answer failed when it was retried.
+
 ## Consequences
 
 - The model can only make edits the command language can express, which

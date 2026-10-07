@@ -163,10 +163,15 @@ export function compileCommand(
    * (meaning its body). `n7.orelse` picks another block field.
    */
   const parent = (value: string | undefined): string => {
-    const [base, field = 'body'] = (value ?? '').split('.');
+    const [base, explicit] = (value ?? '').split('.');
+    const field = explicit ?? 'body';
     const id = ref(base);
     const node = indexTree(program).get(id)?.node;
-    if (node === undefined || node.kind === 'Program' || node.kind === 'Block') return id;
+    if (node === undefined || node.kind === 'Program' || node.kind === 'Block') {
+      if (node !== undefined && explicit !== undefined)
+        throw new CommandError('usage', `${node.kind} ${id} has no block "${explicit}"`);
+      return id;
+    }
     const fields: [string, unknown][] = Object.entries(node);
     const child = fields.find(([key]) => key === field)?.[1];
     if (isBlock(child)) return child.id;
@@ -197,6 +202,21 @@ export function compileCommand(
     case 'add': {
       const { head, body } = headAndBody(rest, 'Write add <parent> [position]: <statements>');
       const [parentRef, ...where] = head.split(/\s+/);
+      // "Otherwise …" on an `if` with no `else` yet: the statements become its `else`.
+      const [base, field] = (parentRef ?? '').split('.');
+      if (field === 'orelse') {
+        const id = ref(base);
+        const node = indexTree(program).get(id)?.node;
+        if (node?.kind === 'If' && node.orelse === undefined) {
+          const value: Block = {
+            kind: 'Block',
+            id: snippet.nextId(),
+            stmts: parseStatements(body, snippet),
+            provenance,
+          };
+          return [{ op: 'update_field', node: id, field: 'orelse', value, provenance }];
+        }
+      }
       const target = parent(parentRef);
       const first = position(where);
       const stmts = parseStatements(body, snippet);

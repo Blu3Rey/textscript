@@ -235,6 +235,35 @@ describe('validate', () => {
     expect(unsaid.heldBack.map((h) => h.proposed)).toEqual(['num in seen']);
   });
 
+  it('holds back each run of unsaid conditions in an and/or as one hole, keeping the rest', () => {
+    const s = new Session();
+    const partly = s.say(
+      'If the value is in range and x is in seen, return true.',
+      'add root:\n    if 0 <= x and x < 10 and x in seen:\n        return True',
+    );
+    expect(partly.heldBack).toMatchObject([{ code: 'VAL003', proposed: '0 <= x and x < 10' }]);
+    expect(s.code).toContain(`if ${hole} and x in seen:`);
+    const none = s.say(
+      'If it works, return true.',
+      'add root:\n    if 0 <= x and x < 10:\n        return True',
+    );
+    expect(none.heldBack.map((h) => h.proposed)).toEqual(['0 <= x and x < 10']);
+    expect(s.code).toContain(`if ${hole}:`);
+  });
+
+  it("doesn't let a collection's name stand for its loop variable's", () => {
+    const s = new Session();
+    expect(
+      s
+        .say('Go through each amount in nums.', 'add root: for num in nums:\n    ...')
+        .heldBack.map((h) => h.proposed),
+    ).toEqual(['num']);
+    expect(
+      s.say('For each num in nums, keep going.', 'add root: for num in nums:\n    continue')
+        .heldBack,
+    ).toEqual([]);
+  });
+
   it('accepts code the batch takes out and rebuilds unchanged', () => {
     const s = new Session();
     s.say('If num is in seen, return true.', 'add root: if num in seen:\n    return True');

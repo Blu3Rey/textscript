@@ -26,6 +26,38 @@ describe('compileCommands', () => {
     expect(result.batch.ops.map((op) => op.op)).toEqual(['add_stmt', 'fill_hole']);
   });
 
+  it('adds an else to an if that has none, and adds to one that has', () => {
+    const result = compileCommands(
+      empty,
+      [
+        { text: 'add root:\n    if x > 1:\n        return 1' },
+        { text: 'add n2.orelse: return 2' },
+        { text: 'add n2.orelse: return 3' },
+      ],
+      { utteranceId: 'u1', provenance: whole },
+    );
+    expect(result.ok).toBe(true);
+    expect(render(result.document.program).text).toBe(
+      'if x > 1:\n    return 1\nelse:\n    return 2\n    return 3\n',
+    );
+    expect(result.batch.ops.map((op) => op.op)).toEqual(['add_stmt', 'update_field', 'add_stmt']);
+    const loop = compileCommands(
+      empty,
+      [{ text: 'add root: for x in xs:\n    ...' }, { text: 'add n2.orelse: return 2' }],
+      { utteranceId: 'u1', provenance: whole },
+    );
+    expect(loop).toMatchObject({
+      ok: false,
+      index: 1,
+      message: 'ForEach n2 has no block "orelse"',
+    });
+    const root = compileCommands(empty, [{ text: 'add n1.orelse: return 2' }], {
+      utteranceId: 'u1',
+      provenance: whole,
+    });
+    expect(root).toMatchObject({ ok: false, message: 'Program n1 has no block "orelse"' });
+  });
+
   it('gives each command its own provenance when asked', () => {
     const result = compileCommands(
       empty,

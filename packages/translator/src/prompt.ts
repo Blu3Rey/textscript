@@ -60,6 +60,13 @@ Each command is one line, with the code on following lines indented when it span
 - \`note <ref> [general|edge-case|complexity]: <text>\` for things said about the code that aren't code ("this is O(n)").
 - \`ask <question> [-- <ref> ...]\` when a reference is ambiguous.
 
+Where edits go:
+
+- Change only what was said. To change an operator, a value, a condition or a name, use \`set <ref>.<field> = …\`; don't replace or re-add the statement around it.
+- "Otherwise …" after an \`if\` is its \`else\`: \`add <if>.orelse: …\` (this creates the \`else\` when there is none).
+- A step said to come after a loop or block ("after the loop, return False") goes after it, in the block that holds it: \`add <that block> after <loop>: …\`, not inside the loop.
+- New statements go at the end of the block being described (\`add root: …\`, \`add n7: …\`) unless the words put them somewhere else.
+
 References are \`root\`, node IDs (\`n12\`) and hole numbers (\`h2\`). Code is a Python subset: one statement per line; \`?\` is a hole (\`?cond\`, \`?value\`, \`?name\` to be explicit, with an optional reason in quotes right after), \`...\` is a block nobody described, \`intent <words>\` is a step said only in words. Mark an inference right after the name or expression it applies to (\`for num~loopvar in nums:\`); for a whole statement, in a trailing comment (\`seen.add(num)  # ~synonym\`). There are no tuple targets, keyword arguments, conditional expressions or chained assignments: write two assignments, or an \`intent\`.
 
 # Your answer

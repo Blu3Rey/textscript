@@ -14,7 +14,8 @@ export type ReasonKind =
   | 'asked'
   | 'not-asked'
   | 'unstable'
-  | 'held-back';
+  | 'held-back'
+  | 'retried';
 
 export interface Reason {
   kind: ReasonKind;
@@ -46,6 +47,15 @@ export function explain(step: StepResult): Reason[] {
     reasons.push({
       kind: 'unsupported',
       text: `Produced, but not in any gold answer: ${code(ref)}.`,
+    });
+  }
+  if (step.trace && step.trace.errors.length > 0) {
+    const outcome = step.trace.salvaged
+      ? 'neither answer worked, so only the commands that did were kept'
+      : 'the second answer worked';
+    reasons.push({
+      kind: 'retried',
+      text: `The translator's answer failed (${step.trace.errors.join(' / ')}); ${outcome}.`,
     });
   }
   for (const held of step.validation?.heldBack ?? []) {

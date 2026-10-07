@@ -325,3 +325,30 @@ describe('the validator', () => {
     expect(kept.translator).toBe('filler');
   });
 });
+
+describe('LLM traces', () => {
+  it('keep why an answer failed and show it on the failing step', async () => {
+    const retrying: Translator = {
+      name: 'retrying',
+      translate: (context) =>
+        Promise.resolve({
+          batch: { utteranceId: context.utterance.id, ops: [] },
+          unparsedSpans: [],
+          trace: {
+            attempts: 2,
+            salvaged: true,
+            errors: ['Command 1 ("add n9: x") failed: bad-ref'],
+          },
+        }),
+    };
+    const result = await runEval(fixture(), { translator: retrying });
+    expect(result.steps[0]?.trace).toEqual({
+      attempts: 2,
+      salvaged: true,
+      errors: ['Command 1 ("add n9: x") failed: bad-ref'],
+    });
+    expect(markdownReport(result)).toContain(
+      'The translator\'s answer failed (Command 1 ("add n9: x") failed: bad-ref); neither answer worked, so only the commands that did were kept.',
+    );
+  });
+});

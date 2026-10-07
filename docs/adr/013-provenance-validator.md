@@ -83,6 +83,15 @@ supports only 1. A local model's second opinion is therefore off by
 default (`--validator lexical` for Ollama runs). Claude Haiku and Gemini
 Flash-Lite as second opinions still need measuring with a key.
 
+Two more rules came from the third local run's failing steps:
+
+- In an `and`/`or`, each run of unsaid operands becomes one hole and the
+  rest is kept. For "if nr, nc is in bounds and grid[nr][nc] is 1", the
+  result is `? and grid[nr][nc] == 1`, which is what gold has. The whole
+  condition is held back only if none of it was said.
+- A loop variable can't be named by its collection's exact name. In "each
+  amount in nums", `num` matches only "nums", so it is held back.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

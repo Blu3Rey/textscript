@@ -330,11 +330,26 @@ class Checker {
   node(node: IrNode, position: Position | undefined, words: Words): Verdict {
     const yes = (ok: boolean): Verdict => (ok ? 'yes' : 'no');
     switch (node.kind) {
-      case 'Name':
+      case 'Name': {
+        // A loop variable can't be named by its collection's name: in "each
+        // amount in nums", `num` matches only "nums"; "amount" is the name said.
+        const iterable =
+          position?.parent.kind === 'ForEach' && position.field === 'target'
+            ? position.parent.iterable
+            : undefined;
+        const said =
+          iterable?.kind === 'Name'
+            ? new Words(
+                words.tokens.map((token) =>
+                  token === iterable.name.toLowerCase() ? '\u0000' : token,
+                ),
+              )
+            : words;
         // A new name must be said; one set up already can be referred to.
         return yes(
-          this.name(node.name, words, isBindingSlot(position) && !this.#before.has(node.name)),
+          this.name(node.name, said, isBindingSlot(position) && !this.#before.has(node.name)),
         );
+      }
       case 'Literal':
         return yes(this.literal(node.value, words));
       case 'InfinityLiteral':
@@ -376,7 +391,12 @@ class Checker {
           this.combined(node, COMPARE_CUES[node.op], words) && this.operandsSaid(node, words),
         );
       case 'BoolOp':
-        return yes(words.hasAny(BOOL_CUES[node.op]) && this.operandsSaid(node, words));
+        // Unsaid operands are held back one run at a time (see `validate`);
+        // the whole `and`/`or` only if none of it was said.
+        return yes(
+          words.hasAny(BOOL_CUES[node.op]) &&
+            node.operands.some((operand) => !this.operandUnsaid(operand, words)),
+        );
       case 'Membership':
         return yes(
           words.hasAny(MEMBERSHIP_CUES) &&
@@ -481,10 +501,13 @@ class Checker {
    * is held back. Only names, literals and further operations count here.
    */
   operandsSaid(node: IrNode, words: Words): boolean {
-    return children(node).every(({ node: operand }) => {
-      if (this.#existing.has(shapeOf(operand)) || !OPERAND_KINDS.has(operand.kind)) return true;
-      return this.node(operand, undefined, words) !== 'no';
-    });
+    return children(node).every(({ node: operand }) => !this.operandUnsaid(operand, words));
+  }
+
+  /** A name, literal or operation the words don't say (code being rebuilt aside). */
+  operandUnsaid(operand: IrNode, words: Words): boolean {
+    if (this.#existing.has(shapeOf(operand)) || !OPERAND_KINDS.has(operand.kind)) return false;
+    return this.node(operand, undefined, words) === 'no';
   }
 
   /** Where the words say something in an expression. */
@@ -630,6 +653,8 @@ export function validate(input: ValidationInput): ValidationResult {
   let temp = highestTempId(batch);
   // Nodes judged as part of their parent: a callee, a rule's own parts.
   const covered = new Set<NodeId>();
+  // Nodes already held back as part of their parent's check, with what's in them.
+  const skipped = new Set<NodeId>();
 
   const holdBack = (
     node: IrNode,
@@ -637,8 +662,9 @@ export function validate(input: ValidationInput): ValidationResult {
     code: ValidationCode,
     message: string,
     spans: Span[],
+    proposed = codeOf(node),
   ) => {
-    heldBack.push({ code, proposed: codeOf(node), target: { node: node.id }, message, spans });
+    heldBack.push({ code, proposed, target: { node: node.id }, message, spans });
     const provenance = code === 'VAL001' || code === 'VAL002' ? [] : spans;
     const removable =
       isStatementSlot(position) ||
@@ -666,6 +692,7 @@ export function validate(input: ValidationInput): ValidationResult {
   };
 
   walk(after, (node, { position }) => {
+    if (skipped.has(node.id)) return false;
     if (!isNew(node.id) || covered.has(node.id)) return;
     // Holes mark what wasn't said; blocks are containers, except a new `else`.
     if (node.kind.endsWith('Hole')) return;
@@ -726,6 +753,33 @@ export function validate(input: ValidationInput): ValidationResult {
     }
     // The `1` of "the next index" is part of the idiom, not a separate claim.
     if (node.kind === 'BinOp' && checker.impliedOne(node, words)) covered.add(node.right.id);
+    // "If nr, nc is in bounds and grid[nr][nc] is 1": each run of unsaid
+    // operands becomes one hole, so `? and grid[nr][nc] == 1` is kept.
+    if (node.kind === 'BoolOp') {
+      const unsaid = node.operands.map((operand) => checker.operandUnsaid(operand, words));
+      for (let i = 0; i < unsaid.length; i++) {
+        if (unsaid[i] !== true) continue;
+        let end = i;
+        while (unsaid[end + 1] === true) end++;
+        const run = node.operands.slice(i, end + 1);
+        const [first, ...rest] = run;
+        if (first !== undefined) {
+          const text = run.map(codeOf).join(` ${node.op} `);
+          holdBack(
+            first,
+            { parent: node, field: 'operands', index: i },
+            'VAL003',
+            `The words "${checker.quote(spans)}" don't say \`${text}\``,
+            first.provenance,
+            text,
+          );
+          for (const operand of rest)
+            downgrades.push({ op: 'remove_node', node: operand.id, provenance: [] });
+          for (const operand of run) skipped.add(operand.id);
+        }
+        i = end;
+      }
+    }
     if (verdict === 'unchecked' && input.rejected?.has(node.id) === true) {
       holdBack(
         node,

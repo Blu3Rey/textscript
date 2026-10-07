@@ -38,6 +38,8 @@ export interface StepResult extends ScoredStep {
   utterance: string;
   batch: EditBatch;
   unparsed: number;
+  /** For LLM translators: how many answers it took, and why the failed ones failed. */
+  trace?: { attempts: number; salvaged: boolean; errors: string[] };
   comparison: StepComparison;
   /** Export-mode code before the step, from the chosen gold answer, and from the translator. */
   code: { before: string; expected: string; produced: string };
@@ -175,6 +177,7 @@ export async function runEval(corpus: Corpus, options: RunOptions): Promise<RunR
         batch,
         ...(rejected ? { rejected } : {}),
         unparsed: translation?.unparsedSpans.length ?? 0,
+        ...(translation?.trace ? { trace: translation.trace } : {}),
         latencyMs,
         ...(translation?.usage ? { usage: translation.usage } : {}),
         ...(validation ? { validation } : {}),
