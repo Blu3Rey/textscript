@@ -212,6 +212,17 @@ describe('Console', () => {
     expect(result.text).toContain("Event 0 doesn't replay");
   });
 
+  it('continues an existing session', () => {
+    const { c } = consoleWith('say A.', 'add root: a = 1', ':commit');
+    const next = new Console({ fs: memoryFs(), session: { state: c.state, events: c.events } });
+    expect(run(next, 'say B.').text).toBe('u2: 0:B 1:.');
+    run(next, 'add root: b = 2');
+    run(next, ':commit');
+    expect(next.events).toHaveLength(2);
+    expect(c.events).toHaveLength(1);
+    expect(run(next, 'expect code:\n  a = 1\n  b = 2').status).toBe('ok');
+  });
+
   it('prints help and quits', () => {
     const { c } = consoleWith('say A.', 'add root: a = 1');
     expect(run(c, ':help').text).toContain('Commands');

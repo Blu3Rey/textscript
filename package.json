@@ -17,7 +17,8 @@
     "check:python": "python3 scripts/check_python_parses.py",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage && pnpm check:python",
     "new-package": "tsx scripts/new-package.ts",
-    "textscript": "node packages/cli/bin/textscript.js"
+    "textscript": "node packages/cli/bin/textscript.js",
+    "eval": "node packages/eval/bin/eval.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

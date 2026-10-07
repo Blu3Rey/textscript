@@ -1,0 +1,9 @@
+---
+problem: two-sum
+style: terse
+---
+Dictionary seen from value to index, starts empty.
+Loop i over the indices of nums.
+Need is target minus nums at i.
+If need is in seen, return seen of need and i.
+Otherwise store i in seen under nums at i.

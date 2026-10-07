@@ -1,0 +1,28 @@
+# The brute-force remark in the first utterance is not part of the
+# approach, so it changes nothing.
+step 1
+
+step 2
+add root: seen = {}
+
+# Restates step 2.
+step 3
+
+step 4
+add root: for i in range(0, len(nums)):
+    ...
+
+step 5
+fill h1: complement = target - nums[i]
+
+step 6
+add n5:
+    if complement in seen:
+        return [seen[complement], i]
+
+step 7
+add n5: seen[nums[i]] = i
+
+step 8
+note root complexity: one pass, so linear time
+expect gaps GAP003

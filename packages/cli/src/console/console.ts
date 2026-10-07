@@ -128,9 +128,23 @@ export class Console {
   #lastError: { code: string; message: string } | undefined;
   #out: string[] = [];
 
-  constructor(options: { fs: FileSystem; inputs?: string[] }) {
+  /** `session` continues an existing session instead of starting an empty one. */
+  constructor(options: {
+    fs: FileSystem;
+    inputs?: string[];
+    session?: { state: SessionState; events: readonly SessionEvent[] };
+  }) {
     this.fs = options.fs;
     this.#inputs = options.inputs ?? [];
+    if (options.session) {
+      this.#state = options.session.state;
+      this.#events = [...options.session.events];
+    }
+  }
+
+  /** The committed session, without pending edits. */
+  get state(): SessionState {
+    return this.#state;
   }
 
   /** The document as it stands, including any pending edits. */
