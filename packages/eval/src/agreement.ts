@@ -4,8 +4,8 @@
 // annotator's own state. The two states are aligned to see which of those
 // match, so an early disagreement doesn't count again at every later step.
 
-import type { Program } from '@textscript/core';
-import { align, isPlaceholder } from './compare/align';
+import { walk, type IrNode, type Program } from '@textscript/core';
+import { align, isPlaceholder, normalizeProgram, structureKey } from './compare/align';
 import { changes, type Changes } from './compare/step';
 import type { CompiledGold } from './corpus/gold';
 import { ratio, type Ratio } from './metrics';
@@ -15,6 +15,8 @@ export interface StepAgreement {
   index: number;
   /** Both produced the same things. */
   exact: boolean;
+  /** Both accept the same set of answers (compared by the code they produce). */
+  sameAnswers: boolean;
   /** Matching units over all units, F1-style: 2·matched / (a + b). 1 when neither produced anything. */
   f1: number;
   /** Holes either annotator produced in this step, and those both produced in the same place. */
@@ -25,6 +27,8 @@ export interface Agreement {
   steps: StepAgreement[];
   /** Steps where both produced the same things. */
   exact: Ratio;
+  /** Steps where both accept exactly the same answers. */
+  sameAnswers: Ratio;
   /** Mean of the steps' F1. */
   f1: number;
   /** Holes both annotations put in the same place, over holes either has. */
@@ -38,7 +42,9 @@ function size(p: Changes): number {
 export function compareSteps(
   a: { before: Program; after: Program },
   b: { before: Program; after: Program },
-): Omit<StepAgreement, 'index'> {
+): Omit<StepAgreement, 'index' | 'sameAnswers'> {
+  a = { before: normalizeProgram(a.before), after: normalizeProgram(a.after) };
+  b = { before: normalizeProgram(b.before), after: normalizeProgram(b.after) };
   const mine = changes(a.before, a.after);
   const theirs = changes(b.before, b.after);
   const alignment = align(a.after, b.after);
@@ -69,16 +75,48 @@ export function compareSteps(
   };
 }
 
+/**
+ * What an answer changed, as a string: the outermost changed nodes' code,
+ * labels and note tags. Compared across annotators whose states may differ.
+ */
+function answerKey(before: Program, after: Program): string {
+  const normalized = normalizeProgram(after);
+  const changed = changes(normalizeProgram(before), normalized);
+  const parents = new Map<IrNode, IrNode>();
+  walk(normalized, (node, context) => {
+    if (context.position) parents.set(node, context.position.parent);
+  });
+  const keys: string[] = [];
+  for (const node of changed.nodes) {
+    let outermost = true;
+    for (let p = parents.get(node); p !== undefined; p = parents.get(p)) {
+      if (changed.nodes.has(p)) outermost = false;
+    }
+    if (outermost) keys.push(structureKey(node));
+  }
+  for (const node of changed.labels) keys.push(`label:${node.label ?? ''}`);
+  keys.push(...[...changed.notes].map(() => 'note'));
+  return keys.sort().join('\n');
+}
+
 export function agreement(a: CompiledGold, b: CompiledGold): Agreement {
   const steps: StepAgreement[] = a.steps.map((step, index) => {
     const other = b.steps[index];
     const mine = step.alternatives[0]?.after.program;
     const theirs = other?.alternatives[0]?.after.program;
     if (mine === undefined || other === undefined || theirs === undefined) {
-      return { index, exact: false, f1: 0, holes: { either: 0, both: 0 } };
+      return { index, exact: false, sameAnswers: false, f1: 0, holes: { either: 0, both: 0 } };
     }
+    const mineAll = new Set(
+      step.alternatives.map((alt) => answerKey(step.before.program, alt.after.program)),
+    );
+    const theirsAll = new Set(
+      other.alternatives.map((alt) => answerKey(other.before.program, alt.after.program)),
+    );
     return {
       index,
+      sameAnswers:
+        mineAll.size === theirsAll.size && [...mineAll].every((key) => theirsAll.has(key)),
       ...compareSteps(
         { before: step.before.program, after: mine },
         { before: other.before.program, after: theirs },
@@ -90,6 +128,7 @@ export function agreement(a: CompiledGold, b: CompiledGold): Agreement {
   return {
     steps,
     exact: ratio(steps.filter((s) => s.exact).length, steps.length),
+    sameAnswers: ratio(steps.filter((s) => s.sameAnswers).length, steps.length),
     f1: steps.length === 0 ? 1 : steps.reduce((total, s) => total + s.f1, 0) / steps.length,
     holes: ratio(both, either),
   };

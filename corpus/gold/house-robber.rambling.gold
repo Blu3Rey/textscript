@@ -1,0 +1,30 @@
+# The first utterance restates the problem's rule; it describes no step.
+step 1
+or
+note root general: you can't take two neighbors, so at every house you either rob it or skip it
+
+step 2
+add root:
+    prev = 0
+    curr = 0
+
+step 3
+add root: for amount in nums:
+    ...
+expect gaps WARN001 WARN001 GAP002
+
+step 4
+fill h1: best = max(curr, prev + amount)
+
+step 5
+add n8:
+    prev = curr
+    curr = best
+
+# Restates the loop from step 3.
+step 6
+
+step 7
+add root: return curr
+note root complexity: linear time, constant space
+expect gaps none

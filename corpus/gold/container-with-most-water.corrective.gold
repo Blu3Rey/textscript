@@ -1,0 +1,44 @@
+step 1
+add root: most = 0
+expect gaps WARN001
+
+step 2
+add root:
+    i = 0
+    j = len(height)
+expect gaps WARN001 WARN001 WARN001
+
+step 3
+set n8.value = len(height) - 1
+expect gaps WARN001 WARN001 WARN001
+
+step 4
+add root: while i < j:
+    ...
+expect gaps GAP002 WARN001
+
+step 5
+fill h1: water = (j - i) * max(height[i], height[j])
+expect gaps WARN001 WARN001
+
+step 6
+set n24.value = (j - i) * min(height[i], height[j])
+add n18: most = max(most, water)
+expect gaps none
+
+step 7
+add n18:
+    if height[i] < height[j]:
+        i += 1
+    else:
+        j -= 1
+add root: return most
+expect gaps none
+or
+add n18:
+    if height[i] < height[j]:
+        i = i + 1
+    else:
+        j = j - 1
+add root: return most
+expect gaps none

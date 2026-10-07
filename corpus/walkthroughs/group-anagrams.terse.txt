@@ -1,0 +1,9 @@
+---
+problem: group-anagrams
+style: terse
+---
+Empty dict called groups.
+For each word in strs, key is the sorted word joined back with an empty string.
+If key not in groups, groups[key] is a new empty list.
+Append word to groups[key].
+Return a list of groups' values.

@@ -291,6 +291,7 @@ function agree(corpus: Corpus, root: string, files: string[], io: Io): number {
   let failed = false;
   const rows: string[] = [];
   let exact = 0;
+  let same = 0;
   let steps = 0;
   let f1 = 0;
   let holesBoth = 0;
@@ -319,20 +320,23 @@ function agree(corpus: Corpus, root: string, files: string[], io: Io): number {
     }
     const result = agreement(mine, theirs);
     exact += result.exact.numerator;
+    same += result.sameAnswers.numerator;
     steps += result.steps.length;
     f1 += result.steps.reduce((total, s) => total + s.f1, 0);
     holesBoth += result.holes.numerator;
     holesEither += result.holes.denominator;
     rows.push(
-      `${id}: ${String(result.exact.numerator)}/${String(result.steps.length)} steps identical, node F1 ${result.f1.toFixed(
-        2,
-      )}, holes in common ${percent(result.holes)}`,
+      `${id}: ${String(result.exact.numerator)}/${String(result.steps.length)} steps identical, ${String(
+        result.sameAnswers.numerator,
+      )} with the same acceptable answers, node F1 ${result.f1.toFixed(2)}, holes in common ${percent(result.holes)}`,
     );
   }
   io.stdout(`${rows.join('\n')}\n`);
   if (steps > 0) {
     io.stdout(
-      `\nOverall: ${String(exact)}/${String(steps)} steps identical (${((exact / steps) * 100).toFixed(1)}%), mean node F1 ${(
+      `\nOverall: ${String(exact)}/${String(steps)} steps identical (${((exact / steps) * 100).toFixed(1)}%), ${String(
+        same,
+      )} with the same acceptable answers (${((same / steps) * 100).toFixed(1)}%), mean node F1 ${(
         f1 / steps
       ).toFixed(
         3,

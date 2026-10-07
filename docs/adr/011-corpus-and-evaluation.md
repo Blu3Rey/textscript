@@ -60,7 +60,9 @@ lists, and maximizes the number of *equal* pairs: same kind and same
 values. It ignores node IDs, provenance, hole reasons, the wording of
 notes and of steps in words, and the spelling of names bound by an allowed
 inference (a `~loopvar` called `num` or `n`). Holes and steps in words may
-pair with anything, so the alignment shows what took their place.
+pair with anything, so the alignment shows what took their place. Before
+aligning, `x = x + y` is rewritten as `x += y`, since gold and translators
+shouldn't have to agree on which of the two to write.
 
 What gets counted are **units**: nodes (not blocks), notes and labels.
 A step *produces* the units that are new or whose own values changed, not
@@ -109,12 +111,23 @@ stricter stand-in: anything gold doesn't have is unsupported.
 
 `pnpm eval agree` compares second annotations (`corpus/agreement/`) with
 the corpus gold, step by step, on what each step produced: the share of
-identical steps, node-level F1, and holes in the same place. Comparing
+steps with the same canonical answer, the share where both accept the same
+set of answers, node-level F1, and holes in the same place. Comparing
 whole states instead would count one early disagreement again at every
 later step.
 
 ## Consequences
 
+- The corpus has 30 problems (6 held out) and 65 walkthroughs (16 terse,
+  16 rambling, 15 corrective, 18 incomplete) with 381 annotated utterances.
+  Each walkthrough was annotated, then checked by a second reviewer who
+  hadn't written it. A blind second annotation of 8 walkthroughs (50 steps)
+  produced the same canonical answer at every step, and the same set of
+  acceptable answers at 48. The other 2 are a recorded judgment call.
+- The annotations, reviews and agreement sample were written with AI
+  assistance following the guide. Agreement between two people is still the
+  real test of the guide, and should be measured before tuning against
+  the corpus in earnest.
 - Gold is only as good as the guide. Disagreements found by `agree` should
   become guide rules, and the guide is versioned with the corpus.
 - Annotating by node ID is tedious. `pnpm eval gold` shows IDs after each

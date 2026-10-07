@@ -19,6 +19,8 @@ import {
   type IrNode,
   type Note,
   type Program,
+  type Stmt,
+  type UpdateOp,
 } from '@textscript/core';
 
 export const HOLE_KINDS: ReadonlySet<string> = new Set([
@@ -72,6 +74,80 @@ export function scalarSignature(node: IrNode, names: NameNormalizer): string {
 }
 
 export type NameNormalizer = (name: string) => string;
+
+const AUGMENTED: Readonly<Record<string, UpdateOp>> = {
+  '+': '+=',
+  '-': '-=',
+  '*': '*=',
+  '/': '/=',
+  '//': '//=',
+  '%': '%=',
+};
+
+/** The same expression, ignoring IDs, provenance and the like. */
+function sameExpr(a: IrNode, b: IrNode): boolean {
+  return (
+    scalarSignature(a, (n) => n) === scalarSignature(b, (n) => n) &&
+    childFields(a).every(({ value }, i) => {
+      const other = childFields(b)[i]?.value;
+      if (Array.isArray(value) || Array.isArray(other)) {
+        return (
+          Array.isArray(value) &&
+          Array.isArray(other) &&
+          value.length === other.length &&
+          value.every((item, j) => {
+            const match = other[j];
+            return match !== undefined && sameExpr(item, match);
+          })
+        );
+      }
+      return value === undefined
+        ? other === undefined
+        : other !== undefined && sameExpr(value, other);
+    })
+  );
+}
+
+function normalizeStmt(stmt: Stmt): Stmt {
+  if (stmt.kind === 'Assign' && stmt.value.kind === 'BinOp') {
+    const op = AUGMENTED[stmt.value.op];
+    if (op !== undefined && sameExpr(stmt.target, stmt.value.left)) {
+      const { value, ...rest } = stmt;
+      return { ...rest, kind: 'Update', op, value: value.right };
+    }
+  }
+  return stmt;
+}
+
+/**
+ * Rewrites `x = x + y` as `x += y`: the same code, said either way, so
+ * comparisons don't depend on which one an annotator or translator chose.
+ * Returns a copy; node IDs are kept.
+ */
+export function normalizeProgram(program: Program): Program {
+  const copy = structuredClone(program);
+  walk(copy, (node) => {
+    if (node.kind === 'Program') node.body = node.body.map(normalizeStmt);
+    if (node.kind === 'Block') node.stmts = node.stmts.map(normalizeStmt);
+  });
+  return copy;
+}
+
+/**
+ * A node's whole structure as a string, ignoring what comparison ignores
+ * (IDs, provenance, hole reasons, free text). Equal keys mean equal code.
+ */
+export function structureKey(node: IrNode): string {
+  const children = childFields(node).map(({ value }) =>
+    Array.isArray(value)
+      ? `[${value.map(structureKey).join(',')}]`
+      : value === undefined
+        ? '-'
+        : structureKey(value),
+  );
+  const facets = `${node.label ?? ''}|${(node.notes ?? []).map((note) => note.tag).join(',')}`;
+  return `${scalarSignature(node, (name) => name)}{${facets}}(${children.join(';')})`;
+}
 
 /** Names bound by an inference rule, in either program. */
 export function inferredNames(...programs: Program[]): Set<string> {

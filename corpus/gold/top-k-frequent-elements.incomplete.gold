@@ -1,0 +1,27 @@
+# Left out: how many candidates to return (k). The slice's end stays a
+# hole (GAP005). The sort is said only in words (GAP009).
+step 1
+add root: freq = {}
+expect gaps WARN001
+
+step 2
+add root:
+    for num in nums:
+        freq[num] = freq.get(num, 0) + 1
+expect gaps none
+
+step 3
+add root: candidates = list(freq.keys())
+expect gaps WARN001
+
+step 4
+add root: intent sort candidates by their frequency, most frequent first
+expect gaps GAP009 WARN001
+
+step 5
+add root: return candidates[:?value"how many of them"]
+expect gaps GAP009 GAP005
+
+step 6
+note root complexity: n log n overall because of the sort
+expect gaps GAP009 GAP005

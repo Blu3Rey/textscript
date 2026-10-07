@@ -1,0 +1,9 @@
+---
+problem: reverse-linked-list
+style: incomplete
+---
+I'll do it recursively, with a function reverse that takes a node.
+If the node is None or node.next is None, return the node.
+Otherwise call reverse on node.next and call what comes back new_head.
+Then node.next.next becomes node, and node.next becomes None.
+And outside the function, return reverse of head.

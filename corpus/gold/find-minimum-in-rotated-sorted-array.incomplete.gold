@@ -1,0 +1,31 @@
+# Left out: what to return when no drop is found, i.e. when the array
+# wasn't rotated at all and the minimum is the first element. The loop can
+# end without a return, so GAP003 stays open.
+
+# The plan is said, but none of its steps yet. Keeping it as a note is
+# equally faithful.
+step 1
+expect gaps none
+or
+note root general: sorted except for one drop, so scan for that drop
+expect gaps none
+
+step 2
+add root: for i~indexvar in range(1, len(nums)~range-bounds):
+    ...
+expect gaps GAP002
+
+# "That's where the rotation happened" says what the condition means, not
+# what to do, so the if's body stays open until the next utterance.
+step 3
+fill h1: if nums[i] < nums[i - 1]:
+    ...
+expect gaps GAP002
+
+step 4
+fill h1: return nums[i]
+expect gaps GAP003
+
+step 5
+note root complexity: linear time
+expect gaps GAP003

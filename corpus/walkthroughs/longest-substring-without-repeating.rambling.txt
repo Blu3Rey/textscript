@@ -1,0 +1,11 @@
+---
+problem: longest-substring-without-repeating
+style: rambling
+---
+Um, okay, so I want the longest stretch with no repeats, so, like, some kind of sliding window, I think.
+I'll keep a dictionary, let's call it last, um, that maps each character to the last index where I saw it.
+And then a start variable, start is zero, and longest, uh, longest is also zero.
+Then I go through the string by index, so i goes from zero up to the length.
+For each character, if it's already in last and, um, its last index is at or after start, then start jumps to that index plus one.
+Then, yeah, I record the current index for that character, so last of it is i, and, uh, longest becomes the max of longest and i minus start plus one.
+And after the loop we just return longest, that's it, one pass, so linear time.

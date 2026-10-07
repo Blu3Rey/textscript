@@ -1,0 +1,15 @@
+step 1
+add root: dp = [0] * (n + 1)
+
+step 2
+add root:
+    dp[0] = 1
+    dp[1] = 1
+
+step 3
+add root: for i in range(2, n + 1):
+    dp[i] = dp[i - 1] + dp[i - 2]
+
+step 4
+add root: return dp[n]
+expect gaps none

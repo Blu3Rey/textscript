@@ -1,0 +1,8 @@
+---
+problem: climbing-stairs
+style: incomplete
+---
+So I'll keep two numbers, prev and curr, for the ways to reach the two steps below the current one.
+Then for each step i from two to n inclusive, ways is prev plus curr.
+After that we shift along: prev becomes curr, and curr becomes ways.
+When the loop's done, curr is the answer, so return it.

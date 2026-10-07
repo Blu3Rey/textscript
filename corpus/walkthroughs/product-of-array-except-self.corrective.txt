@@ -1,0 +1,11 @@
+---
+problem: product-of-array-except-self
+style: corrective
+---
+I'll create a list called output with a zero for each element of nums.
+Wait, it should be ones, not zeros, because we multiply into it.
+Then keep a variable product that starts at one, and walk nums from the left with index i.
+At each step, output at i becomes product, then product gets multiplied by nums at i.
+After that loop, reset product to zero, sorry, to one, and walk i backwards from the last index to zero.
+In that loop, multiply output at i by product, then multiply product by nums at i.
+Return output.

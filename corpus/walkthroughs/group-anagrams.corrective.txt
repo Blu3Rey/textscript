@@ -1,0 +1,11 @@
+---
+problem: group-anagrams
+style: corrective
+---
+I'll keep a dictionary called groups that maps a key to the words sharing that key.
+For every word in strs, I build a list called count with twenty-six zeros, one slot per letter.
+Then for each character c in the word, add one to count at ord of c minus ord of "a".
+The key is just count itself.
+Oh wait, a list can't be a dictionary key, so make the key the tuple of count instead.
+If the key isn't in groups yet, map it to an empty list, and then append the word to groups at the key.
+At the end, return the values of groups, converted to a list.

@@ -1,0 +1,23 @@
+step 1
+add root: groups = {}
+expect gaps WARN001
+
+step 2
+add root:
+    for word in strs:
+        key = "".join(sorted(word))
+expect gaps WARN001 WARN001
+
+step 3
+add n5:
+    if key not in groups:
+        groups[key] = []
+expect gaps none
+
+step 4
+add n5: groups[key].append(word)
+expect gaps none
+
+step 5
+add root: return list(groups.values())
+expect gaps none

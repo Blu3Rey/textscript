@@ -1,0 +1,31 @@
+step 1
+add root: def merge(a, b):
+    ...
+expect gaps WARN001 WARN001 GAP002
+
+step 2
+fill h1:
+    if a is None:
+        return b
+    if b is None:
+        return a
+expect gaps GAP003
+
+step 3
+add n2:
+    if a.val < b.val:
+        a.next = merge(a.next, b)
+        return a
+
+step 4
+set n22.orelse = b.next = merge(a, b.next)
+add n22.orelse: return b
+or
+add n2:
+    b.next = merge(a, b.next)
+    return b
+expect gaps none
+
+step 5
+add root: return merge(list1, list2)
+expect gaps none

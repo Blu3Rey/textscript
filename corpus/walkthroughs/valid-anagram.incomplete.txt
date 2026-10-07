@@ -1,0 +1,9 @@
+---
+problem: valid-anagram
+style: incomplete
+---
+If s and t have different lengths, they can't be anagrams, so return false.
+Then make an empty dictionary called counts.
+For each character c in s, set counts of c to counts dot get of c with a default of zero, plus one.
+Then go through each character c in t and subtract one from its count, again using get with zero as the default.
+If that count drops below zero, return false right there.

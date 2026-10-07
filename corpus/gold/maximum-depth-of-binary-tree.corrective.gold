@@ -1,0 +1,28 @@
+step 1
+add root: def height(node):
+    ...
+expect gaps WARN001 GAP002
+
+step 2
+fill h1:
+    if node is None:
+        return 1
+expect gaps GAP003
+
+step 3
+set n12.value = 0
+expect gaps GAP003
+
+step 4
+set n7.orelse = return 1 + max(height(node.left), height(node.right))
+or
+add n2: return 1 + max(height(node.left), height(node.right))
+expect gaps none
+
+step 5
+rename n3 max_depth
+expect gaps none
+
+step 6
+add root: return max_depth(root)
+expect gaps none

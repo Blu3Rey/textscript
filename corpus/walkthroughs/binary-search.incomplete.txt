@@ -1,0 +1,8 @@
+---
+problem: binary-search
+style: incomplete
+---
+Binary search, with low and high at the two ends of nums.
+While low is at most high, find the middle index, mid.
+If the element at mid equals target, return mid.
+If it's bigger than target, move high to mid minus one, otherwise move low to mid plus one.

@@ -1,0 +1,11 @@
+---
+problem: linked-list-cycle
+style: rambling
+---
+Hmm, okay, so, the thing is, if there's a cycle I'll eventually land on a node I've already been to, right?
+So I'll keep a set, let's call it visited, um, of the nodes I've seen so far.
+And I'll have a pointer, node, that starts at head.
+And, uh, while node is not None, I check, like, if node is already in visited, then, yeah, there's a cycle, so return True.
+Otherwise I add it to visited and, um, move node to node.next.
+If I fall off the end, so node becomes None, there's no cycle, and I return False.
+Oh, and I mean, this uses O(n) extra space because of the set.

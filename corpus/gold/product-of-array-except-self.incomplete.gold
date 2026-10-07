@@ -1,0 +1,31 @@
+# Left out: the starting value of the running product `left` (it should
+# start at one). Its value stays a hole (GAP005) to the end.
+step 1
+add root: answer = [1] * len(nums)
+expect gaps WARN001
+
+step 2
+add root: left = ?value"starting value"
+expect gaps GAP005 WARN001 WARN001
+
+step 3
+add root:
+    for i in range(len(nums)~range-bounds):
+        answer[i] = left
+        left *= nums[i]
+expect gaps GAP005
+
+step 4
+add root: right = 1
+expect gaps GAP005 WARN001
+
+step 5
+add root:
+    for i in range(len(nums) - 1, -1, -1):
+        answer[i] *= right
+        right *= nums[i]
+expect gaps GAP005
+
+step 6
+add root: return answer
+expect gaps GAP005

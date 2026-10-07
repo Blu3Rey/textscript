@@ -208,7 +208,7 @@ describe('textscript-eval', () => {
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('dup.terse: 2/3 steps identical');
     expect(result.stdout).toMatch(
-      /Overall: 2\/3 steps identical \(66\.7%\), mean node F1 0\.\d+, holes in common –/,
+      /Overall: 2\/3 steps identical \(66\.7%\), 1 with the same acceptable answers \(33\.3%\), mean node F1 0\.\d+, holes in common –/,
     );
 
     const broken = join(root, 'broken.gold');

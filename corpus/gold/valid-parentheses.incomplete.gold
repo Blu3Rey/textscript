@@ -1,0 +1,34 @@
+# Left out: what to return when brackets are left on the stack at the end
+# (only the empty case returns), and any check that the stack has something
+# to pop before popping it.
+step 1
+add root:
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+expect gaps WARN001 WARN001
+
+step 2
+add root: for ch in s:
+    ...
+expect gaps WARN001 WARN001 GAP002
+
+step 3
+fill h1:
+    if ch in pairs:
+        if stack.pop() != pairs[ch]:
+            return False
+expect gaps GAP003
+
+step 4
+set n22.orelse = stack.append(ch)  # ~synonym
+expect gaps GAP003
+
+step 5
+add root:
+    if not stack:
+        return True
+or
+add root:
+    if len(stack) == 0:
+        return True
+expect gaps GAP003

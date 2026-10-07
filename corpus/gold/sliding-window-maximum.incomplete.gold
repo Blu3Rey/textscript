@@ -1,0 +1,43 @@
+# Left out: when exactly the front index has left the window (the
+# condition is only described, GAP004), and what to return at the end.
+# There is no return anywhere, so the missing one isn't a GAP003; the gold
+# just has no return node. deque is never imported (GAP001, see
+# ANNOTATION.md "Things the IR can't say yet").
+
+step 1
+add root:
+    dq = deque()
+    out = []
+expect gaps GAP001 WARN001 WARN001
+
+step 2
+add root: for i in range(len(nums)~range-bounds):
+    ...
+expect gaps GAP001 WARN001 WARN001 GAP002
+
+step 3
+fill h1:
+    if ?cond"the index at the front of dq has slid out of the window":
+        dq.popleft()
+expect gaps GAP001 WARN001 GAP004
+
+step 4
+add n9:
+    while dq and nums[dq[-1]] < nums[i]:
+        dq.pop()
+expect gaps GAP001 WARN001 GAP004
+or
+add n9:
+    while len(dq) > 0 and nums[dq[-1]] < nums[i]:
+        dq.pop()
+expect gaps GAP001 WARN001 GAP004
+
+step 5
+add n9: dq.append(i)
+expect gaps GAP001 WARN001 GAP004
+
+step 6
+add n9:
+    if i >= k - 1:
+        out.append(nums[dq[0]])  # ~synonym
+expect gaps GAP001 GAP004

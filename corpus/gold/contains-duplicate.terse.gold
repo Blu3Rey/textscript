@@ -8,6 +8,12 @@ add root:
             return True
         else:
             seen.add(num)
+or
+add root:
+    for num in nums:
+        if num in seen:
+            return True
+        seen.add(num)
 
 step 3
 add root: return False

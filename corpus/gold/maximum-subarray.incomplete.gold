@@ -1,0 +1,30 @@
+# Left out: the starting value of best, and the return at the end.
+step 1
+add root:
+    total = 0
+    best = ?value"starting value of best"
+expect gaps WARN001 WARN001 GAP005
+
+step 2
+add root: for num~loopvar in nums:
+    total += num
+or
+add root: for num~loopvar in nums:
+    total = total + num
+expect gaps WARN001 GAP005
+
+step 3
+add n8:
+    if total > best:
+        best = total
+expect gaps GAP005
+
+step 4
+add n8:
+    if total < 0:
+        total = 0
+expect gaps GAP005
+
+step 5
+note root complexity: linear time and constant space
+expect gaps GAP005

@@ -1,0 +1,9 @@
+---
+problem: maximum-subarray
+style: incomplete
+---
+Keep a sum called total that starts at zero, and another one called best for the answer.
+Go through each number in nums and add it to total.
+Then if total is bigger than best, update best to total.
+If total ever goes negative, reset it to zero.
+That's linear time and constant space.

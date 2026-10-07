@@ -19,3 +19,6 @@ expect gaps GAP003
 step 4
 set n7.orelse = seen.add(num)  # ~synonym
 expect gaps GAP003
+or
+add n2: seen.add(num)  # ~synonym
+expect gaps GAP003

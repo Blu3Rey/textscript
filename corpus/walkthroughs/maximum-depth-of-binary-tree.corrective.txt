@@ -1,0 +1,10 @@
+---
+problem: maximum-depth-of-binary-tree
+style: corrective
+---
+I'll write a recursive function called height that takes a node.
+If the node is None, return one.
+Wait, no, an empty tree has depth zero, so that should return zero.
+Otherwise return one plus the max of height of node.left and height of node.right.
+Actually, let me call the function max_depth instead of height.
+Then the answer is just: return max_depth of root.

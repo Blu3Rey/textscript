@@ -1,0 +1,81 @@
+step 1
+add root:
+    graph = defaultdict(list)
+    indegree = [0] * num_courses
+expect gaps GAP001 WARN001 WARN001
+
+step 2
+add root:
+    for pair in prerequisites:
+        graph[pair[0]].append(pair[1])
+        indegree[pair[1]] += 1
+expect gaps GAP001
+or
+add root:
+    for pair in prerequisites:
+        graph[pair[0]].append(pair[1])
+        indegree[pair[1]] = indegree[pair[1]] + 1
+expect gaps GAP001
+
+step 3
+replace n17: graph[pair[1]].append(pair[0])
+replace n26: indegree[pair[0]] += 1
+expect gaps GAP001
+or
+replace n17: graph[pair[1]].append(pair[0])
+replace n26: indegree[pair[0]] = indegree[pair[0]] + 1
+expect gaps GAP001
+
+step 4
+add root:
+    queue = deque()
+    for i in range(num_courses):
+        if indegree[i] == 0:
+            queue.append(i)
+expect gaps GAP001 GAP001
+
+step 5
+add root: taken = 0
+expect gaps GAP001 GAP001 WARN001
+
+step 6
+add root:
+    while queue:
+        course = queue.popleft()
+        taken += 1
+        for neighbor in graph[course]:
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+or
+add root:
+    while len(queue) > 0:
+        course = queue.popleft()
+        taken += 1
+        for neighbor in graph[course]:
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+or
+add root:
+    while queue:
+        course = queue.popleft()
+        taken = taken + 1
+        for neighbor in graph[course]:
+            indegree[neighbor] = indegree[neighbor] - 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+or
+add root:
+    while len(queue) > 0:
+        course = queue.popleft()
+        taken = taken + 1
+        for neighbor in graph[course]:
+            indegree[neighbor] = indegree[neighbor] - 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+expect gaps GAP001 GAP001
+
+step 7
+add root: return taken == num_courses
+expect gaps GAP001 GAP001

@@ -1,0 +1,8 @@
+---
+problem: coin-change
+style: terse
+---
+dp of size amount plus one, every entry infinity; dp[0] is zero.
+For each total t from 1 through amount, for each coin in coins, if coin is at most t, dp[t] = min(dp[t], dp[t - coin] + 1).
+If dp[amount] is still infinity, return -1.
+Else return dp[amount].

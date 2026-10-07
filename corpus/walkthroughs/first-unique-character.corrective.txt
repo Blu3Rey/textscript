@@ -1,0 +1,10 @@
+---
+problem: first-unique-character
+style: corrective
+---
+Make a list called freq with twenty-six zeros, one per letter.
+Actually, let's not assume lowercase letters, make freq an empty dictionary instead.
+Loop over every character c in s and increase freq of c by one.
+Wait, c might not be in freq yet, so set it to freq dot get of c with a default of zero, plus one.
+Then go through the indexes of s starting from one, no, from zero, and if the character there has a count of one, return that index.
+If nothing has a count of one, return negative one at the end.

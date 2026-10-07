@@ -1,0 +1,12 @@
+---
+problem: number-of-islands
+style: rambling
+---
+Okay, so, um, I need to count the islands, so I'll have a count, uh, starting at zero.
+And I'll write a helper, like a function, called sink, that takes a row r and a column c.
+In sink, um, if r is negative or r is, like, len(grid) or more, or c is negative or c is len(grid[r]) or more, or the cell grid[r][c] isn't a one, I just return.
+Otherwise, uh, I set grid[r][c] to zero so I don't count it again, and then I call sink on r minus one, r plus one, c minus one and c plus one, so, the four neighbors.
+Then in the main part, I go over every row index r of grid, and inside that every column index c of grid[r].
+If grid[r][c] is a one, that's a new island, so count goes up by one and, um, I sink it starting from r, c.
+And, yeah, at the end I return count.
+It's basically O(rows times columns), since each cell gets sunk at most once.

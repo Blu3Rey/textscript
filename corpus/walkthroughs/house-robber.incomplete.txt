@@ -1,0 +1,9 @@
+---
+problem: house-robber
+style: incomplete
+---
+Make a list dp the same length as nums, filled with zeros.
+If there's only one house, just return the money in it.
+dp[0] is just nums[0], and dp[1] is the bigger of nums[0] and nums[1].
+Then for every index i of nums from 2 onward, dp[i] is the max of dp[i - 1] and dp[i - 2] plus nums[i].
+That's O(n) time and O(n) space.

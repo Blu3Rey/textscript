@@ -1,0 +1,43 @@
+# Naming the approach changes nothing.
+step 1
+or
+note root general: binary search, since the list is sorted
+
+step 2
+add root:
+    lo = 0
+    hi = len(nums) - 1
+expect gaps WARN001 WARN001
+
+step 3
+add root:
+    while lo <= hi:
+        ...
+expect gaps GAP002
+
+step 4
+fill h1: mid = (lo + hi) // 2
+
+step 5
+add n12:
+    if nums[mid] == target:
+        return mid
+
+step 6
+replace n25:
+    if nums[mid] == target:
+        return mid
+    elif nums[mid] < target:
+        lo = mid + 1
+    else:
+        hi = mid - 1
+or
+add n12:
+    if nums[mid] < target:
+        lo = mid + 1
+    else:
+        hi = mid - 1
+
+step 7
+add root: return -1
+expect gaps none

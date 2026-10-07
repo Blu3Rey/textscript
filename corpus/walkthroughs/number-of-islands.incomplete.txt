@@ -1,0 +1,9 @@
+---
+problem: number-of-islands
+style: incomplete
+---
+Keep a set called visited for the cells we've already explored.
+Write a function explore that takes row and col.
+If the cell is off the grid, or grid[row][col] is zero, or the pair row, col is in visited, just return.
+Otherwise put the pair in visited and call explore on row plus one, row minus one, col plus one and col minus one.
+Then loop r over the indices of grid and c over the indices of grid[r], and if grid[r][c] is one and the pair r, c isn't in visited, add one to islands and explore from r, c.

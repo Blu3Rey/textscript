@@ -1,0 +1,8 @@
+---
+problem: climbing-stairs
+style: terse
+---
+dp list of length n plus one, all zeros.
+dp[0] and dp[1] are both one.
+For i from 2 through n, dp[i] = dp[i - 1] + dp[i - 2].
+Return dp[n].

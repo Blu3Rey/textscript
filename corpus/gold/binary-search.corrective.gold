@@ -1,0 +1,46 @@
+step 1
+add root:
+    left = 0
+    right = len(nums)
+expect gaps WARN001 WARN001
+
+step 2
+add root: while left < right:
+    ...
+expect gaps GAP002
+
+step 3
+set n5.value = len(nums) - 1
+set n10.cond = left <= right
+expect gaps GAP002
+
+step 4
+fill h1: m = (left + right) // 2
+expect gaps WARN001
+
+step 5
+add n10:
+    if nums[m] == target:
+        return m
+    elif nums[m] < target:
+        left = m
+    else:
+        right = m - 1
+expect gaps GAP003
+or
+add n10:
+    if nums[m] == target:
+        return m
+    if nums[m] < target:
+        left = m
+    else:
+        right = m - 1
+expect gaps GAP003
+
+step 6
+set n47.value = m + 1
+expect gaps GAP003
+
+step 7
+add root: return -1
+expect gaps none

@@ -1,0 +1,11 @@
+---
+problem: three-sum
+style: incomplete
+---
+First I'd sort the numbers.
+Then go over each index i of nums.
+For each one, left starts at i plus one and right starts at the end of the array.
+While left is below right, add up nums[i], nums[left] and nums[right] into total.
+If total is zero, append those three numbers as a list to result, and move left up one and right down one.
+Otherwise, if it's below zero, move left up one, and if not, move right down one.
+Oh, and duplicates are a concern, the same triple can't show up twice.

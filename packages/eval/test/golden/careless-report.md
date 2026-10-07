@@ -4,37 +4,37 @@
 
 ## Metrics
 
-| Metric                                               | Value  | Count              | M2 target |     |
-| ---------------------------------------------------- | ------ | ------------------ | --------- | --- |
-| Faithfulness: produced nodes a gold answer supports  | 20.0%  | 5/25               | ≥ 99%     | ✗   |
-| Gap preservation: gaps in gold left open             | 66.7%  | 4/6                | 100%      | ✗   |
-| Coverage: gold nodes produced                        | 17.9%  | 5/28               | ≥ 85%     | ✗   |
-| Placement: refinements made to the right nodes       | 0.0%   | 0/2                | ≥ 90%     | ✗   |
-| Clarification precision: questions that were needed  | 0.0%   | 0/2                | ≥ 80%     | ✗   |
-| Clarification recall: needed questions asked         | –      | nothing to measure | ≥ 80%     |     |
-| Stability: untouched lines kept byte-identical       | 100.0% | 7/7                | 100%      | ✓   |
-| Exact steps: steps matching a gold answer completely | 14.3%  | 1/7                |           |     |
+| Metric | Value | Count | M2 target |  |
+|---|---|---|---|---|
+| Faithfulness: produced nodes a gold answer supports | 20.0% | 5/25 | ≥ 99% | ✗ |
+| Gap preservation: gaps in gold left open | 66.7% | 4/6 | 100% | ✗ |
+| Coverage: gold nodes produced | 17.9% | 5/28 | ≥ 85% | ✗ |
+| Placement: refinements made to the right nodes | 0.0% | 0/2 | ≥ 90% | ✗ |
+| Clarification precision: questions that were needed | 0.0% | 0/2 | ≥ 80% | ✗ |
+| Clarification recall: needed questions asked | – | nothing to measure | ≥ 80% |  |
+| Stability: untouched lines kept byte-identical | 100.0% | 7/7 | 100% | ✓ |
+| Exact steps: steps matching a gold answer completely | 14.3% | 1/7 |  |  |
 
 Rejected batches: 0. Latency p50 1500 ms, p95 1500 ms.
 
 ## By style
 
-|            | Walkthroughs | Steps | Faithful | Gaps kept | Coverage | Placement | Exact |
-| ---------- | ------------ | ----- | -------- | --------- | -------- | --------- | ----- |
-| incomplete | 1            | 4     | 33.3%    | 60.0%     | 31.3%    | 0.0%      | 0.0%  |
-| terse      | 1            | 3     | 0.0%     | 100.0%    | 0.0%     | –         | 33.3% |
+|  | Walkthroughs | Steps | Faithful | Gaps kept | Coverage | Placement | Exact |
+|---|---|---|---|---|---|---|---|
+| incomplete | 1 | 4 | 33.3% | 60.0% | 31.3% | 0.0% | 0.0% |
+| terse | 1 | 3 | 0.0% | 100.0% | 0.0% | – | 33.3% |
 
 ## By split
 
-|       | Walkthroughs | Steps | Faithful | Gaps kept | Coverage | Placement | Exact |
-| ----- | ------------ | ----- | -------- | --------- | -------- | --------- | ----- |
-| train | 2            | 7     | 20.0%    | 66.7%     | 17.9%    | 0.0%      | 14.3% |
+|  | Walkthroughs | Steps | Faithful | Gaps kept | Coverage | Placement | Exact |
+|---|---|---|---|---|---|---|---|
+| train | 2 | 7 | 20.0% | 66.7% | 17.9% | 0.0% | 14.3% |
 
 ## By problem
 
-|     | Walkthroughs | Steps | Faithful | Gaps kept | Coverage | Placement | Exact |
-| --- | ------------ | ----- | -------- | --------- | -------- | --------- | ----- |
-| dup | 2            | 7     | 20.0%    | 66.7%     | 17.9%    | 0.0%      | 14.3% |
+|  | Walkthroughs | Steps | Faithful | Gaps kept | Coverage | Placement | Exact |
+|---|---|---|---|---|---|---|---|
+| dup | 2 | 7 | 20.0% | 66.7% | 17.9% | 0.0% | 14.3% |
 
 ## Steps that don't match (6)
 

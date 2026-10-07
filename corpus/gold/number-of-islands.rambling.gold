@@ -1,0 +1,57 @@
+step 1
+add root: count = 0
+expect gaps WARN001
+
+step 2
+add root: def sink(r, c):
+    ...
+
+step 3
+fill h1:
+    if r < 0 or r >= len(grid) or c < 0 or c >= len(grid[r]) or grid[r][c] != 1:
+        return
+expect gaps WARN001
+
+step 4
+set n11.orelse = grid[r][c] = 0
+add n11.orelse:
+    sink(r - 1, c)
+    sink(r + 1, c)
+    sink(r, c - 1)
+    sink(r, c + 1)
+or
+add n5:
+    grid[r][c] = 0
+    sink(r - 1, c)
+    sink(r + 1, c)
+    sink(r, c - 1)
+    sink(r, c + 1)
+expect gaps WARN001
+
+step 5
+add root:
+    for r in range(len(grid)~range-bounds):
+        for c in range(len(grid[r])~range-bounds):
+            ...
+expect gaps WARN001 GAP002
+
+step 6
+fill h1:
+    if grid[r][c] == 1:
+        count += 1
+        sink(r, c)
+expect gaps none
+or
+fill h1:
+    if grid[r][c] == 1:
+        count = count + 1
+        sink(r, c)
+expect gaps none
+
+step 7
+add root: return count
+expect gaps none
+
+step 8
+note root complexity: O(rows times columns), since each cell gets sunk at most once
+expect gaps none

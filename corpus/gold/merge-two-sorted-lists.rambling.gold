@@ -1,0 +1,47 @@
+# The first utterance is an observation about the input, not a step.
+# GAP001 is `ListNode`: the problem provides it, but only the inputs count
+# as defined.
+step 1
+expect gaps none
+or
+note root general: both lists are already sorted, so they can be zipped together
+
+step 2
+add root:
+    dummy = ListNode(0)
+    tail = dummy
+expect gaps GAP001 WARN001
+
+step 3
+add root: while list1 is not None and list2 is not None:
+    ...
+expect gaps GAP001 WARN001 GAP002
+
+step 4
+fill h1:
+    if list1.val <= list2.val:
+        tail.next = list1
+        list1 = list1.next
+expect gaps GAP001
+
+step 5
+set n20.orelse = tail.next = list2
+add n20.orelse: list2 = list2.next
+expect gaps GAP001
+
+step 6
+add n10: tail = tail.next
+expect gaps GAP001
+
+step 7
+add root:
+    if list1 is not None:
+        tail.next = list1
+    else:
+        tail.next = list2
+expect gaps GAP001
+
+step 8
+add root: return dummy.next
+note root complexity: linear in the total number of nodes
+expect gaps GAP001

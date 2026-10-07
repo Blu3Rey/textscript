@@ -148,11 +148,15 @@ and add the second as an `or`:
 | Words | Canonical | Also accept |
 |---|---|---|
 | "is empty" / "isn't empty" | `not x` / `x` | `len(x) == 0` / `len(x) > 0` |
-| "otherwise, if …" | `elif` | a separate `if`, when the branch before returns |
-| "otherwise …" after a branch that returns | `else:` | the statement after the `if` |
-| "goes up by one" | `x += 1` | `x = x + 1` (only when said in words, not when "+=" was said) |
+| "otherwise, if …" | `elif` | `else:` holding the `if`; a separate `if`, when the branch before returns |
+| "otherwise …" after a branch that returns, breaks or continues | `else:` | the statement after the `if` |
 | "sort nums" | `nums.sort()` | `nums = sorted(nums)` |
+| "return A and B", when the problem asks for a list | `return [a, b]` | `return (a, b)` |
+| a spoken formula whose grouping is unclear ("the max of A and B plus C") | the reading the words favor | the other reading |
 
+- `x += 1` and `x = x + 1` are compared as the same code, so write either
+  and don't add the other as an `or`.
+- "The end" or "the last index" of a list is `len(x) - 1`.
 - "Up to n" is exclusive, as in Python's `range`. "Through n", "up to and
   including n" and "inclusive" mean `n + 1` as the bound.
 - Direct translations of plain words need no mark: "bigger than" → `>`,
@@ -169,15 +173,14 @@ and add the second as an `or`:
 Add an `or` alternative when two encodings are equally faithful, for
 example:
 
-- `x += 1` and `x = x + 1`
 - an `else:` branch, or a separate statement after an `if` that returns
 - `note` or `intent` for a remark that could be either a step or a comment
 - the order of two independent setup statements said in one breath
 
 Alternatives are compared by the code they produce, so two ways of
 writing the same code (`set n6.start = 0` and replacing the literal) are
-one answer, not two. Don't add alternatives for things that weren't said. If one reading fills
-a gap, it isn't acceptable, however likely it is.
+one answer, not two. Don't add alternatives for things that weren't said.
+If one reading fills a gap, it isn't acceptable, however likely it is.
 
 ### Things the IR can't say yet
 

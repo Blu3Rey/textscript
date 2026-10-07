@@ -1,0 +1,10 @@
+---
+problem: coin-change
+style: corrective
+---
+I'll make a list called best with amount entries, each one infinity.
+Sorry, it needs amount plus one entries, so that best[amount] exists.
+best[0] is zero, since zero coins make zero.
+For each coin, go through every total x from coin up to amount inclusive, and set best[x] to the smaller of best[x] and best[x minus coin] plus one.
+At the end, return best[amount].
+Wait, no: if best[amount] is still infinity we return minus one, and otherwise best[amount].

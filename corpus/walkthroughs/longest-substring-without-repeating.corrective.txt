@@ -1,0 +1,11 @@
+---
+problem: longest-substring-without-repeating
+style: corrective
+---
+I'll keep a list called window with the characters in the current window.
+Left starts at zero, and best starts at one.
+Actually, make window a set instead, so checking membership is fast.
+And best should start at zero, not one.
+Then for each index right in range of len of s, while s[right] is in window, remove s[left] from window and bump left by one.
+After that, add s[right] to window and set best to the max of best and right minus left plus one.
+Return best at the end.

@@ -1,0 +1,50 @@
+step 1
+add root: groups = {}
+expect gaps WARN001
+
+step 2
+add root:
+    for word in strs:
+        count = [0] * 26
+expect gaps WARN001 WARN001
+
+step 3
+add n5:
+    for c in word:
+        count[ord(c) - ord("a")] += 1
+expect gaps WARN001
+or
+add n5:
+    for c in word:
+        count[ord(c) - ord("a")] = count[ord(c) - ord("a")] + 1
+expect gaps WARN001
+
+step 4
+add n5: key = count
+expect gaps WARN001 WARN001
+
+step 5
+set n30.value = tuple(count)
+expect gaps WARN001 WARN001
+
+step 6
+add n5:
+    if key not in groups:
+        groups[key] = []
+    groups[key].append(word)
+expect gaps none
+
+step 7
+add root: return list(groups.values())
+expect code:
+    groups = {}
+    for word in strs:
+        count = [0] * 26
+        for c in word:
+            count[ord(c) - ord("a")] += 1
+        key = tuple(count)
+        if key not in groups:
+            groups[key] = []
+        groups[key].append(word)
+    return list(groups.values())
+expect gaps none

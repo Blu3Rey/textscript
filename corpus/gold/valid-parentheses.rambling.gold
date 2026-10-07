@@ -1,0 +1,48 @@
+# The first utterance gives the reason for a stack but creates nothing;
+# the stack is created in step 2.
+step 1
+or
+note root general: brackets close in the reverse order they opened, which suggests a stack
+
+step 2
+add root:
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+expect gaps WARN001 WARN001
+
+step 3
+add root: for c in s:
+    ...
+expect gaps WARN001 WARN001 GAP002
+
+step 4
+fill h1:
+    if c in pairs:
+        if not stack or stack[-1] != pairs[c]:
+            return False
+or
+fill h1:
+    if c in pairs:
+        if len(stack) == 0 or stack[-1] != pairs[c]:
+            return False
+expect gaps GAP003
+
+step 5
+set n27.orelse = stack.pop()
+or
+add n22: stack.pop()
+expect gaps GAP003
+
+step 6
+set n22.orelse = stack.append(c)  # ~synonym
+expect gaps GAP003
+
+step 7
+add root: return not stack
+or
+add root: return len(stack) == 0
+expect gaps none
+
+step 8
+note root complexity: O(n) time, and O(n) space for the stack
+expect gaps none

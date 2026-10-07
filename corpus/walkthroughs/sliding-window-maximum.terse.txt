@@ -1,0 +1,8 @@
+---
+problem: sliding-window-maximum
+style: terse
+---
+Brute force. Result list res.
+For each start i from 0 through len(nums) - k inclusive, append max of nums[i:i + k] to res.
+Return res.
+O(n times k) time, fine for small k.

@@ -2,7 +2,7 @@ import { emptyTranslator, type Translator } from '@textscript/translator';
 import { describe, expect, it } from 'vitest';
 import { isExact } from '../src/metrics';
 import { oracleTranslator, runEval, selectWalkthroughs, type StepResult } from '../src/run';
-import { fixture, scriptedTranslator } from './helpers';
+import { corpusOf, fixture, INCOMPLETE, PROBLEM, scriptedTranslator, TERSE } from './helpers';
 
 const clock = () => {
   let t = 0;
@@ -172,6 +172,28 @@ describe('step comparison', () => {
     });
     expect(metrics.clarificationPrecision).toEqual({ numerator: 0, denominator: 1, value: 0 });
     expect(metrics.clarificationRecall.value).toBeNull();
+  });
+});
+
+describe('equivalent code', () => {
+  it('treats x = x + y and x += y as the same', async () => {
+    const corpus = corpusOf({
+      problems: { dup: PROBLEM },
+      walkthroughs: { 'dup.incomplete': INCOMPLETE, 'dup.terse': TERSE },
+      gold: {
+        'dup.incomplete':
+          'step 1\nadd root: count = 0\nstep 2\nadd root: count += 1\nstep 3\nstep 4\n',
+        'dup.terse': 'step 1\nstep 2\nstep 3\n',
+      },
+    });
+    const { steps } = await runEval(corpus, {
+      translator: scriptedTranslator('explicit', {
+        u1: ['add root: count = 0'],
+        u2: ['add root: count = count + 1'],
+      }),
+      filter: { walkthroughs: ['dup.incomplete'] },
+    });
+    expect(steps.every(isExact)).toBe(true);
   });
 });
 

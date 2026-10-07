@@ -1,0 +1,10 @@
+---
+problem: fizz-buzz
+style: corrective
+---
+The result is an empty list called out.
+Loop i from zero to n.
+Wait, the numbers start at one and n has to be included, so i goes from one up to n plus one.
+If i mod three is zero and i mod five is zero, append FizzBuzz to out; else if i mod three is zero, append Fizz; else if i mod five is zero, append Buzz; otherwise append str of i.
+Actually, for the FizzBuzz case just check i mod fifteen equals zero instead of the two checks.
+Return out.

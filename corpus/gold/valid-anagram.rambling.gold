@@ -1,0 +1,27 @@
+# The first utterance only names the idea (sorting); the next ones say
+# how, so it changes nothing. Keeping it as a note is equally faithful.
+step 1
+or
+note root general: an anagram is the same letters shuffled, so sorting
+
+step 2
+add root:
+    if len(s) != len(t):
+        return False
+expect gaps GAP003
+
+step 3
+add root: sorted_s = sorted(s)
+expect gaps GAP003 WARN001
+
+step 4
+add root: sorted_t = sorted(t)
+expect gaps GAP003 WARN001 WARN001
+
+step 5
+add root: return sorted_s == sorted_t
+expect gaps none
+
+step 6
+note root complexity: n log n because of the sorting
+expect gaps none

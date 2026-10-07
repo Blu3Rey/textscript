@@ -1,0 +1,8 @@
+---
+problem: move-zeroes
+style: terse
+---
+Index called write, starts at zero.
+For each num in nums: if num isn't zero, nums[write] = num, then write += 1.
+Then for i from write to len(nums), set nums[i] to zero.
+In place, O(n), O(1) extra.

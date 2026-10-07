@@ -1,0 +1,8 @@
+---
+problem: linked-list-cycle
+style: terse
+---
+Two pointers, slow and fast, both start at head.
+While fast is not None and fast.next is not None: slow goes to slow.next, fast goes to fast.next.next.
+Inside the loop, if slow is fast, return True.
+After the loop, return False.

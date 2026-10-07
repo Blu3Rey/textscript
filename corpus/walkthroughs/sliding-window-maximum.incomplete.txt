@@ -1,0 +1,10 @@
+---
+problem: sliding-window-maximum
+style: incomplete
+---
+I'll use a deque called dq that holds indices, and a list called out for the answers.
+Go through nums by index i.
+First, if the index at the front of dq has slid out of the window, pop it off the left.
+Then while dq isn't empty and the number at its back index is smaller than nums[i], pop from the back.
+Append i to dq.
+Once i is at least k minus one, add the number at the front index of dq to out.

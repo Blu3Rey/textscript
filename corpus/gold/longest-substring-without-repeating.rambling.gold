@@ -1,0 +1,40 @@
+# The first utterance names the idea but no step of it. Keeping it as a
+# note is equally faithful.
+step 1
+expect gaps none
+or
+note root general: some kind of sliding window
+expect gaps none
+
+step 2
+add root: last = {}
+expect gaps WARN001
+
+step 3
+add root:
+    start = 0
+    longest = 0
+expect gaps WARN001 WARN001 WARN001
+
+step 4
+add root: for i in range(0, len(s)):
+    ...
+expect gaps WARN001 WARN001 WARN001 GAP002
+
+# "Each character" is s[i]; no separate name was given for it.
+step 5
+fill h1:
+    if s[i] in last and last[s[i]] >= start:
+        start = last[s[i]] + 1
+expect gaps WARN001
+
+step 6
+add n11:
+    last[s[i]] = i
+    longest = max(longest, i - start + 1)
+expect gaps none
+
+step 7
+add root: return longest
+note root complexity: one pass, so linear time
+expect gaps none

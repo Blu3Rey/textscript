@@ -1,0 +1,29 @@
+# Left out: what to return once both loops finish without returning False
+# (the True at the end). GAP003 keeps it open.
+step 1
+add root:
+    if len(s) != len(t):
+        return False
+expect gaps GAP003
+
+step 2
+add root: counts = {}
+expect gaps GAP003 WARN001
+
+step 3
+add root:
+    for c in s:
+        counts[c] = counts.get(c, 0) + 1
+expect gaps GAP003
+
+step 4
+add root:
+    for c in t:
+        counts[c] = counts.get(c, 0) - 1
+expect gaps GAP003
+
+step 5
+add n31:
+    if counts[c] < 0:
+        return False
+expect gaps GAP003

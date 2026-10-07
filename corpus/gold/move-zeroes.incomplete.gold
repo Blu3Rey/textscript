@@ -1,0 +1,25 @@
+# Left out: where slow starts (it should start at zero). Its value stays a
+# hole (GAP005). The swap is said only in words, since the IR has no
+# tuple assignment (GAP009).
+step 1
+add root: slow = ?value"starting value"
+expect gaps GAP005 WARN001
+
+step 2
+add root:
+    for fast in range(len(nums)~range-bounds):
+        ...
+expect gaps GAP005 GAP002 WARN001
+
+step 3
+fill h2:
+    if nums[fast] != 0:
+        intent swap nums[fast] with nums[slow]
+expect gaps GAP005 GAP009 WARN001
+
+step 4
+add n12: slow += 1
+expect gaps GAP005 GAP009
+or
+add n12: slow = slow + 1
+expect gaps GAP005 GAP009

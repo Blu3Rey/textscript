@@ -1,0 +1,32 @@
+# Left out: the return at the end. The early return for one house means
+# the other path reaches the end without a return (GAP003). An empty
+# street is never mentioned, so nothing handles it.
+step 1
+add root: dp = [0] * len(nums)
+expect gaps WARN001
+
+step 2
+add root:
+    if len(nums) == 1:
+        return nums[0]
+expect gaps WARN001 GAP003
+
+step 3
+add root:
+    dp[0] = nums[0]
+    dp[1] = max(nums[0], nums[1])
+expect gaps GAP003
+
+# Spoken, "the max of A and B plus C" could group either way; both are accepted.
+step 4
+add root: for i in range(2, len(nums)~range-bounds):
+    dp[i] = max(dp[i - 1], dp[i - 2] + nums[i])
+expect gaps GAP003
+or
+add root: for i in range(2, len(nums)~range-bounds):
+    dp[i] = max(dp[i - 1], dp[i - 2]) + nums[i]
+expect gaps GAP003
+
+step 5
+note root complexity: O(n) time and O(n) space
+expect gaps GAP003

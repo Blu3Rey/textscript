@@ -1,0 +1,41 @@
+step 1
+add root: freq = [0] * 26
+expect gaps WARN001
+
+step 2
+set n2.value = {}
+expect gaps WARN001
+
+step 3
+add root:
+    for c in s:
+        freq[c] += 1
+expect gaps none
+or
+add root:
+    for c in s:
+        freq[c] = freq[c] + 1
+expect gaps none
+
+step 4
+replace n13: freq[c] = freq.get(c, 0) + 1
+expect gaps none
+
+step 5
+add root:
+    for i~indexvar in range(0, len(s)~range-bounds):
+        if freq[s[i]] == 1:
+            return i
+expect gaps GAP003
+
+step 6
+add root: return -1
+expect code:
+    freq = {}
+    for c in s:
+        freq[c] = freq.get(c, 0) + 1
+    for i in range(0, len(s)):
+        if freq[s[i]] == 1:
+            return i
+    return -1
+expect gaps none

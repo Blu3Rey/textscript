@@ -1,0 +1,18 @@
+# heapify and heapreplace are said without heapq, so they stay bare names
+# (GAP001 each): imports aren't modeled.
+
+step 1
+add root:
+    heap = nums[:k]
+    heapify(heap)
+expect gaps GAP001
+
+step 2
+add root: for num in nums[k:]:
+    if num > heap[0]:
+        heapreplace(heap, num)
+expect gaps GAP001 GAP001
+
+step 3
+add root: return heap[0]
+expect gaps GAP001 GAP001

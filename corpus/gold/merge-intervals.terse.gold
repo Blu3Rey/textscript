@@ -1,0 +1,27 @@
+step 1
+add root: intent sort intervals by start
+expect gaps GAP009
+
+step 2
+add root: merged = []
+expect gaps GAP009 WARN001
+
+step 3
+add root:
+    for interval in intervals:
+        if not merged or interval[0] > merged[-1][1]:
+            merged.append(interval)
+or
+add root:
+    for interval in intervals:
+        if len(merged) == 0 or interval[0] > merged[-1][1]:
+            merged.append(interval)
+expect gaps GAP009
+
+step 4
+set n10.orelse = merged[-1][1] = max(merged[-1][1], interval[1])
+expect gaps GAP009
+
+step 5
+add root: return merged
+expect gaps GAP009

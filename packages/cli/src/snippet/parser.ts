@@ -649,12 +649,11 @@ class ExprParser {
     if (!this.at('op', '-')) return this.power();
     this.next();
     const number = this.peek();
-    // `-5` is a negative literal, unless it's the base of a power: `-5 ** 2`
-    // is -(5 ** 2) in Python.
-    if (
-      number?.kind === 'number' &&
-      !(this.peek(1)?.kind === 'op' && this.peek(1)?.text === '**')
-    ) {
+    // `-5` is a negative literal, unless something binds tighter to the 5:
+    // `-5 ** 2` is -(5 ** 2) in Python, and `-5()` is -(5()).
+    const after = this.peek(1);
+    const bindsTighter = after?.kind === 'op' && ['**', '(', '[', '.'].includes(after.text);
+    if (number?.kind === 'number' && !bindsTighter) {
       this.next();
       return this.annotations({
         kind: 'Literal',

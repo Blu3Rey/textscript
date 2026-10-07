@@ -17,7 +17,14 @@ import {
   type Program,
 } from '@textscript/core';
 import { PYTHON_BUILTINS, render, type RenderResult } from '@textscript/render-python';
-import { align, childFields, isPlaceholder, scalarSignature, type Alignment } from './align';
+import {
+  align,
+  childFields,
+  isPlaceholder,
+  normalizeProgram,
+  scalarSignature,
+  type Alignment,
+} from './align';
 
 export interface NodeRef {
   id: NodeId;
@@ -416,11 +423,18 @@ function compareWith(
  * batch was rejected.
  */
 export function compareStep(
-  before: IrDocument,
-  alternatives: readonly GoldAnswer[],
-  produced: { document: IrDocument; batch: EditBatch },
+  original: IrDocument,
+  goldAnswers: readonly GoldAnswer[],
+  result: { document: IrDocument; batch: EditBatch },
   options: { inputs: readonly string[] },
 ): StepComparison {
+  const normalize = (document: IrDocument): IrDocument => ({
+    ...document,
+    program: normalizeProgram(document.program),
+  });
+  const before = normalize(original);
+  const alternatives = goldAnswers.map((answer) => ({ ...answer, after: normalize(answer.after) }));
+  const produced = { ...result, document: normalize(result.document) };
   const producedGaps = new Map<NodeId, Set<string>>();
   for (const gap of gapsOf(produced.document.program, options.inputs)) {
     producedGaps.set(gap.nodeId, (producedGaps.get(gap.nodeId) ?? new Set()).add(gap.code));

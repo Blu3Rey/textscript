@@ -1,0 +1,32 @@
+step 1
+add root:
+    lo = 0
+    hi = len(nums) - 1
+expect gaps WARN001 WARN001
+
+step 2
+add root: while lo <= hi:
+    mid = (lo + hi) // 2
+expect gaps WARN001
+
+step 3
+set n12.cond = lo < hi
+expect gaps WARN001
+
+step 4
+add n12:
+    if nums[mid] > nums[hi]:
+        lo = mid + 1
+expect gaps none
+
+step 5
+set n27.orelse = hi = mid - 1
+expect gaps none
+
+step 6
+set n42.value = mid
+expect gaps none
+
+step 7
+add root: return nums[lo]
+expect gaps none

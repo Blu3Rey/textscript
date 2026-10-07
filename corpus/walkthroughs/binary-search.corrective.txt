@@ -1,0 +1,11 @@
+---
+problem: binary-search
+style: corrective
+---
+Set left to zero and right to the length of nums.
+Loop while left is less than right.
+Wait, I'll do the inclusive version instead: right starts at the length minus one, and the loop runs while left is less than or equal to right.
+In the loop, the middle index m is left plus right over two, rounded down.
+If nums[m] equals target, return m; if it's less than target, set left to m; otherwise set right to m minus one.
+Oops, left has to be m plus one, otherwise it can get stuck forever.
+After the loop, return minus one.

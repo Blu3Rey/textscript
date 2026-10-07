@@ -1,0 +1,44 @@
+step 1
+add root: counts = {}
+expect gaps WARN001
+
+# Restates step 1.
+step 2
+expect gaps WARN001
+
+step 3
+add root:
+    for num~loopvar in nums:
+        counts[num] = counts.get(num, 0) + 1
+expect gaps none
+
+step 4
+add root: buckets = []
+expect gaps WARN001
+
+step 5
+add root:
+    for i in range(0, len(nums) + 1):
+        buckets.append([])
+expect gaps none
+
+step 6
+add root:
+    for num in counts:
+        buckets[counts[num]].append(num)
+expect gaps none
+
+step 7
+add root:
+    result = []
+    for i in range(len(buckets) - 1, -1, -1):
+        result.extend(buckets[i])
+expect gaps none
+
+# The problem guarantees the loop returns, but nobody said what happens
+# if it doesn't, so GAP003 stays.
+step 8
+add n49:
+    if len(result) >= k:
+        return result
+expect gaps GAP003

@@ -1,0 +1,9 @@
+---
+problem: maximum-depth-of-binary-tree
+style: incomplete
+---
+I'll go level by level, with a deque called queue that starts with root in it.
+I also keep a counter called depth.
+While the queue is not empty, add one to depth, then repeat len(queue) times to handle one level.
+Each time, popleft from queue into node, and if node.left is not None append it, and same for node.right.
+Once the queue runs out, return depth.
