@@ -51,20 +51,43 @@ baseline with `--write-baseline` and check the diff.
 
 ### The LLM translators
 
-`claude` needs `ANTHROPIC_API_KEY` in the environment. `gemini` needs
-`GEMINI_API_KEY` (or `GOOGLE_API_KEY`). Both share the prompt, examples,
-retry and salvage ([ADR-014](../../docs/adr/014-llm-providers.md)). Both
-leave out the four training problems their few-shot examples come from,
-and translate four walkthroughs at once (`--concurrency`). For Gemini,
-`--effort` sets the thinking level.
+Each LLM translator has its own requirement:
+
+- `claude` needs `ANTHROPIC_API_KEY` in the environment.
+- `gemini` needs `GEMINI_API_KEY` (or `GOOGLE_API_KEY`).
+- `ollama` needs a local [Ollama](https://ollama.com) server
+  (`OLLAMA_HOST`, default `http://127.0.0.1:11434`) with the model pulled.
+  It needs no key and costs nothing.
+
+All three share the prompt, examples, retry and salvage
+([ADR-014](../../docs/adr/014-llm-providers.md)). All three leave out the
+four training problems their few-shot examples come from.
+
+For Gemini, `--effort` sets the thinking level. For Ollama, `--think`
+(`true`, `false`, `low`, `medium` or `high`) or `--effort` does; without
+either, the model's default applies. `--context-length` sets Ollama's
+context window (default 16384); the prompt alone is about 7,000 tokens
+before the turn.
+
+Claude translates four walkthroughs at once. Gemini and Ollama translate
+one at a time. Gemini's free tier allows only a few requests a minute, so
+raise it with `--concurrency 4` only on a paid key. A local model
+processes one request at a time anyway. The Gemini client retries rate
+limits and server errors with backoff.
+
+When batches are rejected (an API error, a refusal, a batch `apply` didn't
+accept), the run prints the most common reasons.
 
 ```sh
 pnpm eval run --translator claude --split test               # the held-out set
 pnpm eval run --translator gemini --split test
+pnpm eval run --translator ollama --model qwen3:8b --split test   # after `ollama pull qwen3:8b`
+pnpm eval run --translator ollama --model gpt-oss:20b --think low --validator lexical
 pnpm eval run --translator claude --effort low --model claude-opus-5-5 --out eval-report
 pnpm eval run --translator gemini --model gemini-3.1-pro-preview --effort high
 pnpm eval sweep --split test --efforts low,medium,high --out sweep
 pnpm eval sweep --translator gemini --split test
+pnpm eval sweep --translator ollama --model gpt-oss:20b --split test   # thinking levels
 ```
 
 The report adds latency (p50, p95) and cost, including cost per 20

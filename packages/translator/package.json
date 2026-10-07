@@ -18,6 +18,7 @@
     "@textscript/commands": "workspace:*",
     "@textscript/core": "workspace:*",
     "@textscript/render-python": "workspace:*",
+    "ollama": "^0.6.4",
     "zod": "^4.6.5"
   }
 }

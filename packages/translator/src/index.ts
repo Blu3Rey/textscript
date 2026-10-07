@@ -21,12 +21,22 @@ export {
 export {
   createGeminiTranslator,
   GEMINI_DEFAULT_MODEL,
+  GEMINI_HTTP_OPTIONS,
   GEMINI_PRICES,
   geminiBackend,
   type GeminiModelsApi,
   type GeminiReply,
   type GeminiTranslatorOptions,
 } from './gemini';
+export {
+  createOllamaTranslator,
+  OLLAMA_DEFAULT_CONTEXT,
+  OLLAMA_DEFAULT_MODEL,
+  ollamaBackend,
+  type OllamaChatApi,
+  type OllamaReply,
+  type OllamaTranslatorOptions,
+} from './ollama';
 export {
   createLlmTranslator,
   TranslatorError,

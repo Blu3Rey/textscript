@@ -14,6 +14,7 @@ Browser-safe.
 | `rulesTranslator` | About 30 phrase patterns, no network. The eval floor and the offline fallback. It leaves holes rather than guess. |
 | `createClaudeTranslator({ messages, model?, effort?, examples? })` | Claude writes edit commands (the console's language, see `@textscript/commands`) in a structured JSON answer. |
 | `createGeminiTranslator({ models, model?, effort?, examples? })` | The same with Gemini (default `gemini-3.5-flash`). |
+| `createOllamaTranslator({ ollama, model?, think?, contextLength?, examples? })` | The same with a local model through Ollama (default `qwen3:8b`): no key, no rate limits, no cost. |
 | `createLlmTranslator(backend)` | The loop both share, over any `LlmBackend`; a new provider only implements `start(context).send(feedback?)`. |
 | `createRemoteTranslator({ url })` | For the browser: calls `apps/server`, which runs an LLM translator. |
 
@@ -44,6 +45,25 @@ const translator = createGeminiTranslator({
   examples,
 });
 ```
+
+For a local model, run Ollama (`ollama pull qwen3:8b`) and:
+
+```ts
+import { Ollama } from 'ollama';
+import { createOllamaTranslator } from '@textscript/translator';
+
+const translator = createOllamaTranslator({
+  ollama: new Ollama({ host: 'http://127.0.0.1:11434' }),
+  model: 'qwen3:8b',
+  examples,
+});
+```
+
+Ollama truncates prompts that don't fit its context window, which is a few
+thousand tokens by default. The prompt with its examples is about 7,000
+tokens before the turn, so the adapter sets `num_ctx` to 16384
+(`contextLength`). `think` is left to the model unless set: some models
+take `true`/`false`, others `low`/`medium`/`high`.
 
 Words a translator can't encode come back as `unparsedSpans`. Apps call
 `withUnparsedNotes(context, translation)` to keep them visible as notes.

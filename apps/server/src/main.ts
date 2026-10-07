@@ -1,9 +1,12 @@
 import { serve } from '@hono/node-server';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
+import { Ollama } from 'ollama';
 import {
   createClaudeTranslator,
   createGeminiTranslator,
+  createOllamaTranslator,
+  GEMINI_HTTP_OPTIONS,
   type Effort,
   type Translator,
 } from '@textscript/translator';
@@ -11,6 +14,7 @@ import { examples } from '@textscript/translator/examples';
 import {
   createClaudeVerifier,
   createGeminiVerifier,
+  createOllamaVerifier,
   validatedTranslator,
   type Verifier,
 } from '@textscript/validator';
@@ -18,21 +22,30 @@ import { createApp } from './app';
 
 const EFFORTS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
-export type Provider = 'anthropic' | 'gemini';
+export type Provider = 'anthropic' | 'gemini' | 'ollama';
 
 /**
  * Which model provider to use: `TEXTSCRIPT_PROVIDER` if set, else Anthropic
- * when its key is set, else Gemini when its key is.
+ * when its key is set, else Gemini when its key is. Ollama (local models)
+ * needs no key, so it's only used when asked for.
  */
 export function providerFrom(env: NodeJS.ProcessEnv): Provider {
   const asked = env['TEXTSCRIPT_PROVIDER'];
-  if (asked === 'anthropic' || asked === 'gemini') return asked;
+  if (asked === 'anthropic' || asked === 'gemini' || asked === 'ollama') return asked;
   if (asked !== undefined && asked !== '')
-    throw new Error(`TEXTSCRIPT_PROVIDER must be anthropic or gemini, not "${asked}"`);
+    throw new Error(`TEXTSCRIPT_PROVIDER must be anthropic, gemini or ollama, not "${asked}"`);
   if (env['ANTHROPIC_API_KEY']) return 'anthropic';
   if (env['GEMINI_API_KEY'] ?? env['GOOGLE_API_KEY']) return 'gemini';
-  throw new Error('Set ANTHROPIC_API_KEY or GEMINI_API_KEY');
+  throw new Error('Set ANTHROPIC_API_KEY or GEMINI_API_KEY, or TEXTSCRIPT_PROVIDER=ollama');
 }
+
+const THINK: Readonly<Record<string, boolean | 'low' | 'medium' | 'high'>> = {
+  true: true,
+  false: false,
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+};
 
 /** The validated translator the server runs, for the provider the environment picks. */
 export function translatorFrom(env: NodeJS.ProcessEnv): Translator {
@@ -42,13 +55,27 @@ export function translatorFrom(env: NodeJS.ProcessEnv): Translator {
   const verify = env['TEXTSCRIPT_VERIFY'] === 'on';
   let translator: Translator;
   let verifier: Verifier | undefined;
-  if (providerFrom(env) === 'anthropic') {
+  const provider = providerFrom(env);
+  if (provider === 'anthropic') {
     const messages = new Anthropic().beta.messages;
     translator = createClaudeTranslator({ messages, ...settings });
     if (verify) verifier = createClaudeVerifier({ messages });
+  } else if (provider === 'ollama') {
+    const ollama = new Ollama({ host: env['OLLAMA_HOST'] ?? 'http://127.0.0.1:11434' });
+    const think = THINK[env['TEXTSCRIPT_THINK'] ?? ''];
+    const contextLength = Number(env['TEXTSCRIPT_CONTEXT_LENGTH']);
+    translator = createOllamaTranslator({
+      ollama,
+      examples,
+      ...(model ? { model } : {}),
+      ...(think === undefined ? {} : { think }),
+      ...(Number.isInteger(contextLength) && contextLength > 0 ? { contextLength } : {}),
+    });
+    if (verify) verifier = createOllamaVerifier({ ollama, ...(model ? { model } : {}) });
   } else {
     const models = new GoogleGenAI({
       apiKey: env['GEMINI_API_KEY'] ?? env['GOOGLE_API_KEY'] ?? '',
+      httpOptions: GEMINI_HTTP_OPTIONS,
     }).models;
     translator = createGeminiTranslator({ models, ...settings });
     if (verify) verifier = createGeminiVerifier({ models });

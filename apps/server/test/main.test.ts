@@ -11,9 +11,12 @@ describe('choosing a provider', () => {
     expect(providerFrom({ ANTHROPIC_API_KEY: 'a', GEMINI_API_KEY: 'g' })).toBe('anthropic');
     expect(providerFrom({ GEMINI_API_KEY: 'g' })).toBe('gemini');
     expect(providerFrom({ GOOGLE_API_KEY: 'g', TEXTSCRIPT_PROVIDER: '' })).toBe('gemini');
-    expect(() => providerFrom({})).toThrow('Set ANTHROPIC_API_KEY or GEMINI_API_KEY');
+    expect(providerFrom({ TEXTSCRIPT_PROVIDER: 'ollama' })).toBe('ollama');
+    expect(() => providerFrom({})).toThrow(
+      'Set ANTHROPIC_API_KEY or GEMINI_API_KEY, or TEXTSCRIPT_PROVIDER=ollama',
+    );
     expect(() => providerFrom({ TEXTSCRIPT_PROVIDER: 'openai' })).toThrow(
-      'TEXTSCRIPT_PROVIDER must be anthropic or gemini, not "openai"',
+      'TEXTSCRIPT_PROVIDER must be anthropic, gemini or ollama, not "openai"',
     );
   });
 
@@ -22,6 +25,17 @@ describe('choosing a provider', () => {
       translatorFrom({ GEMINI_API_KEY: 'g', TEXTSCRIPT_EFFORT: 'low', TEXTSCRIPT_VERIFY: 'on' })
         .name,
     ).toBe('gemini:gemini-3.5-flash:low');
+    expect(translatorFrom({ TEXTSCRIPT_PROVIDER: 'ollama' }).name).toBe('ollama:qwen3:8b');
+    expect(
+      translatorFrom({
+        TEXTSCRIPT_PROVIDER: 'ollama',
+        TEXTSCRIPT_MODEL: 'gpt-oss:20b',
+        TEXTSCRIPT_THINK: 'low',
+        TEXTSCRIPT_CONTEXT_LENGTH: '32768',
+        TEXTSCRIPT_VERIFY: 'on',
+        OLLAMA_HOST: 'http://gpu-box:11434',
+      }).name,
+    ).toBe('ollama:gpt-oss:20b:think-low');
     vi.stubEnv('ANTHROPIC_API_KEY', 'test');
     expect(
       translatorFrom({
