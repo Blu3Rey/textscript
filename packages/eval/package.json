@@ -18,6 +18,7 @@
     "textscript-eval": "./bin/eval.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@textscript/cli": "workspace:*",
     "@textscript/core": "workspace:*",
     "@textscript/render-python": "workspace:*",

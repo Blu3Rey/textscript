@@ -40,9 +40,14 @@ export interface Translation {
    * Questions for the user are `ask_clarification` ops in the batch.
    */
   batch: EditBatch;
-  /** Words the translator couldn't encode. The caller keeps them as notes. */
+  /**
+   * Words the translator couldn't encode. `withUnparsedNotes` keeps them as
+   * notes, so nothing said is lost (ROADMAP.md principle 6).
+   */
   unparsedSpans: Span[];
   usage?: TranslationUsage;
+  /** How the translation went, for reports. */
+  trace?: { attempts: number; salvaged: boolean; errors: string[] };
 }
 
 export interface Translator {

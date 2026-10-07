@@ -4,10 +4,12 @@
 import { fileURLToPath } from 'node:url';
 import { analyze } from '@textscript/core';
 import { PYTHON_BUILTINS } from '@textscript/render-python';
-import { emptyTranslator } from '@textscript/translator';
+import { emptyTranslator, rulesTranslator } from '@textscript/translator';
+import { examples } from '@textscript/translator/examples';
 import { describe, expect, it } from 'vitest';
 import { STYLES } from '../src/corpus/corpus';
 import { loadCorpus, readCorpusDir } from '../src/corpus/load';
+import { buildExamples, exampleProblems } from '../src/examples';
 import { oracleTranslator, runEval } from '../src/run';
 
 const root = fileURLToPath(new URL('../../../corpus', import.meta.url));
@@ -113,4 +115,31 @@ describe('the corpus against the stub translators', () => {
     expect(metrics.gapPreservation.value).toBe(1);
     expect(metrics.coverage.value).toBe(0);
   }, 60_000);
+});
+
+describe('the LLM translator examples', () => {
+  it('match the training gold (regenerate with `pnpm eval examples --out packages/translator/src/examples.json`)', () => {
+    expect(buildExamples(corpus, files)).toEqual(examples);
+  });
+
+  it('come from training problems only, which LLM runs leave out', async () => {
+    const left = exampleProblems(corpus);
+    expect(left.length).toBe(4);
+    for (const id of left) expect(corpus.problems.get(id)?.split).toBe('train');
+    const result = await runEval(corpus, {
+      translator: emptyTranslator,
+      filter: { excludeProblems: left },
+      concurrency: 8,
+    });
+    expect(result.steps.some((step) => left.includes(step.problem))).toBe(false);
+    expect(result.steps.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the rules baseline', () => {
+  it('never closes a gap the speaker left open', async () => {
+    const result = await runEval(corpus, { translator: rulesTranslator });
+    expect(result.metrics.gapPreservation.value).toBe(1);
+    expect(result.metrics.rejected).toBe(0);
+  });
 });

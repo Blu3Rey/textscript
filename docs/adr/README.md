@@ -18,6 +18,7 @@ the old one.
 | [009](009-gap-analysis.md) | Gap analysis and coverage | Accepted |
 | [010](010-developer-console.md) | Developer console and scenario scripts | Accepted |
 | [011](011-corpus-and-evaluation.md) | Walkthrough corpus and evaluation | Accepted |
+| [012](012-translator.md) | The translator: commands as output, context packing, baseline, server | Accepted |
 
 ## Writing a new ADR
 

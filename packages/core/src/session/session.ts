@@ -224,7 +224,7 @@ export function replay(
 
 // Persistence ------------------------------------------------------------------
 
-const UtteranceSchema = z.strictObject({
+export const UtteranceSchema = z.strictObject({
   id: z.string().min(1),
   text: z.string(),
   tokens: z.array(

@@ -28,7 +28,7 @@ pnpm check
 
 | Command | What it does |
 |---|---|
-| `pnpm check` | Everything CI runs: typecheck, lint, format check, tests with coverage, Python golden parse |
+| `pnpm check` | Everything CI runs: typecheck, lint, format check, tests with coverage, Python golden parse, eval gate |
 | `pnpm typecheck` | `tsc` for root files and every package |
 | `pnpm lint` | ESLint with type-aware rules; warnings fail |
 | `pnpm format` / `pnpm format:check` | Prettier (Markdown is excluded) |
@@ -39,6 +39,8 @@ pnpm check
 | `pnpm new-package <name>` | Scaffolds a package (`--node` to allow Node APIs) |
 | `pnpm textscript --help` | Runs the developer CLI |
 | `pnpm eval check` | Checks the walkthrough corpus (see [corpus/README.md](corpus/README.md)) |
+| `pnpm check:eval` | The eval gate: the corpus is valid and the rules translator doesn't regress against `corpus/baselines/rules.json` |
+| `pnpm eval run --translator claude` | Scores the LLM translator (needs `ANTHROPIC_API_KEY`; see [packages/eval/README.md](packages/eval/README.md)) |
 
 ## Repository layout
 
@@ -46,11 +48,13 @@ pnpm check
 packages/          libraries; each exports TypeScript source from src/index.ts
   core/            IR, edit operations, history, analysis (only dependency: Zod)
   render-python/   IR → Python source + source map
+  commands/        the edit-command language: console commands → edit operations
   cli/             developer console
-  translator/      the Translator interface (implementations from S7)
+  translator/      the Translator interface, the rules baseline and the Claude translator
   eval/            corpus loader, evaluation runner, metrics, reports
-apps/              deployable apps (web UI, API server); from S10
-corpus/            interview problems, walkthroughs and gold annotations
+apps/              deployable apps; each exports TypeScript source from src/index.ts
+  server/          HTTP API that calls Claude, so the key stays server-side
+corpus/            interview problems, walkthroughs, gold annotations, eval baselines
 docs/adr/          architecture decision records
 scripts/           repo tooling
 ```
@@ -66,7 +70,7 @@ scripts/           repo tooling
   `test/tsconfig.json` adds them for the tests. `pnpm new-package` sets this up.
 - **Strict TypeScript.** `noUncheckedIndexedAccess` and
   `exactOptionalPropertyTypes` are on. Prefer narrowing over `!` and `as`.
-- **Coverage stays at or above 80%** for `packages/*/src`.
+- **Coverage stays at or above 80%** for `packages/*/src` and `apps/*/src`.
 
 ## Tests
 

@@ -39,12 +39,16 @@ export interface RunFilter {
   problems?: readonly string[];
   styles?: readonly Style[];
   walkthroughs?: readonly string[];
+  /** Leave these problems out, such as the ones the few-shot examples come from. */
+  excludeProblems?: readonly string[];
 }
 
 export interface RunOptions {
   /** One translator for every walkthrough, or one made per walkthrough from its gold. */
   translator: Translator | ((gold: CompiledGold) => Translator);
   filter?: RunFilter;
+  /** Walkthroughs translated at once (default 1); steps within one stay in order. */
+  concurrency?: number;
   /** Milliseconds; injectable for tests. */
   now?: () => number;
 }
@@ -57,7 +61,8 @@ export function selectWalkthroughs(corpus: Corpus, filter: RunFilter = {}): Comp
         (filter.split === undefined || problem?.split === filter.split) &&
         (filter.problems === undefined || filter.problems.includes(w.problem)) &&
         (filter.styles === undefined || filter.styles.includes(w.style)) &&
-        (filter.walkthroughs === undefined || filter.walkthroughs.includes(w.id))
+        (filter.walkthroughs === undefined || filter.walkthroughs.includes(w.id)) &&
+        !(filter.excludeProblems ?? []).includes(w.problem)
       );
     })
     .sort((a, b) => a.walkthrough.id.localeCompare(b.walkthrough.id));
@@ -71,10 +76,12 @@ function problemContext(problem: Problem | undefined, id: string) {
 
 export async function runEval(corpus: Corpus, options: RunOptions): Promise<RunResult> {
   const now = options.now ?? (() => performance.now());
-  const steps: StepResult[] = [];
+  const selected = selectWalkthroughs(corpus, options.filter);
+  const results: StepResult[][] = [];
   let name: string | undefined;
 
-  for (const gold of selectWalkthroughs(corpus, options.filter)) {
+  const play = async (gold: CompiledGold): Promise<StepResult[]> => {
+    const steps: StepResult[] = [];
     const { walkthrough } = gold;
     const problem = corpus.problems.get(walkthrough.problem);
     const translator =
@@ -140,7 +147,25 @@ export async function runEval(corpus: Corpus, options: RunOptions): Promise<RunR
         },
       });
     }
-  }
+    return steps;
+  };
+
+  // A small pool: each worker takes the next walkthrough until none are left.
+  let next = 0;
+  const worker = async () => {
+    while (next < selected.length) {
+      const index = next++;
+      const gold = selected[index];
+      if (gold !== undefined) results[index] = await play(gold);
+    }
+  };
+  await Promise.all(
+    Array.from(
+      { length: Math.max(1, Math.min(options.concurrency ?? 1, selected.length)) },
+      worker,
+    ),
+  );
+  const steps = results.flat();
   return {
     translator:
       name ?? (typeof options.translator === 'function' ? 'unknown' : options.translator.name),

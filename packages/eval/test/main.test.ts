@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import type { MessagesApi, ModelReply } from '@textscript/translator';
+import { describe, expect, it, vi } from 'vitest';
 import { main } from '../src/main';
 import { INCOMPLETE, INCOMPLETE_GOLD, PROBLEM, TERSE, TERSE_GOLD } from './helpers';
 
@@ -24,11 +25,38 @@ function corpusDir(extra: Record<string, string> = {}): string {
   return root;
 }
 
-async function run(argv: string[]) {
+async function run(argv: string[], messages?: MessagesApi) {
   let stdout = '';
   let stderr = '';
-  const code = await main(argv, { stdout: (t) => (stdout += t), stderr: (t) => (stderr += t) });
+  const code = await main(argv, {
+    stdout: (t) => (stdout += t),
+    stderr: (t) => (stderr += t),
+    ...(messages ? { messages } : {}),
+  });
   return { code, stdout, stderr };
+}
+
+/** A Claude API that understands nothing, and records the efforts it was asked for. */
+function silentClaude(): MessagesApi & { efforts: string[] } {
+  const efforts: string[] = [];
+  return {
+    efforts,
+    create(params) {
+      efforts.push(params.output_config?.effort ?? 'none');
+      const reply: ModelReply = {
+        content: [{ type: 'text', text: '{"commands":[],"unparsed":[]}', citations: null }],
+        stop_reason: 'end_turn',
+        model: params.model,
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
+      };
+      return Promise.resolve(reply);
+    },
+  };
 }
 
 describe('textscript-eval', () => {
@@ -141,6 +169,64 @@ describe('textscript-eval', () => {
     const bad = await run(['run', '--corpus', root, '--baseline', baseline]);
     expect(bad.code).toBe(2);
     expect(bad.stderr).toContain('is not a baseline');
+  });
+
+  it('runs the Claude translator with a model and effort', async () => {
+    const claude = silentClaude();
+    const result = await run(
+      [
+        'run',
+        '--corpus',
+        corpusDir(),
+        '--translator',
+        'claude',
+        '--effort',
+        'low',
+        '--concurrency',
+        '2',
+      ],
+      claude,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('# Evaluation: claude:claude-opus-5-5:low');
+    expect(result.stdout).toContain('per 20 utterances');
+    expect(claude.efforts).toEqual(Array.from({ length: 7 }, () => 'low'));
+    for (const [argv, message] of [
+      [['--effort', 'huge'], "unknown effort 'huge'"],
+      [['--concurrency', '0'], '--concurrency needs a positive integer'],
+    ] as const) {
+      const bad = await run(
+        ['run', '--corpus', corpusDir(), '--translator', 'claude', ...argv],
+        claude,
+      );
+      expect(bad.code).toBe(2);
+      expect(bad.stderr).toContain(message);
+    }
+  });
+
+  it('needs an API key for Claude', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    const result = await run(['run', '--corpus', corpusDir(), '--translator', 'claude']);
+    vi.unstubAllEnvs();
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('needs ANTHROPIC_API_KEY');
+  });
+
+  it('sweeps efforts and writes a report for each', async () => {
+    const root = corpusDir();
+    const claude = silentClaude();
+    const result = await run(
+      ['sweep', '--corpus', root, '--efforts', 'low,high', '--out', join(root, 'sweep')],
+      claude,
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('# Effort sweep: claude-opus-5-5');
+    expect(result.stdout).toMatch(/\| low \| – \| 100\.0% \| .* \| \$0\.\d{4} \|/);
+    expect(result.stdout).toContain('| high |');
+    expect(new Set(claude.efforts)).toEqual(new Set(['low', 'high']));
+    expect(readFileSync(join(root, 'sweep', 'high', 'report.md'), 'utf8')).toContain(
+      '# Evaluation: claude:claude-opus-5-5:high',
+    );
   });
 
   it('filters by problem and walkthrough', async () => {

@@ -5,8 +5,22 @@
 //   h2        the second hole, in document order
 //   @label    a node by its label (spaces written as dashes)
 
-import { allNodes, indexTree, type NodeId, type Program } from '@textscript/core';
-import { holes } from './view';
+import { allNodes, indexTree, type NodeId, type NodeKind, type Program } from '@textscript/core';
+
+const HOLE_KINDS: ReadonlySet<NodeKind> = new Set<NodeKind>([
+  'BlockHole',
+  'CondHole',
+  'ExprHole',
+  'NameHole',
+  'RefHole',
+]);
+
+/** Holes in document order; `h1` is the first. */
+export function holes(program: Program): NodeId[] {
+  return allNodes(program)
+    .filter((node) => HOLE_KINDS.has(node.kind))
+    .map((node) => node.id);
+}
 
 export class RefError extends Error {
   constructor(message: string) {

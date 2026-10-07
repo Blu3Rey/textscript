@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check:python": "python3 scripts/check_python_parses.py",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage && pnpm check:python",
+    "check:eval": "pnpm -s eval check && pnpm -s eval run --translator rules --baseline corpus/baselines/rules.json",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test:coverage && pnpm check:python && pnpm check:eval",
     "new-package": "tsx scripts/new-package.ts",
     "textscript": "node packages/cli/bin/textscript.js",
     "eval": "node packages/eval/bin/eval.js"

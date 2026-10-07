@@ -6,8 +6,12 @@
 // starts, or on :commit, :undo, :redo, :revert or :save.
 
 import {
-  CHILD_FIELDS,
-  EditOpSchema,
+  commandFailure,
+  compileCommand,
+  describeApplyError,
+  resolveRef,
+} from '@textscript/commands';
+import {
   analyze,
   apply,
   applyEvent,
@@ -16,33 +20,17 @@ import {
   indexTree,
   parseSessionLog,
   replay,
-  resolveTempIds,
   serializeSessionLog,
-  zodIssueMessages,
   type Analysis,
-  type ApplyError,
-  type Block,
   type Clarification,
   type EditOp,
-  type InsertPosition,
   type IrDocument,
-  type JsonValue,
-  type NoteTag,
   type SessionEvent,
   type SessionState,
   type Span,
-  type Stmt,
   type Utterance,
 } from '@textscript/core';
 import { PYTHON_BUILTINS, render } from '@textscript/render-python';
-import {
-  SnippetError,
-  parseCondition,
-  parseExpression,
-  parseStatements,
-  type SnippetOptions,
-} from '../snippet/parser';
-import { RefError, resolveRef } from './refs';
 import { formatCode, formatCoverage, formatDiagnostics } from './view';
 
 export interface FileSystem {
@@ -81,13 +69,6 @@ interface Pending {
   clarifications: Clarification[];
   temp: number;
 }
-
-const NOTE_TAGS: readonly NoteTag[] = ['general', 'edge-case', 'complexity'];
-
-/** Fields holding a block of statements. */
-const BLOCK_FIELDS: ReadonlySet<string> = new Set(['body', 'orelse']);
-/** Fields holding a condition, where `?` means a condition hole. */
-const CONDITION_FIELDS: ReadonlySet<string> = new Set(['cond']);
 
 export const HELP = `Commands (refs: root, n12, h2 for the 2nd hole, @label):
 
@@ -169,20 +150,13 @@ export class Console {
       const status = this.#dispatch(word, rest, text);
       return { status, output: this.#out };
     } catch (error) {
-      if (
-        error instanceof ConsoleError ||
-        error instanceof SnippetError ||
-        error instanceof RefError
-      ) {
-        const code =
-          error instanceof ConsoleError
-            ? error.code
-            : error instanceof SnippetError
-              ? 'syntax'
-              : 'bad-ref';
-        const failure = { code, message: error.message };
+      const failure =
+        error instanceof ConsoleError
+          ? { code: error.code, message: error.message }
+          : commandFailure(error);
+      if (failure !== undefined) {
         this.#lastError = failure;
-        this.#out.push(`✗ ${code}: ${error.message}`);
+        this.#out.push(`✗ ${failure.code}: ${failure.message}`);
         return { status: 'error', output: this.#out, error: failure };
       }
       throw error;
@@ -212,7 +186,7 @@ export class Console {
       case 'unnote':
       case 'ask':
       case 'op':
-        this.#edit(word, rest, text);
+        this.#edit(text);
         return 'ok';
       case 'show':
       case ':show':
@@ -404,24 +378,23 @@ export class Console {
 
   // Edits ---------------------------------------------------------------------------
 
-  #edit(word: string, rest: string, text: string): void {
+  #edit(text: string): void {
     const pending = this.#pending ?? this.#beginImplicit(text);
     const tokens = pending.utterance.tokens.length;
     const provenance: Span[] =
       tokens > 0 ? [{ utteranceId: pending.utterance.id, start: 0, end: tokens }] : [];
-    const snippet: SnippetOptions = {
-      nextId: () => `t${String(++pending.temp)}`,
-      provenance,
+    const ops = compileCommand(this.document, text, {
       utteranceId: pending.utterance.id,
-    };
-    const ops = this.#buildOps(word, rest, snippet, provenance);
+      provenance,
+      nextId: () => `t${String(++pending.temp)}`,
+    });
 
     const all = [...pending.ops, ...ops];
     const result = apply(this.#state.document, { utteranceId: pending.utterance.id, ops: all });
     if (!result.ok)
       throw new ConsoleError(
         result.error.code,
-        describe(result.error, pending.ops.length, ops.length),
+        describeApplyError(result.error, pending.ops.length, ops.length),
       );
     pending.ops = all;
     pending.preview = result.document;
@@ -449,208 +422,6 @@ export class Console {
     if (ref === undefined || ref === '')
       throw new ConsoleError('usage', 'A node reference is missing');
     return resolveRef(this.document.program, ref);
-  }
-
-  /**
-   * A block to add statements to: `root`, a block, or a compound statement
-   * (meaning its body). `n7.orelse` picks another block field.
-   */
-  #parent(ref: string | undefined): string {
-    const [base, field = 'body'] = (ref ?? '').split('.');
-    const id = this.#ref(base);
-    const node = indexTree(this.document.program).get(id)?.node;
-    if (node === undefined || node.kind === 'Program' || node.kind === 'Block') return id;
-    const fields: [string, unknown][] = Object.entries(node);
-    const child = fields.find(([key]) => key === field)?.[1];
-    if (isBlock(child)) return child.id;
-    throw new ConsoleError('usage', `${node.kind} ${id} has no block "${field}"`);
-  }
-
-  /** Splits `head: body` at the first colon of the first line. */
-  #headAndBody(rest: string, usage: string): { head: string; body: string } {
-    const newline = rest.indexOf('\n');
-    const firstLine = newline === -1 ? rest : rest.slice(0, newline);
-    const colon = firstLine.indexOf(':');
-    if (colon === -1) throw new ConsoleError('usage', usage);
-    const inline = firstLine.slice(colon + 1).trim();
-    const more = newline === -1 ? '' : rest.slice(newline + 1);
-    return { head: firstLine.slice(0, colon).trim(), body: joinBody(inline, more) };
-  }
-
-  #position(words: string[]): InsertPosition {
-    const [where, anchor] = words;
-    switch (where) {
-      case undefined:
-      case 'end':
-        return { at: 'end' };
-      case 'start':
-        return { at: 'start' };
-      case 'before':
-        return { before: this.#ref(anchor) };
-      case 'after':
-        return { after: this.#ref(anchor) };
-      default:
-        throw new ConsoleError(
-          'usage',
-          `Position must be start, end, before <ref> or after <ref>, not "${where}"`,
-        );
-    }
-  }
-
-  #buildOps(word: string, rest: string, snippet: SnippetOptions, provenance: Span[]): EditOp[] {
-    const words = rest.trim().split(/\s+/).filter(Boolean);
-    switch (word) {
-      case 'add': {
-        const { head, body } = this.#headAndBody(
-          rest,
-          'Write add <parent> [position]: <statements>',
-        );
-        const [parentRef, ...where] = head.split(/\s+/);
-        const parent = this.#parent(parentRef);
-        const position = this.#position(where);
-        const stmts = parseStatements(body, snippet);
-        return stmts.map((stmt, i): EditOp => {
-          const previous = stmts[i - 1];
-          return {
-            op: 'add_stmt',
-            parent,
-            position: previous === undefined ? position : { after: previous.id },
-            stmt,
-            provenance,
-          };
-        });
-      }
-      case 'fill': {
-        const { head, body } = this.#headAndBody(rest, 'Write fill <hole>: <code>');
-        const hole = this.#ref(head);
-        const kind = indexTree(this.document.program).get(hole)?.node.kind;
-        const value =
-          kind === 'BlockHole'
-            ? parseStatements(body, snippet)
-            : kind === 'CondHole'
-              ? parseCondition(body, snippet)
-              : parseExpression(body, snippet);
-        return [{ op: 'fill_hole', hole, value, provenance }];
-      }
-      case 'set': {
-        const match = /^\s*(\S+)\.([A-Za-z]+)\s*=\s*([\s\S]*)$/.exec(rest);
-        if (match === null) throw new ConsoleError('usage', 'Write set <ref>.<field> = <value>');
-        const [, ref, field = '', text = ''] = match;
-        const newline = text.indexOf('\n');
-        const valueText =
-          newline === -1 ? text : joinBody(text.slice(0, newline).trim(), text.slice(newline + 1));
-        const node = this.#ref(ref);
-        const target = indexTree(this.document.program).get(node)?.node;
-        const childFields: readonly string[] = target ? CHILD_FIELDS[target.kind] : [];
-        let value: JsonValue | Stmt | Block | ReturnType<typeof parseExpression>;
-        if (BLOCK_FIELDS.has(field) && childFields.includes(field)) {
-          value = {
-            kind: 'Block',
-            id: snippet.nextId(),
-            stmts: parseStatements(valueText, snippet),
-            provenance,
-          };
-        } else if (childFields.includes(field)) {
-          value = CONDITION_FIELDS.has(field)
-            ? parseCondition(valueText, snippet)
-            : parseExpression(valueText, snippet);
-        } else {
-          value = scalar(valueText);
-        }
-        return [{ op: 'update_field', node, field, value, provenance }];
-      }
-      case 'replace': {
-        const { head, body } = this.#headAndBody(rest, 'Write replace <ref>: <code>');
-        const node = this.#ref(head);
-        const entry = indexTree(this.document.program).get(node);
-        const field = entry?.position?.field ?? '';
-        if (field === 'body' || field === 'stmts') {
-          const stmts = parseStatements(body, snippet);
-          const [stmt] = stmts;
-          if (stmt === undefined || stmts.length !== 1)
-            throw new ConsoleError('usage', 'Replace one statement with one statement');
-          return [{ op: 'replace_node', node, replacement: stmt, provenance }];
-        }
-        const replacement = CONDITION_FIELDS.has(field)
-          ? parseCondition(body, snippet)
-          : parseExpression(body, snippet);
-        return [{ op: 'replace_node', node, replacement, provenance }];
-      }
-      case 'remove':
-        return [{ op: 'remove_node', node: this.#ref(words[0]), provenance }];
-      case 'move': {
-        const [ref, parentRef, ...where] = words;
-        return [
-          {
-            op: 'move_node',
-            node: this.#ref(ref),
-            parent: this.#parent(parentRef),
-            position: this.#position(where),
-            provenance,
-          },
-        ];
-      }
-      case 'wrap': {
-        const { head, body } = this.#headAndBody(rest, 'Write wrap <ref>,<ref>: <header>:');
-        const nodes = head.split(',').map((ref) => this.#ref(ref.trim()));
-        const [wrapper, extra] = parseStatements(body.endsWith(':') ? body : `${body}:`, snippet);
-        if (wrapper === undefined || extra !== undefined)
-          throw new ConsoleError('usage', 'Give one compound header, such as "if ready:"');
-        return [{ op: 'wrap_nodes', nodes, wrapper, provenance }];
-      }
-      case 'rename': {
-        const [ref, name] = words;
-        if (name === undefined)
-          throw new ConsoleError('usage', 'Write rename <name-ref> <new-name>');
-        return [{ op: 'rename_symbol', node: this.#ref(ref), name, provenance }];
-      }
-      case 'label': {
-        const [ref, ...label] = words;
-        if (label.length === 0) throw new ConsoleError('usage', 'Write label <ref> <text>');
-        return [{ op: 'set_label', node: this.#ref(ref), label: label.join(' '), provenance }];
-      }
-      case 'unlabel':
-        return [{ op: 'set_label', node: this.#ref(words[0]), provenance }];
-      case 'note': {
-        const { head, body } = this.#headAndBody(rest, 'Write note <ref> [tag]: <text>');
-        const [ref, tagWord = 'general'] = head.split(/\s+/);
-        const tag = NOTE_TAGS.find((t) => t === tagWord);
-        if (tag === undefined)
-          throw new ConsoleError('usage', `Note tags are ${NOTE_TAGS.join(', ')}`);
-        if (body === '') throw new ConsoleError('usage', 'A note needs text');
-        return [{ op: 'add_note', node: this.#ref(ref), text: body, tag, provenance }];
-      }
-      case 'unnote':
-        if (words[0] === undefined) throw new ConsoleError('usage', 'Write unnote <note-id>');
-        return [{ op: 'remove_note', note: words[0], provenance }];
-      case 'ask': {
-        const [question = '', refs = ''] = rest.split(' -- ');
-        if (question.trim() === '')
-          throw new ConsoleError('usage', 'Write ask <question> [-- <ref> ...]');
-        const candidates = refs
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((ref) => this.#ref(ref));
-        return [{ op: 'ask_clarification', question: question.trim(), candidates }];
-      }
-      default: {
-        let json: unknown;
-        try {
-          json = JSON.parse(rest);
-        } catch {
-          throw new ConsoleError('usage', 'Write op <json>');
-        }
-        // Its temporary IDs may clash with ones earlier commands in this
-        // batch used, so they are renumbered from the batch's counter.
-        const renumbered = resolveTempIds(json, { allocate: snippet.nextId, next: 0 });
-        if (!renumbered.ok) throw new ConsoleError('invalid-temp-id', renumbered.message);
-        const op = EditOpSchema.safeParse(renumbered.value);
-        if (!op.success)
-          throw new ConsoleError('invalid-batch', zodIssueMessages(op.error).join('; '));
-        return [op.data];
-      }
-    }
   }
 
   // Views and inspection ------------------------------------------------------------
@@ -743,36 +514,6 @@ export class Console {
   }
 }
 
-function isBlock(value: unknown): value is Block {
-  return typeof value === 'object' && value !== null && 'kind' in value && value.kind === 'Block';
-}
-
-/** A scalar for `set`: a Python literal if it reads as one, otherwise the text. */
-function scalar(text: string): JsonValue {
-  const trimmed = text.trim();
-  if (trimmed === 'True' || trimmed === 'False') return trimmed === 'True';
-  if (trimmed === 'None') return null;
-  if (/^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(trimmed)) return Number(trimmed);
-  if (/^(".*"|'.*')$/.test(trimmed)) return trimmed.slice(1, -1);
-  return trimmed;
-}
-
-/**
- * Joins code written after a command's colon (or `=`) with the indented
- * lines below it. The lines below keep their shape relative to each other:
- * they're the body of a compound header written inline (`for x in xs:`),
- * or more statements after a simple one.
- */
-function joinBody(inline: string, more: string): string {
-  const lines = more.split('\n').filter((line) => line.trim() !== '');
-  const indent = Math.min(...lines.map((line) => line.length - line.trimStart().length));
-  const below = lines.map((line) => line.slice(indent));
-  if (inline === '') return below.join('\n');
-  if (below.length === 0) return inline;
-  const nested = inline.endsWith(':') ? below.map((line) => `    ${line}`) : below;
-  return [inline, ...nested].join('\n');
-}
-
 function reason(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -788,18 +529,4 @@ function dedent(text: string): string {
     .map((l) => l.slice(indent))
     .join('\n')
     .trimEnd();
-}
-
-/**
- * An apply error. When one command made several ops, says which one failed,
- * counting from the command rather than the whole batch.
- */
-function describe(error: ApplyError, earlier: number, count: number): string {
-  const issues =
-    error.issues && error.issues.length > 0 ? ` (${error.issues.slice(0, 3).join('; ')})` : '';
-  const which =
-    count > 1 && error.opIndex !== undefined && error.opIndex >= earlier
-      ? ` [op ${String(error.opIndex - earlier + 1)} of this command]`
-      : '';
-  return `${error.message}${which}${issues}`;
 }

@@ -20,6 +20,7 @@
   "dependencies": {
     "@textscript/core": "workspace:*",
     "@textscript/render-python": "workspace:*",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "@textscript/commands": "workspace:*"
   }
 }

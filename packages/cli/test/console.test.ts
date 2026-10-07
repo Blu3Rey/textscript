@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Console, ConsoleError } from '../src/console/console';
-import { resolveRef } from '../src/console/refs';
+import { resolveRef } from '@textscript/commands';
 import { runScript, splitScript } from '../src/console/script';
 import { memoryFs } from './memory-fs';
 

@@ -1,0 +1,68 @@
+name: Eval (LLM)
+
+# Runs the Claude translator over the corpus and gates it against
+# corpus/baselines/claude.json when that file exists. Started by hand
+# because every run costs money; it needs the ANTHROPIC_API_KEY secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      split:
+        description: Corpus split to score (test is the held-out set)
+        default: test
+        type: choice
+        options: [test, train]
+      effort:
+        description: Effort
+        default: medium
+        type: choice
+        options: [low, medium, high, xhigh, max]
+      model:
+        description: Model
+        default: claude-opus-5-5
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    name: Score the Claude translator
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run
+        env:
+          SPLIT: ${{ inputs.split }}
+          EFFORT: ${{ inputs.effort }}
+          MODEL: ${{ inputs.model }}
+        run: |
+          baseline=()
+          if [ -f corpus/baselines/claude.json ]; then
+            baseline=(--baseline corpus/baselines/claude.json)
+          fi
+          pnpm -s eval run --translator claude --split "$SPLIT" --effort "$EFFORT" \
+            --model "$MODEL" --out eval-report "${baseline[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval-report/
+          if-no-files-found: ignore
+          retention-days: 30
