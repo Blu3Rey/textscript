@@ -474,10 +474,7 @@ export class Console {
     if (colon === -1) throw new ConsoleError('usage', usage);
     const inline = firstLine.slice(colon + 1).trim();
     const more = newline === -1 ? '' : rest.slice(newline + 1);
-    return {
-      head: firstLine.slice(0, colon).trim(),
-      body: [inline, more].filter((part) => part.trim() !== '').join('\n'),
-    };
+    return { head: firstLine.slice(0, colon).trim(), body: joinBody(inline, more) };
   }
 
   #position(words: string[]): InsertPosition {
@@ -538,7 +535,10 @@ export class Console {
       case 'set': {
         const match = /^\s*(\S+)\.([A-Za-z]+)\s*=\s*([\s\S]*)$/.exec(rest);
         if (match === null) throw new ConsoleError('usage', 'Write set <ref>.<field> = <value>');
-        const [, ref, field = '', valueText = ''] = match;
+        const [, ref, field = '', text = ''] = match;
+        const newline = text.indexOf('\n');
+        const valueText =
+          newline === -1 ? text : joinBody(text.slice(0, newline).trim(), text.slice(newline + 1));
         const node = this.#ref(ref);
         const target = indexTree(this.document.program).get(node)?.node;
         const childFields: readonly string[] = target ? CHILD_FIELDS[target.kind] : [];
@@ -755,6 +755,22 @@ function scalar(text: string): JsonValue {
   if (/^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(trimmed)) return Number(trimmed);
   if (/^(".*"|'.*')$/.test(trimmed)) return trimmed.slice(1, -1);
   return trimmed;
+}
+
+/**
+ * Joins code written after a command's colon (or `=`) with the indented
+ * lines below it. The lines below keep their shape relative to each other:
+ * they're the body of a compound header written inline (`for x in xs:`),
+ * or more statements after a simple one.
+ */
+function joinBody(inline: string, more: string): string {
+  const lines = more.split('\n').filter((line) => line.trim() !== '');
+  const indent = Math.min(...lines.map((line) => line.length - line.trimStart().length));
+  const below = lines.map((line) => line.slice(indent));
+  if (inline === '') return below.join('\n');
+  if (below.length === 0) return inline;
+  const nested = inline.endsWith(':') ? below.map((line) => `    ${line}`) : below;
+  return [inline, ...nested].join('\n');
 }
 
 function reason(error: unknown): string {

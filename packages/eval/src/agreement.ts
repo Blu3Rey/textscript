@@ -4,8 +4,9 @@
 // annotator's own state. The two states are aligned to see which of those
 // match, so an early disagreement doesn't count again at every later step.
 
-import { allNodes, type IrNode, type Program } from '@textscript/core';
-import { align, isPlaceholder, scalarSignature } from './compare/align';
+import type { Program } from '@textscript/core';
+import { align, isPlaceholder } from './compare/align';
+import { changes, type Changes } from './compare/step';
 import type { CompiledGold } from './corpus/gold';
 import { ratio, type Ratio } from './metrics';
 
@@ -30,38 +31,7 @@ export interface Agreement {
   holes: Ratio;
 }
 
-const identity = (name: string) => name;
-
-interface Produced {
-  nodes: Set<IrNode>;
-  notes: Set<string>;
-  labels: Set<IrNode>;
-}
-
-/** What a step added or changed, relative to the state before it. */
-function produced(before: Program, after: Program): Produced {
-  const old = new Map(allNodes(before).map((node) => [node.id, node]));
-  const oldNotes = new Set(
-    allNodes(before).flatMap((node) => (node.notes ?? []).map((note) => note.id)),
-  );
-  const result: Produced = { nodes: new Set(), notes: new Set(), labels: new Set() };
-  for (const node of allNodes(after)) {
-    const previous = old.get(node.id);
-    if (
-      node.kind !== 'Program' &&
-      node.kind !== 'Block' &&
-      (previous === undefined ||
-        scalarSignature(previous, identity) !== scalarSignature(node, identity))
-    ) {
-      result.nodes.add(node);
-    }
-    if (node.label !== undefined && node.label !== previous?.label) result.labels.add(node);
-    for (const note of node.notes ?? []) if (!oldNotes.has(note.id)) result.notes.add(note.id);
-  }
-  return result;
-}
-
-function size(p: Produced): number {
+function size(p: Changes): number {
   return p.nodes.size + p.notes.size + p.labels.size;
 }
 
@@ -69,8 +39,8 @@ export function compareSteps(
   a: { before: Program; after: Program },
   b: { before: Program; after: Program },
 ): Omit<StepAgreement, 'index'> {
-  const mine = produced(a.before, a.after);
-  const theirs = produced(b.before, b.after);
+  const mine = changes(a.before, a.after);
+  const theirs = changes(b.before, b.after);
   const alignment = align(a.after, b.after);
   let matched = 0;
   for (const node of mine.nodes) {

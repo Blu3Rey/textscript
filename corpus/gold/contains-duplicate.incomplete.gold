@@ -1,5 +1,5 @@
-# The worked example from ROADMAP.md §3.6. Nobody says "return False",
-# so the end of the function stays without a return (GAP003).
+# Left out: what to return when no number repeats. This is the worked
+# example from ROADMAP.md §3.6: nobody says "return False", so GAP003 stays.
 
 step 1
 add root: for num~loopvar in nums:

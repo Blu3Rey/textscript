@@ -25,7 +25,8 @@ Commands:
   run                          Play walkthroughs through a translator and score
                                every step against gold.
   gold <walkthrough>           Show a walkthrough's gold: each utterance, the
-                               expected code and its gaps.
+                               expected code and its gaps. With --file <gold>,
+                               show that annotation instead.
   agree [file.gold ...]        Compare second annotations with the corpus gold
                                (default: every file in <corpus>/agreement/).
 
@@ -60,6 +61,7 @@ const VALUE_OPTIONS = new Set([
   'out',
   'baseline',
   'write-baseline',
+  'file',
 ]);
 
 function parseArgs(argv: readonly string[]): Args {
@@ -213,8 +215,26 @@ function isBaseline(value: unknown): value is Baseline {
   );
 }
 
-function showGold(corpus: Corpus, id: string | undefined, io: Io): number {
-  const gold = id === undefined ? undefined : (corpus.gold.get(id) ?? corpus.drafts.get(id));
+function showGold(
+  corpus: Corpus,
+  id: string | undefined,
+  file: string | undefined,
+  io: Io,
+): number {
+  let gold = id === undefined ? undefined : (corpus.gold.get(id) ?? corpus.drafts.get(id));
+  let issues = corpus.issues.filter((issue) => issue.file === `gold/${id ?? ''}.gold`);
+  const walkthrough = id === undefined ? undefined : corpus.walkthroughs.get(id);
+  if (file !== undefined && walkthrough !== undefined) {
+    // Another annotation of the same walkthrough, such as a second annotator's.
+    issues = [];
+    const inputs = corpus.problems.get(walkthrough.problem)?.inputs ?? [];
+    gold = compileGold(
+      walkthrough,
+      inputs,
+      parseGold(walkthrough.id, readFileSync(file, 'utf8'), issues),
+      issues,
+    );
+  }
   if (gold === undefined) {
     io.stderr(`textscript-eval: no gold for '${id ?? ''}'\n`);
     return 2;
@@ -241,10 +261,7 @@ function showGold(corpus: Corpus, id: string | undefined, io: Io): number {
       ].join('\n'),
     );
   }
-  const problems = corpus.issues.filter(
-    (issue) => issue.file === `gold/${gold.walkthrough.id}.gold`,
-  );
-  for (const issue of problems) io.stderr(`${formatIssue(issue)}\n`);
+  for (const issue of issues) io.stderr(`${formatIssue(issue)}\n`);
   if (!gold.complete) {
     io.stderr(`Stopped after step ${String(gold.steps.length)}.\n`);
     return 1;
@@ -342,7 +359,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
       case 'run':
         return await run(corpus, args.options, io);
       case 'gold':
-        return showGold(corpus, args.positional[0], io);
+        return showGold(corpus, args.positional[0], args.options.get('file'), io);
       case 'agree':
         return agree(corpus, root, args.positional, io);
       default:

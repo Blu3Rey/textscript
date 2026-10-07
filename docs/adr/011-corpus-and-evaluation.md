@@ -63,7 +63,9 @@ inference (a `~loopvar` called `num` or `n`). Holes and steps in words may
 pair with anything, so the alignment shows what took their place.
 
 What gets counted are **units**: nodes (not blocks), notes and labels.
-A step *produces* the units that are new or whose own values changed.
+A step *produces* the units that are new or whose own values changed, not
+counting code rewritten exactly as it was. When gold replaces a whole `if`
+to add an `elif`, its unchanged first branch isn't credited to it.
 
 | Metric | Computed as |
 |---|---|

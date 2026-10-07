@@ -87,6 +87,24 @@ describe('Console', () => {
     expect(run(c, 'set n2 value').error?.code).toBe('usage');
   });
 
+  it('sets a block of several statements, written inline or below', () => {
+    const { c } = consoleWith('say Branch.', 'add root:\n  if x:\n    a = 1');
+    expect(run(c, 'set n2.orelse = b = 2\n    c = 3').error).toBeUndefined();
+    expect(
+      run(c, 'expect code:\n  if x:\n      a = 1\n  else:\n      b = 2\n      c = 3').status,
+    ).toBe('ok');
+    expect(
+      run(c, 'set n2.orelse =\n      d = 4\n      if y:\n          e = 5').error,
+    ).toBeUndefined();
+    expect(run(c, 'fill h1:\n  ...').error?.code).toBe('bad-ref');
+    expect(
+      run(
+        c,
+        'expect code:\n  if x:\n      a = 1\n  else:\n      d = 4\n      if y:\n          e = 5',
+      ).status,
+    ).toBe('ok');
+  });
+
   it('sets a statement block with set', () => {
     const { c } = consoleWith('say Loop.', 'add root: while x:\n  ...');
     expect(run(c, 'set n2.body = y = 1').status).toBe('ok');

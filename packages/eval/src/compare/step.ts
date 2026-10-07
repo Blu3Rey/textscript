@@ -150,35 +150,61 @@ class Rendered {
   }
 }
 
-function producedUnits(before: Program, after: Program, rendered: Rendered): Unit[] {
+/** What a step added or changed: nodes, labels, and note IDs. */
+export interface Changes {
+  nodes: Set<IrNode>;
+  labels: Set<IrNode>;
+  notes: Set<NodeId>;
+}
+
+/**
+ * The units of `after` that aren't in `before`. A node is unchanged if it
+ * keeps its ID and values, or if it lines up with an equal node in `before`
+ * (code rewritten as it was, as when an `if` is replaced to add an `elif`).
+ */
+export function changes(before: Program, after: Program): Changes {
   const old = new Map(allNodes(before).map((node) => [node.id, node]));
   const oldNotes = new Set(
     allNodes(before).flatMap((node) => (node.notes ?? []).map((note) => note.id)),
   );
-  const units: Unit[] = [];
+  const same = align(after, before);
+  const sameNotes = new Set(same.notes.map((pair) => pair.gold.id));
+  const result: Changes = { nodes: new Set(), labels: new Set(), notes: new Set() };
   walk(after, (node) => {
     const previous = old.get(node.id);
-    if (!STRUCTURAL.has(node.kind)) {
-      if (
-        previous === undefined ||
-        scalarSignature(previous, identity) !== scalarSignature(node, identity)
-      ) {
-        units.push({ ref: rendered.ref(node), node, type: 'node' });
-      }
+    const kept =
+      (previous !== undefined &&
+        scalarSignature(previous, identity) === scalarSignature(node, identity)) ||
+      same.equal.has(node);
+    if (!STRUCTURAL.has(node.kind) && !kept) result.nodes.add(node);
+    if (node.label !== undefined && node.label !== previous?.label && !same.labels.has(node)) {
+      result.labels.add(node);
     }
-    if (node.label !== undefined && node.label !== previous?.label) {
+    for (const note of node.notes ?? []) {
+      if (!oldNotes.has(note.id) && !sameNotes.has(note.id)) result.notes.add(note.id);
+    }
+  });
+  return result;
+}
+
+function producedUnits(before: Program, after: Program, rendered: Rendered): Unit[] {
+  const changed = changes(before, after);
+  const units: Unit[] = [];
+  walk(after, (node) => {
+    if (changed.nodes.has(node)) units.push({ ref: rendered.ref(node), node, type: 'node' });
+    if (changed.labels.has(node)) {
       units.push({
         ref: {
           id: node.id,
           kind: 'Label',
-          text: `label "${node.label}" on ${rendered.text(node.id)}`,
+          text: `label "${node.label ?? ''}" on ${rendered.text(node.id)}`,
         },
         node,
         type: 'label',
       });
     }
     for (const note of node.notes ?? []) {
-      if (!oldNotes.has(note.id)) {
+      if (changed.notes.has(note.id)) {
         units.push({
           ref: { id: note.id, kind: 'Note', text: rendered.text(note.id) },
           node,

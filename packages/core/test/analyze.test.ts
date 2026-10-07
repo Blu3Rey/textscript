@@ -548,6 +548,17 @@ describe('WARN005 used-before-set', () => {
     ]);
   });
 
+  it('stays quiet when a problem input is reassigned after being used', () => {
+    const p = program((b) => {
+      const x = h(b);
+      return [x.set('nums', b.call({ callee: x.n('sorted'), args: [x.n('nums')] }, S))];
+    });
+    expect(only(p, 'WARN005', { inputs: ['nums'] })).toEqual([]);
+    expect(only(p, 'WARN005').map((d) => d.message)).toEqual([
+      '`nums` is used before it is set up.',
+    ]);
+  });
+
   it('stays quiet when a function uses a name set up later outside it', () => {
     const p = program((b) => {
       const x = h(b);

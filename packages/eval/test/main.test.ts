@@ -171,6 +171,23 @@ describe('textscript-eval', () => {
     expect(missing.code).toBe(2);
   });
 
+  it('shows another annotation of a walkthrough with --file', async () => {
+    const root = corpusDir({
+      'mine.gold': 'step 1\nadd root: seen = []\nstep 2\nstep 3\nremove n9\n',
+    });
+    const result = await run([
+      'gold',
+      'dup.terse',
+      '--corpus',
+      root,
+      '--file',
+      join(root, 'mine.gold'),
+    ]);
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain('n2 │ seen = []');
+    expect(result.stderr).toContain('There is no node n9');
+  });
+
   it('shows a draft up to the step that fails', async () => {
     const root = corpusDir({
       'gold/dup.terse.gold': 'step 1\nadd root: seen = set()\nstep 2\nremove n99\nstep 3\n',
