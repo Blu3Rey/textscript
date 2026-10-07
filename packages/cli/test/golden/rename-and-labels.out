@@ -1,0 +1,231 @@
+# Renaming a symbol changes every use; labels give nodes names to refer to.
+> :inputs s
+inputs: s
+
+> say Keep a counter c of the vowels in the string.
+u1: 0:Keep 1:a 2:counter 3:c 4:of 5:the 6:vowels 7:in 8:the 9:string 10:.
+
+> add root:
+>     c = 0
+>     for ch in s:
+>         if ch in "aeiou":
+>             c += 1
+>     return c
+✓ add_stmt, add_stmt, add_stmt → u1 (pending, 3 ops)
+ n2 │ c = 0
+ n5 │ for ch in s:
+ n9 │     if ch in "aeiou":
+n14 │         c += 1
+n17 │ return c
+──
+(no gaps)
+
+> label n2 the counter
+✓ set_label → u1 (pending, 4 ops)
+ n2 │ c = 0
+ n5 │ for ch in s:
+ n9 │     if ch in "aeiou":
+n14 │         c += 1
+n17 │ return c
+──
+(no gaps)
+
+> label n9 vowel check
+✓ set_label → u1 (pending, 5 ops)
+ n2 │ c = 0
+ n5 │ for ch in s:
+ n9 │     if ch in "aeiou":
+n14 │         c += 1
+n17 │ return c
+──
+(no gaps)
+
+> say Call the counter vowels, not c.
+u2: 0:Call 1:the 2:counter 3:vowels 4:, 5:not 6:c 7:.
+
+> rename n3 vowels
+✓ rename_symbol → u2 (pending, 1 ops)
+ n2 │ vowels = 0
+ n5 │ for ch in s:
+ n9 │     if ch in "aeiou":
+n14 │         vowels += 1
+n17 │ return vowels
+──
+(no gaps)
+
+> expect code:
+>     vowels = 0
+>     for ch in s:
+>         if ch in "aeiou":
+>             vowels += 1
+>     return vowels
+
+> say Count capital vowels too.
+u3: 0:Count 1:capital 2:vowels 3:too 4:.
+
+> set @vowel-check.cond = ch.lower() in "aeiou"
+✓ update_field → u3 (pending, 1 ops)
+ n2 │ vowels = 0
+ n5 │ for ch in s:
+ n9 │     if ch.lower() in "aeiou":
+n14 │         vowels += 1
+n17 │ return vowels
+──
+(no gaps)
+
+> :ir @vowel-check
+{
+  "kind": "If",
+  "id": "n9",
+  "cond": {
+    "kind": "Membership",
+    "id": "n19",
+    "negated": false,
+    "element": {
+      "kind": "Call",
+      "id": "n20",
+      "callee": {
+        "kind": "Attribute",
+        "id": "n21",
+        "object": {
+          "kind": "Name",
+          "id": "n22",
+          "name": "ch",
+          "provenance": [
+            {
+              "utteranceId": "u3",
+              "start": 0,
+              "end": 5
+            }
+          ]
+        },
+        "name": "lower",
+        "provenance": [
+          {
+            "utteranceId": "u3",
+            "start": 0,
+            "end": 5
+          }
+        ]
+      },
+      "args": [],
+      "provenance": [
+        {
+          "utteranceId": "u3",
+          "start": 0,
+          "end": 5
+        }
+      ]
+    },
+    "container": {
+      "kind": "Literal",
+      "id": "n23",
+      "value": "aeiou",
+      "provenance": [
+        {
+          "utteranceId": "u3",
+          "start": 0,
+          "end": 5
+        }
+      ]
+    },
+    "provenance": [
+      {
+        "utteranceId": "u3",
+        "start": 0,
+        "end": 5
+      }
+    ]
+  },
+  "body": {
+    "kind": "Block",
+    "id": "n13",
+    "stmts": [
+      {
+        "kind": "Update",
+        "id": "n14",
+        "target": {
+          "kind": "Name",
+          "id": "n15",
+          "name": "vowels",
+          "provenance": [
+            {
+              "utteranceId": "u1",
+              "start": 0,
+              "end": 11
+            },
+            {
+              "utteranceId": "u2",
+              "start": 0,
+              "end": 8
+            }
+          ]
+        },
+        "op": "+=",
+        "value": {
+          "kind": "Literal",
+          "id": "n16",
+          "value": 1,
+          "provenance": [
+            {
+              "utteranceId": "u1",
+              "start": 0,
+              "end": 11
+            }
+          ]
+        },
+        "provenance": [
+          {
+            "utteranceId": "u1",
+            "start": 0,
+            "end": 11
+          }
+        ]
+      }
+    ],
+    "provenance": []
+  },
+  "elifs": [],
+  "provenance": [
+    {
+      "utteranceId": "u1",
+      "start": 0,
+      "end": 11
+    },
+    {
+      "utteranceId": "u3",
+      "start": 0,
+      "end": 5
+    }
+  ],
+  "label": "vowel check"
+}
+
+> say Forget that label.
+u4: 0:Forget 1:that 2:label 3:.
+
+> unlabel @vowel-check
+✓ set_label → u4 (pending, 1 ops)
+ n2 │ vowels = 0
+ n5 │ for ch in s:
+ n9 │     if ch.lower() in "aeiou":
+n14 │         vowels += 1
+n17 │ return vowels
+──
+(no gaps)
+
+> show
+ n2 │ vowels = 0
+ n5 │ for ch in s:
+ n9 │     if ch.lower() in "aeiou":
+n14 │         vowels += 1
+n17 │ return vowels
+──
+(no gaps)
+
+> set @vowel-check.cond = True
+✗ bad-ref: No node is labeled "vowel-check"
+
+> expect error bad-ref
+
+-- ok

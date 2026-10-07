@@ -72,6 +72,10 @@ scripts/           repo tooling
   with `await expect(text).toMatchFileSnapshot('./golden/name.py')`. After an
   intended output change, run `pnpm test -u` and review the golden diff like
   code. CI never writes goldens, and every golden `.py` must parse as Python.
+- **Scenario scripts** in `packages/cli/scenarios/` drive the whole engine
+  through the developer console. Each must pass its `expect` lines, and its
+  transcript is a golden in `packages/cli/test/golden/`. See
+  [packages/cli/README.md](packages/cli/README.md#scenario-scripts).
 - Each bug fix comes with a test that fails without the fix.
 
 ## Adding a package

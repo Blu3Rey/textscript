@@ -1,0 +1,30 @@
+# Inference marks (~rule) are checked: one that doesn't fit its rule warns.
+:inputs words, n
+
+say Loop over the words, calling each one word.
+add root: for word~loopvar in words:
+    print(word)
+expect gaps none
+:diag all
+
+say Go through each index of the words, with i as the index.
+add root: for i~indexvar in range(len(words)~range-bounds):
+    print(i)
+expect gaps none
+
+say Loop over the words, calling each one banana.
+add root: for banana~loopvar in words:
+    print(banana)
+expect gaps WARN004
+:diag
+
+say Go up to n, starting at one.
+add root: for j in range(1, n~range-bounds):
+    print(j)
+expect gaps WARN004 WARN004
+
+say Marks go on a bound, not on range() itself.
+add root: for k in range(n)~range-bounds:
+    print(k)
+expect error syntax
+:diag all

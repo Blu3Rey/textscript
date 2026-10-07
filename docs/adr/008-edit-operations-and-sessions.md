@@ -1,6 +1,6 @@
 # 008: Edit operations, inverses and the session log
 
-- **Status:** Accepted
+- **Status:** Accepted; temporary IDs are now resolved op by op ([010](010-developer-console.md))
 - **Date:** 2026-10-06
 - **Roadmap segment:** S3
 

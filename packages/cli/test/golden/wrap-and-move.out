@@ -1,0 +1,111 @@
+# Restructuring: move a misplaced statement, wrap statements in a new block
+# or a function, change a condition and replace a statement.
+> :inputs nums
+inputs: nums
+
+> say Add up the numbers and return the total.
+u1: 0:Add 1:up 2:the 3:numbers 4:and 5:return 6:the 7:total 8:.
+
+> add root:
+>     total = 0
+>     for num~loopvar in nums:
+>         total += num
+>         return total
+✓ add_stmt, add_stmt → u1 (pending, 2 ops)
+ n2 │ total = 0
+ n5 │ for num in nums:
+ n9 │     total += num
+n12 │     return total
+──
+GAP003      n1   The solution doesn't say what it returns when it reaches the end.
+(1 inferred: n6; :diag all shows them)
+
+> expect gaps GAP003
+
+> say Oh, the return comes after the loop, not inside it.
+u2: 0:Oh 1:, 2:the 3:return 4:comes 5:after 6:the 7:loop 8:, 9:not 10:inside 11:it 12:.
+
+> move n12 root
+✓ move_node → u2 (pending, 1 ops)
+ n2 │ total = 0
+ n5 │ for num in nums:
+ n9 │     total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect gaps none
+
+> say But only the even ones.
+u3: 0:But 1:only 2:the 3:even 4:ones 5:.
+
+> wrap n9: if num % 2 == 0:
+✓ wrap_nodes → u3 (pending, 1 ops)
+ n2 │ total = 0
+ n5 │ for num in nums:
+n14 │     if num % 2 == 0:
+ n9 │         total += num
+n12 │ return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     total = 0
+>     for num in nums:
+>         if num % 2 == 0:
+>             total += num
+>     return total
+
+> say Put all of that in a function called sum_even that takes the numbers.
+u4: 0:Put 1:all 2:of 3:that 4:in 5:a 6:function 7:called 8:sum_even 9:that 10:takes 11:the 12:numbers 13:.
+
+> wrap n2,n5,n12: def sum_even(nums):
+✓ wrap_nodes → u4 (pending, 1 ops)
+n22 │ def sum_even(nums):
+ n2 │     total = 0
+ n5 │     for num in nums:
+n14 │         if num % 2 == 0:
+ n9 │             total += num
+n12 │     return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect gaps none
+
+> say Make that the positive ones, not the even ones.
+u5: 0:Make 1:that 2:the 3:positive 4:ones 5:, 6:not 7:the 8:even 9:ones 10:.
+
+> set n14.cond = num > 0
+✓ update_field → u5 (pending, 1 ops)
+n22 │ def sum_even(nums):
+ n2 │     total = 0
+ n5 │     for num in nums:
+n14 │         if num > 0:
+ n9 │             total += num
+n12 │     return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> say And start the total at the first number.
+u6: 0:And 1:start 2:the 3:total 4:at 5:the 6:first 7:number 8:.
+
+> replace n2: total = nums[0]
+✓ replace_node → u6 (pending, 1 ops)
+n22 │ def sum_even(nums):
+n30 │     total = nums[0]
+ n5 │     for num in nums:
+n14 │         if num > 0:
+ n9 │             total += num
+n12 │     return total
+──
+(1 inferred: n6; :diag all shows them)
+
+> expect code:
+>     def sum_even(nums):
+>         total = nums[0]
+>         for num in nums:
+>             if num > 0:
+>                 total += num
+>         return total
+
+-- ok

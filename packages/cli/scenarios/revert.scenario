@@ -1,0 +1,47 @@
+# :revert undoes one earlier utterance and keeps everything said after it.
+# It refuses when something said later changed what it added.
+:inputs words
+
+say Count the words with a dictionary.
+add root: counts = {}
+
+say For each word, add one to its count.
+add root: for word~loopvar in words:
+    counts[word] += 1
+
+say Then print how many distinct words there were.
+add root: print(len(counts))
+
+say Actually, never mind the printing.
+:revert u3
+expect code:
+    counts = {}
+    for word in words:
+        counts[word] += 1
+:revert u3
+expect error already-reverted
+:revert u9
+expect error nothing-to-revert
+
+say Also keep the longest word.
+add root start: longest = ""
+label n20 longest so far
+add n5: longest = max(longest, word)
+expect code:
+    longest = ""
+    counts = {}
+    for word in words:
+        counts[word] += 1
+        longest = max(longest, word)
+
+say Start the longest word at None instead.
+set @longest-so-far.value = None
+expect gaps none
+
+say And drop the longest word altogether.
+remove @longest-so-far
+remove n23
+
+:revert u5
+expect error revert-conflict
+:log

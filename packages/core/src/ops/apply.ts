@@ -24,7 +24,7 @@ import type {
   Span,
   Stmt,
 } from '../ir/types';
-import { EditBatchSchema } from './schema';
+import { EditBatchSchema, EditOpSchema } from './schema';
 import { resolveTempIds } from './temp-ids';
 import { OpError, Transaction, isListField, isReplaceable, toJson } from './transaction';
 import type {
@@ -465,12 +465,8 @@ class Executor {
  * never modified either way.
  */
 export function apply(document: IrDocument, batch: EditBatch): ApplyResult {
-  const ids = createIdAllocator(document.nextId);
-  const resolved = resolveTempIds(batch, ids);
-  if (!resolved.ok)
-    return { ok: false, error: { code: 'invalid-temp-id', message: resolved.message } };
-
-  const parsed = EditBatchSchema.safeParse(resolved.value);
+  // Shapes first: temporary IDs are valid IDs to the schema.
+  const parsed = EditBatchSchema.safeParse(batch);
   if (!parsed.success) {
     const issues = zodIssueMessages(parsed.error);
     return {
@@ -479,8 +475,17 @@ export function apply(document: IrDocument, batch: EditBatch): ApplyResult {
     };
   }
 
+  const ids = createIdAllocator(document.nextId);
+  const assigned = new Map<string, string>();
   const executor = new Executor(new Transaction(document, ids));
-  for (const [opIndex, op] of parsed.data.ops.entries()) {
+  for (const [opIndex, raw] of parsed.data.ops.entries()) {
+    // Temporary IDs are resolved op by op, so an op's IDs (and those of the
+    // holes and notes it creates) don't change when later ops are added.
+    const resolved = resolveTempIds(raw, ids, assigned);
+    if (!resolved.ok) {
+      return { ok: false, error: { code: 'invalid-temp-id', message: resolved.message, opIndex } };
+    }
+    const op = EditOpSchema.parse(resolved.value);
     try {
       executor.run(op);
     } catch (error) {

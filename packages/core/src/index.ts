@@ -50,6 +50,7 @@ export {
   deserialize,
   parseDocument,
   serialize,
+  zodIssueMessages,
   type ParseResult,
   type ParseStage,
 } from './ir/serialize';
@@ -69,6 +70,7 @@ export { diffPrograms, isEmptyDiff, type IrDiff } from './ir/diff';
 export type * from './ops/types';
 export { HOLE_REASONS, apply } from './ops/apply';
 export { EditBatchSchema, EditOpSchema, OP_SCHEMAS, editBatchJsonSchema } from './ops/schema';
+export { resolveTempIds, type TempIdResult } from './ops/temp-ids';
 export {
   createUtterance,
   quoteSpan,

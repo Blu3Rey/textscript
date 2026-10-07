@@ -1,0 +1,48 @@
+# Every kind of hole. h1 is always the first open hole, so filling one
+# renumbers the rest.
+:inputs grid
+
+say Walk the grid until something happens, then return some value.
+add root:
+    while ?cond:
+        ...
+    return ?value
+expect gaps GAP004 GAP002 GAP005
+
+say The loop runs while the stack isn't empty.
+fill h1: stack
+expect gaps GAP001 GAP002 GAP005
+
+say Each time, pop a cell off the stack and mark it as visited.
+fill h1:
+    cell = stack.pop()
+    visited.add(cell)  # ~synonym
+expect gaps GAP001 GAP001 GAP005
+
+say Return how many cells we visited.
+fill h1: len(visited)
+expect gaps GAP001 GAP001
+
+say Visited starts empty. The corners are the start and the end.
+add root start:
+    visited = set()
+    start = grid[0][0]
+    end = grid[-1][-1]
+expect gaps GAP001 WARN001 WARN001
+
+say The stack starts with the corner. Which one wasn't said.
+add root before n2: stack = [?ref(n24,n31)"which corner"]
+expect gaps WARN001 WARN001 GAP007
+
+say Name a helper for the neighbors, but we haven't named what it returns.
+add n2: ?name = neighbors(cell)
+expect gaps WARN001 WARN001 GAP007 GAP008 GAP001
+
+say It's the start corner.
+fill h1: start
+expect gaps WARN001 GAP008 GAP001
+
+say A helper takes the grid and something else we didn't name.
+add root start: def walk(grid, ?name):
+    return grid
+expect gaps WARN001 GAP008 GAP001 GAP006

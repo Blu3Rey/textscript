@@ -1,0 +1,127 @@
+# A while loop with two pointers and an if/elif/else chain.
+> :inputs nums, target
+inputs: nums, target
+
+> say Put a left pointer at the start and a right pointer at the end.
+u1: 0:Put 1:a 2:left 3:pointer 4:at 5:the 6:start 7:and 8:a 9:right 10:pointer 11:at 12:the 13:end 14:.
+
+> add root:
+>     left = 0
+>     right = len(nums) - 1
+✓ add_stmt, add_stmt → u1 (pending, 2 ops)
+n2 │ left = 0
+n5 │ right = len(nums) - 1
+──
+WARN001     n3   `left` is set up but never used.  "Put a left pointer at the start and a right pointer at the end."
+WARN001     n6   `right` is set up but never used.  "Put a left pointer at the start and a right pointer at the end."
+
+> expect gaps WARN001 WARN001
+
+> say While they haven't crossed, look at the sum.
+u2: 0:While 1:they 2:haven't 3:crossed 4:, 5:look 6:at 7:the 8:sum 9:.
+
+> add root:
+>     while left < right:
+>         total = nums[left] + nums[right]
+>         if total == target:
+>             return [left, right]
+>         elif total < target:
+>             left += 1
+>         else:
+>             right -= 1
+✓ add_stmt → u2 (pending, 1 ops)
+ n2 │ left = 0
+ n5 │ right = len(nums) - 1
+n12 │ while left < right:
+n17 │     total = nums[left] + nums[right]
+n26 │     if total == target:
+n31 │         return [left, right]
+n35 │     elif total < target:
+n40 │         left += 1
+    │     else:
+n44 │         right -= 1
+──
+GAP003      n1   The solution doesn't say what it returns when it reaches the end.
+
+> expect gaps GAP003
+
+> say If they cross, there's no pair, so return an empty list.
+u3: 0:If 1:they 2:cross 3:, 4:there's 5:no 6:pair 7:, 8:so 9:return 10:an 11:empty 12:list 13:.
+
+> add root: return []
+✓ add_stmt → u3 (pending, 1 ops)
+ n2 │ left = 0
+ n5 │ right = len(nums) - 1
+n12 │ while left < right:
+n17 │     total = nums[left] + nums[right]
+n26 │     if total == target:
+n31 │         return [left, right]
+n35 │     elif total < target:
+n40 │         left += 1
+    │     else:
+n44 │         right -= 1
+n47 │ return []
+──
+(no gaps)
+
+> expect gaps none
+
+> note root complexity: O(n) time once sorted.
+✓ add_note → u3 (pending, 2 ops)
+n49 │ # Complexity: O(n) time once sorted.
+ n2 │ left = 0
+ n5 │ right = len(nums) - 1
+n12 │ while left < right:
+n17 │     total = nums[left] + nums[right]
+n26 │     if total == target:
+n31 │         return [left, right]
+n35 │     elif total < target:
+n40 │         left += 1
+    │     else:
+n44 │         right -= 1
+n47 │ return []
+──
+(no gaps)
+
+> note root edge-case: Assumes nums is sorted.
+✓ add_note → u3 (pending, 3 ops)
+n49 │ # Complexity: O(n) time once sorted.
+n50 │ # Edge case: Assumes nums is sorted.
+ n2 │ left = 0
+ n5 │ right = len(nums) - 1
+n12 │ while left < right:
+n17 │     total = nums[left] + nums[right]
+n26 │     if total == target:
+n31 │         return [left, right]
+n35 │     elif total < target:
+n40 │         left += 1
+    │     else:
+n44 │         right -= 1
+n47 │ return []
+──
+(no gaps)
+
+> :coverage
+✓ approach described
+✓ inputs: named (nums, target)
+✓ returns: all-paths
+✓ edge cases noted: 1
+✓ complexity noted: 1
+  open gaps: 0
+
+> expect code:
+>     # Complexity: O(n) time once sorted.
+>     # Edge case: Assumes nums is sorted.
+>     left = 0
+>     right = len(nums) - 1
+>     while left < right:
+>         total = nums[left] + nums[right]
+>         if total == target:
+>             return [left, right]
+>         elif total < target:
+>             left += 1
+>         else:
+>             right -= 1
+>     return []
+
+-- ok

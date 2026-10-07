@@ -1,0 +1,118 @@
+# Notes record edge cases and complexity; the coverage summary counts them.
+> :inputs nums
+inputs: nums
+
+> say Return the largest number.
+u1: 0:Return 1:the 2:largest 3:number 4:.
+
+> add root:
+>     best = nums[0]
+>     for num~loopvar in nums:
+>         if num > best:
+>             best = num
+>     return best
+✓ add_stmt, add_stmt, add_stmt → u1 (pending, 3 ops)
+ n2 │ best = nums[0]
+ n7 │ for num in nums:
+n11 │     if num > best:
+n16 │         best = num
+n19 │ return best
+──
+(1 inferred: n8; :diag all shows them)
+
+> :coverage
+✓ approach described
+✓ inputs: named (nums)
+✓ returns: all-paths
+✗ edge cases noted: 0
+✗ complexity noted: 0
+  open gaps: 0
+
+> say If the list is empty there's no answer; that's an edge case.
+u2: 0:If 1:the 2:list 3:is 4:empty 5:there's 6:no 7:answer 8:; 9:that's 10:an 11:edge 12:case 13:.
+
+> note n2 edge-case: An empty list has no largest number.
+✓ add_note → u2 (pending, 1 ops)
+n21 │ # Edge case: An empty list has no largest number.
+ n2 │ best = nums[0]
+ n7 │ for num in nums:
+n11 │     if num > best:
+n16 │         best = num
+n19 │ return best
+──
+(1 inferred: n8; :diag all shows them)
+
+> say It's one pass, so linear time.
+u3: 0:It's 1:one 2:pass 3:, 4:so 5:linear 6:time 7:.
+
+> note root complexity: O(n) time, O(1) space.
+✓ add_note → u3 (pending, 1 ops)
+n22 │ # Complexity: O(n) time, O(1) space.
+n21 │ # Edge case: An empty list has no largest number.
+ n2 │ best = nums[0]
+ n7 │ for num in nums:
+n11 │     if num > best:
+n16 │         best = num
+n19 │ return best
+──
+(1 inferred: n8; :diag all shows them)
+
+> note n7: Could use max(), but this shows the loop.
+✓ add_note → u3 (pending, 2 ops)
+n22 │ # Complexity: O(n) time, O(1) space.
+n21 │ # Edge case: An empty list has no largest number.
+ n2 │ best = nums[0]
+n23 │ # Could use max(), but this shows the loop.
+ n7 │ for num in nums:
+n11 │     if num > best:
+n16 │         best = num
+n19 │ return best
+──
+(1 inferred: n8; :diag all shows them)
+
+> show
+n22 │ # Complexity: O(n) time, O(1) space.
+n21 │ # Edge case: An empty list has no largest number.
+ n2 │ best = nums[0]
+n23 │ # Could use max(), but this shows the loop.
+ n7 │ for num in nums:
+n11 │     if num > best:
+n16 │         best = num
+n19 │ return best
+──
+(1 inferred: n8; :diag all shows them)
+
+> :coverage
+✓ approach described
+✓ inputs: named (nums)
+✓ returns: all-paths
+✓ edge cases noted: 1
+✓ complexity noted: 1
+  open gaps: 0
+
+> say Scratch the remark about max.
+u4: 0:Scratch 1:the 2:remark 3:about 4:max 5:.
+
+> unnote n23
+✓ remove_note → u4 (pending, 1 ops)
+n22 │ # Complexity: O(n) time, O(1) space.
+n21 │ # Edge case: An empty list has no largest number.
+ n2 │ best = nums[0]
+ n7 │ for num in nums:
+n11 │     if num > best:
+n16 │         best = num
+n19 │ return best
+──
+(1 inferred: n8; :diag all shows them)
+
+> expect gaps none
+
+> :coverage
+✓ approach described
+✓ inputs: named (nums)
+✓ returns: all-paths
+✓ edge cases noted: 1
+✓ complexity noted: 1
+  open gaps: 0
+
+-- ok

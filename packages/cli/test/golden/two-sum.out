@@ -1,0 +1,120 @@
+# Two sum, described inside a function, with a dictionary of seen values.
+> say Write a function two_sum that takes the numbers and a target.
+u1: 0:Write 1:a 2:function 3:two_sum 4:that 5:takes 6:the 7:numbers 8:and 9:a 10:target 11:.
+
+> add root: def two_sum(nums, target):
+>     ...
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ def two_sum(nums, target):
+n7 │     ⟨body not described⟩
+──
+WARN001     n4   The input `nums` is never used.  "Write a function two_sum that takes the numbers and a target."
+WARN001     n5   The input `target` is never used.  "Write a function two_sum that takes the numbers and a target."
+GAP002  h1  n7   Nothing is described inside the function `two_sum`.  "Write a function two_sum that takes the numbers and a target."
+
+> expect gaps WARN001 WARN001 GAP002
+
+> say Go through each index i of the numbers.
+u2: 0:Go 1:through 2:each 3:index 4:i 5:of 6:the 7:numbers 8:.
+
+> fill h1:
+>     for i~indexvar in range(len(nums)~range-bounds):
+>         ...
+✓ fill_hole → u2 (pending, 1 ops)
+ n2 │ def two_sum(nums, target):
+ n8 │     for i in range(len(nums)):
+n14 │         ⟨body not described⟩
+──
+WARN001     n5   The input `target` is never used.  "Write a function two_sum that takes the numbers and a target."
+GAP002  h1  n14  Nothing is described inside the `i` loop.  "Go through each index i of the numbers."
+(2 inferred: n9 n10; :diag all shows them)
+
+> expect gaps WARN001 GAP002
+
+> say Work out what we still need: the target minus the current number.
+u3: 0:Work 1:out 2:what 3:we 4:still 5:need 6:: 7:the 8:target 9:minus 10:the 11:current 12:number 13:.
+
+> fill h1: need = target - nums[i]
+✓ fill_hole → u3 (pending, 1 ops)
+ n2 │ def two_sum(nums, target):
+ n8 │     for i in range(len(nums)):
+n15 │         need = target - nums[i]
+──
+WARN001     n16  `need` is set up but never used.  "Work out what we still need: the target minus the current number."
+(2 inferred: n9 n10; :diag all shows them)
+
+> expect gaps WARN001
+
+> say If we've seen what we need, return both indices.
+u4: 0:If 1:we've 2:seen 3:what 4:we 5:need 6:, 7:return 8:both 9:indices 10:.
+
+> add n8:
+>     if need in seen:
+>         return [seen[need], i]
+✓ add_stmt → u4 (pending, 1 ops)
+ n2 │ def two_sum(nums, target):
+ n8 │     for i in range(len(nums)):
+n15 │         need = target - nums[i]
+n22 │         if need in seen:
+n27 │             return [seen[need], i]
+──
+GAP003      n2   The function `two_sum` doesn't say what it returns when it reaches the end.
+GAP001      n25  `seen` is used but never set up.  "If we've seen what we need, return both indices."
+(2 inferred: n9 n10; :diag all shows them)
+
+> expect gaps GAP001 GAP003
+
+> say We keep a dictionary called seen, empty at the start.
+u5: 0:We 1:keep 2:a 3:dictionary 4:called 5:seen 6:, 7:empty 8:at 9:the 10:start 11:.
+
+> add n2 start: seen = {}
+✓ add_stmt → u5 (pending, 1 ops)
+ n2 │ def two_sum(nums, target):
+n33 │     seen = {}
+ n8 │     for i in range(len(nums)):
+n15 │         need = target - nums[i]
+n22 │         if need in seen:
+n27 │             return [seen[need], i]
+──
+GAP003      n2   The function `two_sum` doesn't say what it returns when it reaches the end.
+(2 inferred: n9 n10; :diag all shows them)
+
+> expect gaps GAP003
+
+> say After checking, remember this number's index.
+u6: 0:After 1:checking 2:, 3:remember 4:this 5:number's 6:index 7:.
+
+> add n8: seen[nums[i]] = i
+✓ add_stmt → u6 (pending, 1 ops)
+ n2 │ def two_sum(nums, target):
+n33 │     seen = {}
+ n8 │     for i in range(len(nums)):
+n15 │         need = target - nums[i]
+n22 │         if need in seen:
+n27 │             return [seen[need], i]
+n36 │         seen[nums[i]] = i
+──
+GAP003      n2   The function `two_sum` doesn't say what it returns when it reaches the end.
+(2 inferred: n9 n10; :diag all shows them)
+
+> expect gaps GAP003
+
+> expect code:
+>     def two_sum(nums, target):
+>         seen = {}
+>         for i in range(len(nums)):
+>             need = target - nums[i]
+>             if need in seen:
+>                 return [seen[need], i]
+>             seen[nums[i]] = i
+
+# Nobody said what to return when no pair adds up, so GAP003 stays open.
+> :coverage
+✓ approach described
+✓ inputs: named (nums, target)
+✗ returns: some-paths
+✗ edge cases noted: 0
+✗ complexity noted: 0
+  open gaps: 1
+
+-- ok

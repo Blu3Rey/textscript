@@ -1,0 +1,28 @@
+# Warnings: things that are stated but look wrong.
+
+say Write a function f with two inputs, both called x.
+add root: def f(x, x):
+    return x
+expect gaps WARN007
+
+say Inside, return, then print something.
+add n2: print(x)
+expect gaps WARN007 WARN002
+
+say Outside any loop, break.
+add root: break
+expect gaps WARN007 WARN002 WARN006
+
+say After that, use total before setting it up, then set it.
+add root:
+    print(total)
+    total = 0
+expect gaps WARN007 WARN002 WARN006 WARN002 WARN005
+
+say Set up a value, and also a different one inside a function.
+add root:
+    limit = 10
+    def g():
+        limit = 5
+        return limit
+expect gaps WARN007 WARN002 WARN006 WARN002 WARN005 WARN001 WARN003

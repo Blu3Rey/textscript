@@ -126,7 +126,7 @@ describe('resolveTempIds', () => {
   it('rejects a reference to a temporary ID no node has', () => {
     expect(resolveTempIds({ ops: [{ node: 't9' }] }, createIdAllocator())).toEqual({
       ok: false,
-      message: 'Temporary ID t9 is referenced but not given to any node in the batch',
+      message: 'Temporary ID t9 is referenced but not given to any node before it',
     });
   });
 

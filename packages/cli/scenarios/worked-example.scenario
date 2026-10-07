@@ -1,0 +1,29 @@
+# The worked example from ROADMAP.md §3.6: contains-duplicate, in four steps.
+:inputs nums
+
+say Loop through the list of numbers.
+add root: for num~loopvar@5:6 in nums@3:6:
+    ...
+expect gaps GAP002
+
+say If we've already seen the number, return true.
+fill h1:
+    if num in seen:
+        return True
+expect gaps GAP001 GAP003
+
+say Oh, we keep a set called seen, empty at the start.
+add root start: seen = set()
+expect gaps GAP003
+
+say Otherwise add it to the set.
+set n7.orelse = seen.add(num)  # ~synonym
+expect gaps GAP003
+expect code:
+    seen = set()
+    for num in nums:
+        if num in seen:
+            return True
+        else:
+            seen.add(num)
+:log

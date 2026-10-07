@@ -282,7 +282,7 @@ checks the exact diagnostics at every step.
 
 | Milestone | Outcome | Segments | Rough size (one dev) |
 |---|---|---|---|
-| **M1: Deterministic engine** | You can build, render, edit and analyze a solution by hand, with no AI | S0–S5 | 5–7 weeks |
+| **M1: Deterministic engine** ✅ | You can build, render, edit and analyze a solution by hand, with no AI | S0–S5 | 5–7 weeks |
 | **M2: Language understanding** | Typed sentences become faithful edits, measured against a corpus | S6–S9 | 6–9 weeks |
 | **M3: Practice tool** | A usable web app for practicing walkthroughs | S10–S12 | 6–8 weeks |
 | **M4: Beyond** | More languages, hardening, speech, live sessions | S13–S16 | open-ended |
@@ -444,10 +444,12 @@ criteria** (the definition of done) and **Risks**.
 
 #### S5: Developer console
 
+**Status:** ✅ Done ([ADR-010](docs/adr/010-developer-console.md)). Milestone M1 is complete.
+
 **Goal:** Drive the whole engine by hand, with no AI, to show that M1 works and to make debugging easy later.
 
 **Deliverables**
-- `cli` REPL: type ops as compact commands (`add root ForEach num nums`, `fill h3 ...`), see rendered code, diagnostics and history after each one.
+- `cli` REPL: type ops as compact commands (`add root: for num in nums:`, `fill h3: ...`, with code in a small Python subset), see rendered code, diagnostics and history after each one.
 - `:undo`, `:redo`, `:log`, `:ir` (dump JSON), `:export file.py`, `:load session.json`.
 - **Scenario scripts:** a file of op commands plus expected output, run in CI as end-to-end tests of the engine.
 

@@ -1,0 +1,95 @@
+# Inference marks (~rule) are checked: one that doesn't fit its rule warns.
+> :inputs words, n
+inputs: words, n
+
+> say Loop over the words, calling each one word.
+u1: 0:Loop 1:over 2:the 3:words 4:, 5:calling 6:each 7:one 8:word 9:.
+
+> add root: for word~loopvar in words:
+>     print(word)
+✓ add_stmt → u1 (pending, 1 ops)
+n2 │ for word in words:
+n6 │     print(word)
+──
+(1 inferred: n3; :diag all shows them)
+
+> expect gaps none
+
+> :diag all
+INFO001     n3   Inferred (INF-LOOPVAR): the loop variable is named after the collection's name.  "Loop over the words, calling each one word."
+
+> say Go through each index of the words, with i as the index.
+u2: 0:Go 1:through 2:each 3:index 4:of 5:the 6:words 7:, 8:with 9:i 10:as 11:the 12:index 13:.
+
+> add root: for i~indexvar in range(len(words)~range-bounds):
+>     print(i)
+✓ add_stmt → u2 (pending, 1 ops)
+ n2 │ for word in words:
+ n6 │     print(word)
+n10 │ for i in range(len(words)):
+n16 │     print(i)
+──
+(3 inferred: n3 n11 n12; :diag all shows them)
+
+> expect gaps none
+
+> say Loop over the words, calling each one banana.
+u3: 0:Loop 1:over 2:the 3:words 4:, 5:calling 6:each 7:one 8:banana 9:.
+
+> add root: for banana~loopvar in words:
+>     print(banana)
+✓ add_stmt → u3 (pending, 1 ops)
+ n2 │ for word in words:
+ n6 │     print(word)
+n10 │ for i in range(len(words)):
+n16 │     print(i)
+n20 │ for banana in words:
+n24 │     print(banana)
+──
+WARN004     n21  Marked as inferred by INF-LOOPVAR, but it doesn't fit that rule.  "Loop over the words, calling each one banana."
+(3 inferred: n3 n11 n12; :diag all shows them)
+
+> expect gaps WARN004
+
+> :diag
+WARN004     n21  Marked as inferred by INF-LOOPVAR, but it doesn't fit that rule.  "Loop over the words, calling each one banana."
+(3 inferred: n3 n11 n12; :diag all shows them)
+
+> say Go up to n, starting at one.
+u4: 0:Go 1:up 2:to 3:n 4:, 5:starting 6:at 7:one 8:.
+
+> add root: for j in range(1, n~range-bounds):
+>     print(j)
+✓ add_stmt → u4 (pending, 1 ops)
+ n2 │ for word in words:
+ n6 │     print(word)
+n10 │ for i in range(len(words)):
+n16 │     print(i)
+n20 │ for banana in words:
+n24 │     print(banana)
+n28 │ for j in range(1, n):
+n33 │     print(j)
+──
+WARN004     n21  Marked as inferred by INF-LOOPVAR, but it doesn't fit that rule.  "Loop over the words, calling each one banana."
+WARN004     n31  Marked as inferred by INF-RANGE-BOUNDS, but it doesn't fit that rule.  "Go up to n, starting at one."
+(3 inferred: n3 n11 n12; :diag all shows them)
+
+> expect gaps WARN004 WARN004
+
+> say Marks go on a bound, not on range() itself.
+u5: 0:Marks 1:go 2:on 3:a 4:bound 5:, 6:not 7:on 8:range 9:( 10:) 11:itself 12:.
+
+> add root: for k in range(n)~range-bounds:
+>     print(k)
+✗ syntax: Line 1: Mark a bound inside range(...), such as range(len(nums)~range-bounds)
+
+> expect error syntax
+
+> :diag all
+INFO001     n3   Inferred (INF-LOOPVAR): the loop variable is named after the collection's name.  "Loop over the words, calling each one word."
+INFO001     n11  Inferred (INF-INDEXVAR): the index variable is named `i`, `j` or `k`.  "Go through each index of the words, with i as the index."
+INFO001     n12  Inferred (INF-RANGE-BOUNDS): looping over every index of a collection uses `len()` as the bound.  "Go through each index of the words, with i as the index."
+WARN004     n21  Marked as inferred by INF-LOOPVAR, but it doesn't fit that rule.  "Loop over the words, calling each one banana."
+WARN004     n31  Marked as inferred by INF-RANGE-BOUNDS, but it doesn't fit that rule.  "Go up to n, starting at one."
+
+-- ok

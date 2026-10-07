@@ -1,0 +1,31 @@
+# Renaming a symbol changes every use; labels give nodes names to refer to.
+:inputs s
+
+say Keep a counter c of the vowels in the string.
+add root:
+    c = 0
+    for ch in s:
+        if ch in "aeiou":
+            c += 1
+    return c
+label n2 the counter
+label n9 vowel check
+
+say Call the counter vowels, not c.
+rename n3 vowels
+expect code:
+    vowels = 0
+    for ch in s:
+        if ch in "aeiou":
+            vowels += 1
+    return vowels
+
+say Count capital vowels too.
+set @vowel-check.cond = ch.lower() in "aeiou"
+:ir @vowel-check
+
+say Forget that label.
+unlabel @vowel-check
+show
+set @vowel-check.cond = True
+expect error bad-ref

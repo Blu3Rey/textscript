@@ -1,0 +1,41 @@
+# Restructuring: move a misplaced statement, wrap statements in a new block
+# or a function, change a condition and replace a statement.
+:inputs nums
+
+say Add up the numbers and return the total.
+add root:
+    total = 0
+    for num~loopvar in nums:
+        total += num
+        return total
+expect gaps GAP003
+
+say Oh, the return comes after the loop, not inside it.
+move n12 root
+expect gaps none
+
+say But only the even ones.
+wrap n9: if num % 2 == 0:
+expect code:
+    total = 0
+    for num in nums:
+        if num % 2 == 0:
+            total += num
+    return total
+
+say Put all of that in a function called sum_even that takes the numbers.
+wrap n2,n5,n12: def sum_even(nums):
+expect gaps none
+
+say Make that the positive ones, not the even ones.
+set n14.cond = num > 0
+
+say And start the total at the first number.
+replace n2: total = nums[0]
+expect code:
+    def sum_even(nums):
+        total = nums[0]
+        for num in nums:
+            if num > 0:
+                total += num
+        return total

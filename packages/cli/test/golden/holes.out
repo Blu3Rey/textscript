@@ -1,0 +1,192 @@
+# Every kind of hole. h1 is always the first open hole, so filling one
+# renumbers the rest.
+> :inputs grid
+inputs: grid
+
+> say Walk the grid until something happens, then return some value.
+u1: 0:Walk 1:the 2:grid 3:until 4:something 5:happens 6:, 7:then 8:return 9:some 10:value 11:.
+
+> add root:
+>     while ?cond:
+>         ...
+>     return ?value
+✓ add_stmt, add_stmt → u1 (pending, 2 ops)
+n2 │ while ⟨condition not described⟩:
+n5 │     ⟨body not described⟩
+n6 │ return ⟨value not described⟩
+──
+GAP004  h1  n3   This condition isn't stated: condition not described.
+GAP002  h2  n5   Nothing is described inside the while loop.  "Walk the grid until something happens, then return some value."
+GAP005  h3  n7   This value isn't described: value not described.
+
+> expect gaps GAP004 GAP002 GAP005
+
+> say The loop runs while the stack isn't empty.
+u2: 0:The 1:loop 2:runs 3:while 4:the 5:stack 6:isn't 7:empty 8:.
+
+> fill h1: stack
+✓ fill_hole → u2 (pending, 1 ops)
+n2 │ while stack:
+n5 │     ⟨body not described⟩
+n6 │ return ⟨value not described⟩
+──
+GAP001      n8   `stack` is used but never set up.  "The loop runs while the stack isn't empty."
+GAP002  h1  n5   Nothing is described inside the while loop.  "Walk the grid until something happens, then return some value."
+GAP005  h2  n7   This value isn't described: value not described.
+
+> expect gaps GAP001 GAP002 GAP005
+
+> say Each time, pop a cell off the stack and mark it as visited.
+u3: 0:Each 1:time 2:, 3:pop 4:a 5:cell 6:off 7:the 8:stack 9:and 10:mark 11:it 12:as 13:visited 14:.
+
+> fill h1:
+>     cell = stack.pop()
+>     visited.add(cell)  # ~synonym
+✓ fill_hole → u3 (pending, 1 ops)
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+ n6 │ return ⟨value not described⟩
+──
+GAP001      n8   `stack` is used but never set up.  "The loop runs while the stack isn't empty." / "Each time, pop a cell off the stack and mark it as visited."
+GAP001      n15  `visited` is used but never set up.  "Each time, pop a cell off the stack and mark it as visited."
+GAP005  h1  n7   This value isn't described: value not described.
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps GAP001 GAP001 GAP005
+
+> say Return how many cells we visited.
+u4: 0:Return 1:how 2:many 3:cells 4:we 5:visited 6:.
+
+> fill h1: len(visited)
+✓ fill_hole → u4 (pending, 1 ops)
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+ n6 │ return len(visited)
+──
+GAP001      n8   `stack` is used but never set up.  "The loop runs while the stack isn't empty." / "Each time, pop a cell off the stack and mark it as visited."
+GAP001      n15  `visited` is used but never set up.  "Each time, pop a cell off the stack and mark it as visited." / "Return how many cells we visited."
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps GAP001 GAP001
+
+> say Visited starts empty. The corners are the start and the end.
+u5: 0:Visited 1:starts 2:empty 3:. 4:The 5:corners 6:are 7:the 8:start 9:and 10:the 11:end 12:.
+
+> add root start:
+>     visited = set()
+>     start = grid[0][0]
+>     end = grid[-1][-1]
+✓ add_stmt, add_stmt, add_stmt → u5 (pending, 3 ops)
+n20 │ visited = set()
+n23 │ start = grid[0][0]
+n30 │ end = grid[-1][-1]
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+ n6 │ return len(visited)
+──
+WARN001     n24  `start` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+WARN001     n31  `end` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+GAP001      n8   `stack` is used but never set up.  "The loop runs while the stack isn't empty." / "Each time, pop a cell off the stack and mark it as visited."
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps GAP001 WARN001 WARN001
+
+> say The stack starts with the corner. Which one wasn't said.
+u6: 0:The 1:stack 2:starts 3:with 4:the 5:corner 6:. 7:Which 8:one 9:wasn't 10:said 11:.
+
+> add root before n2: stack = [?ref(n24,n31)"which corner"]
+✓ add_stmt → u6 (pending, 1 ops)
+n20 │ visited = set()
+n23 │ start = grid[0][0]
+n30 │ end = grid[-1][-1]
+n37 │ stack = [⟨which corner⟩]
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+ n6 │ return len(visited)
+──
+WARN001     n24  `start` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+WARN001     n31  `end` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+GAP007  h1  n40  It's unclear which is meant: which corner.
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps WARN001 WARN001 GAP007
+
+> say Name a helper for the neighbors, but we haven't named what it returns.
+u7: 0:Name 1:a 2:helper 3:for 4:the 5:neighbors 6:, 7:but 8:we 9:haven't 10:named 11:what 12:it 13:returns 14:.
+
+> add n2: ?name = neighbors(cell)
+✓ add_stmt → u7 (pending, 1 ops)
+n20 │ visited = set()
+n23 │ start = grid[0][0]
+n30 │ end = grid[-1][-1]
+n37 │ stack = [⟨which corner⟩]
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+n41 │     ⟨name not given⟩ = neighbors(cell)
+ n6 │ return len(visited)
+──
+WARN001     n24  `start` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+WARN001     n31  `end` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+GAP007  h1  n40  It's unclear which is meant: which corner.
+GAP008  h2  n42  This isn't named: name not given.
+GAP001      n44  `neighbors` is used but never set up.  "Name a helper for the neighbors, but we haven't named what it returns."
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps WARN001 WARN001 GAP007 GAP008 GAP001
+
+> say It's the start corner.
+u8: 0:It's 1:the 2:start 3:corner 4:.
+
+> fill h1: start
+✓ fill_hole → u8 (pending, 1 ops)
+n20 │ visited = set()
+n23 │ start = grid[0][0]
+n30 │ end = grid[-1][-1]
+n37 │ stack = [start]
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+n41 │     ⟨name not given⟩ = neighbors(cell)
+ n6 │ return len(visited)
+──
+WARN001     n31  `end` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+GAP008  h1  n42  This isn't named: name not given.
+GAP001      n44  `neighbors` is used but never set up.  "Name a helper for the neighbors, but we haven't named what it returns."
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps WARN001 GAP008 GAP001
+
+> say A helper takes the grid and something else we didn't name.
+u9: 0:A 1:helper 2:takes 3:the 4:grid 5:and 6:something 7:else 8:we 9:didn't 10:name 11:.
+
+> add root start: def walk(grid, ?name):
+>     return grid
+✓ add_stmt → u9 (pending, 1 ops)
+n47 │ def walk(grid, ⟨name not given⟩):
+n52 │     return grid
+    │
+    │
+n20 │ visited = set()
+n23 │ start = grid[0][0]
+n30 │ end = grid[-1][-1]
+n37 │ stack = [start]
+ n2 │ while stack:
+ n9 │     cell = stack.pop()
+n14 │     visited.add(cell)
+n41 │     ⟨name not given⟩ = neighbors(cell)
+ n6 │ return len(visited)
+──
+GAP006  h1  n50  An input of the function `walk` isn't named: name not given.
+WARN001     n31  `end` is set up but never used.  "Visited starts empty. The corners are the start and the end."
+GAP008  h2  n42  This isn't named: name not given.
+GAP001      n44  `neighbors` is used but never set up.  "Name a helper for the neighbors, but we haven't named what it returns."
+(1 inferred: n14; :diag all shows them)
+
+> expect gaps WARN001 GAP008 GAP001 GAP006
+
+-- ok
