@@ -9,7 +9,7 @@ import {
   parseExpression,
   parseStatements,
   type SnippetOptions,
-} from '../src/snippet/parser';
+} from '../src/snippet';
 
 const SPAN = [{ utteranceId: 'u1', start: 0, end: 4 }];
 

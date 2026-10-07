@@ -22,4 +22,4 @@ export {
   parseStatements,
   SnippetError,
   type SnippetOptions,
-} from './snippet/parser';
+} from '@textscript/commands';

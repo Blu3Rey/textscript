@@ -5,13 +5,18 @@
   "description": "The Translator interface: one utterance plus the current solution in, an edit batch out.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./examples": "./src/examples.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
-    "@textscript/core": "workspace:*"
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@textscript/commands": "workspace:*",
+    "@textscript/core": "workspace:*",
+    "@textscript/render-python": "workspace:*",
+    "zod": "^4.6.5"
   }
 }

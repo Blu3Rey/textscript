@@ -1,0 +1,18 @@
+{
+  "name": "@textscript/commands",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The text language for edits: console commands and code snippets, compiled to edit operations.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@textscript/core": "workspace:*",
+    "@textscript/render-python": "workspace:*"
+  }
+}

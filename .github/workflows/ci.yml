@@ -49,6 +49,13 @@ jobs:
       - name: Python goldens parse
         run: pnpm check:python
 
+      # The merge gate (ROADMAP.md §6.1): the corpus is valid, and the rules
+      # translator's faithfulness and gap preservation don't drop below
+      # corpus/baselines/rules.json. The LLM translator is gated by the
+      # eval workflow, which needs an API key.
+      - name: Eval gate
+        run: pnpm check:eval
+
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,0 +1,27 @@
+{
+  "name": "@textscript/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stateless API proxy: runs the translator server-side so the API key never reaches the browser.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "textscript": {
+    "runtime": "node"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node bin/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@hono/node-server": "^2.1.3",
+    "@textscript/core": "workspace:*",
+    "@textscript/translator": "workspace:*",
+    "hono": "^4.13.13",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.5"
+  }
+}

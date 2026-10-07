@@ -49,6 +49,7 @@ export default defineConfig(
       'scripts/**',
       'packages/*/bin/**',
       'packages/*/test/**',
+      'apps/server/**',
       ...nodePackageGlobs,
     ],
     languageOptions: { globals: globals.node },

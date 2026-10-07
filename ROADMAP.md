@@ -492,6 +492,14 @@ segment **comes before the translator** on purpose.
 
 #### S7: Translator (text → edit operations)
 
+**Status:** 🟡 Built ([ADR-012](docs/adr/012-translator.md)). The LLM exit
+criteria still need a run with an API key: `pnpm eval run --translator
+claude --split test` and `pnpm eval sweep --split test`. The model answers
+in the console's command language rather than JSON edit operations,
+because structured outputs can't express the recursive IR (see the ADR).
+The rules baseline scores 65.2% faithfulness, 100% gap preservation and
+14.2% coverage on the whole corpus.
+
 **Goal:** Turn one utterance plus the current solution into a validated edit batch.
 
 **Deliverables**

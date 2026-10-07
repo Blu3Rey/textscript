@@ -15,10 +15,32 @@ pnpm eval run --split test --style incomplete
 pnpm eval run --write-baseline baseline.json
 pnpm eval run --baseline baseline.json       # exit 1 if faithfulness or gap preservation drop
 pnpm eval agree                              # second annotations vs gold
+pnpm eval examples --out packages/translator/src/examples.json
 ```
 
-S6 has two translators: `empty` (does nothing) and `oracle` (replays gold).
-S7 adds the baseline and LLM translators.
+Translators: `empty` (does nothing), `oracle` (replays gold), `rules` (the
+phrase-pattern baseline) and `claude`.
+
+The rules translator is gated in CI by `pnpm check:eval` against
+`corpus/baselines/rules.json`. After an intended change, record a new
+baseline with `--write-baseline` and check the diff.
+
+### The Claude translator
+
+`claude` needs `ANTHROPIC_API_KEY` in the environment. It leaves out the
+four training problems its few-shot examples come from, and translates
+four walkthroughs at once (`--concurrency`).
+
+```sh
+pnpm eval run --translator claude --split test               # the held-out set
+pnpm eval run --translator claude --effort low --model claude-opus-5-5 --out eval-report
+pnpm eval sweep --split test --efforts low,medium,high --out sweep
+```
+
+The report adds latency (p50, p95) and cost, including cost per 20
+utterances. `sweep` prints one row per effort. To gate the LLM translator,
+record `corpus/baselines/claude.json` with `--write-baseline`; the manual
+**Eval (LLM)** workflow then fails if it regresses.
 
 From code:
 

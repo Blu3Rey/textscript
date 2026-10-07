@@ -85,6 +85,7 @@ export {
   parseSessionLog,
   replay,
   serializeSessionLog,
+  UtteranceSchema,
   type AppliedEdit,
   type ParseSessionLogResult,
   type ReplayResult,

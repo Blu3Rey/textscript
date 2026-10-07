@@ -3,19 +3,34 @@ import { join } from 'node:path';
 import { analyze } from '@textscript/core';
 import { formatCode } from '@textscript/cli';
 import { PYTHON_BUILTINS } from '@textscript/render-python';
-import { emptyTranslator, type Translator } from '@textscript/translator';
+import Anthropic from '@anthropic-ai/sdk';
+import {
+  createClaudeTranslator,
+  DEFAULT_MODEL,
+  emptyTranslator,
+  rulesTranslator,
+  type Effort,
+  type MessagesApi,
+  type Translator,
+} from '@textscript/translator';
+import { examples } from '@textscript/translator/examples';
 import { agreement } from './agreement';
 import { STYLES, SPLITS, type CorpusIssue, type Split, type Style } from './corpus/corpus';
 import { compileGold, parseGold, type CompiledGold } from './corpus/gold';
 import { loadCorpus, readCorpusDir, type Corpus } from './corpus/load';
+import { buildExamples, exampleProblems } from './examples';
 import { baselineOf, checkGate, type Baseline } from './gate';
 import { percent, htmlReport, markdownReport } from './report/report';
-import { oracleTranslator, runEval, type RunFilter } from './run';
+import { oracleTranslator, runEval, type RunFilter, type RunResult } from './run';
 
 export interface Io {
   stdout: (text: string) => void;
   stderr: (text: string) => void;
+  /** The Claude API; by default a client that reads ANTHROPIC_API_KEY. */
+  messages?: MessagesApi;
 }
+
+const EFFORTS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
 const HELP = `Usage: textscript-eval <command> [options]
 
@@ -29,10 +44,21 @@ Commands:
                                show that annotation instead.
   agree [file.gold ...]        Compare second annotations with the corpus gold
                                (default: every file in <corpus>/agreement/).
+  examples [--out <file>]      Print (or write) the LLM translator's few-shot
+                               examples, made from training-split gold.
+  sweep                        Run the Claude translator at several efforts and
+                               compare quality, latency and cost.
 
 Options:
   --corpus <dir>               Corpus directory (default: corpus)
-  --translator <name>          empty or oracle (default: empty)
+  --translator <name>          empty, oracle, rules or claude (default: empty).
+                               claude needs ANTHROPIC_API_KEY and leaves out
+                               the problems its examples come from.
+  --model <id>                 Claude model (default: ${DEFAULT_MODEL})
+  --effort <level>             Claude effort: ${EFFORTS.join(', ')} (default: medium)
+  --efforts <level,...>        Efforts to sweep (default: low,medium,high)
+  --concurrency <n>            Walkthroughs translated at once (default: 1;
+                               4 for claude)
   --split <train|test>         Only this split
   --problem <id,...>           Only these problems
   --style <style,...>          Only these styles (${STYLES.join(', ')})
@@ -62,6 +88,10 @@ const VALUE_OPTIONS = new Set([
   'baseline',
   'write-baseline',
   'file',
+  'model',
+  'effort',
+  'efforts',
+  'concurrency',
 ]);
 
 function parseArgs(argv: readonly string[]): Args {
@@ -121,15 +151,75 @@ function filterFrom(options: Map<string, string>): RunFilter {
   };
 }
 
-function translatorFrom(name: string): Translator | ((gold: CompiledGold) => Translator) {
+function effortFrom(value: string): Effort {
+  const effort = EFFORTS.find((e) => e === value);
+  if (effort === undefined)
+    throw new UsageError(`unknown effort '${value}'; use ${EFFORTS.join(', ')}`);
+  return effort;
+}
+
+function messagesFrom(io: Io): MessagesApi {
+  if (io.messages) return io.messages;
+  if (!process.env['ANTHROPIC_API_KEY']) {
+    throw new UsageError('the claude translator needs ANTHROPIC_API_KEY in the environment');
+  }
+  return new Anthropic().beta.messages;
+}
+
+function claudeTranslator(options: Map<string, string>, io: Io, effort: Effort): Translator {
+  return createClaudeTranslator({
+    messages: messagesFrom(io),
+    model: options.get('model') ?? DEFAULT_MODEL,
+    effort,
+    examples,
+  });
+}
+
+function translatorFrom(
+  options: Map<string, string>,
+  io: Io,
+): Translator | ((gold: CompiledGold) => Translator) {
+  const name = options.get('translator') ?? 'empty';
   switch (name) {
     case 'empty':
       return emptyTranslator;
     case 'oracle':
       return oracleTranslator;
+    case 'rules':
+      return rulesTranslator;
+    case 'claude':
+      return claudeTranslator(options, io, effortFrom(options.get('effort') ?? 'medium'));
     default:
-      throw new UsageError(`unknown translator '${name}'; S6 has empty and oracle`);
+      throw new UsageError(`unknown translator '${name}'; use empty, oracle, rules or claude`);
   }
+}
+
+function concurrencyFrom(options: Map<string, string>, fallback: number): number {
+  const value = options.get('concurrency');
+  if (value === undefined) return fallback;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1) throw new UsageError(`--concurrency needs a positive integer`);
+  return n;
+}
+
+/** The run's filter; an LLM run leaves out the problems its examples come from. */
+function runFilter(corpus: Corpus, options: Map<string, string>, llm: boolean): RunFilter {
+  const filter = filterFrom(options);
+  return llm ? { ...filter, excludeProblems: exampleProblems(corpus) } : filter;
+}
+
+function writeReports(out: string, result: RunResult): void {
+  mkdirSync(out, { recursive: true });
+  writeFileSync(join(out, 'report.md'), markdownReport(result));
+  writeFileSync(join(out, 'report.html'), htmlReport(result));
+  writeFileSync(join(out, 'results.json'), `${JSON.stringify(result, null, 2)}\n`);
+}
+
+function refuseIssues(corpus: Corpus, io: Io): boolean {
+  if (corpus.issues.length === 0) return false;
+  for (const issue of corpus.issues) io.stderr(`${formatIssue(issue)}\n`);
+  io.stderr('textscript-eval: the corpus has issues; fix them first (see `check`)\n');
+  return true;
 }
 
 function count<T>(items: Iterable<T>, key: (item: T) => string): string {
@@ -160,23 +250,16 @@ function check(corpus: Corpus, io: Io): number {
 }
 
 async function run(corpus: Corpus, options: Map<string, string>, io: Io): Promise<number> {
-  if (corpus.issues.length > 0) {
-    for (const issue of corpus.issues) io.stderr(`${formatIssue(issue)}\n`);
-    io.stderr('textscript-eval: the corpus has issues; fix them first (see `check`)\n');
-    return 2;
-  }
+  if (refuseIssues(corpus, io)) return 2;
+  const llm = options.get('translator') === 'claude';
   const result = await runEval(corpus, {
-    translator: translatorFrom(options.get('translator') ?? 'empty'),
-    filter: filterFrom(options),
+    translator: translatorFrom(options, io),
+    filter: runFilter(corpus, options, llm),
+    concurrency: concurrencyFrom(options, llm ? 4 : 1),
   });
   const report = markdownReport(result);
   const out = options.get('out');
-  if (out !== undefined) {
-    mkdirSync(out, { recursive: true });
-    writeFileSync(join(out, 'report.md'), report);
-    writeFileSync(join(out, 'report.html'), htmlReport(result));
-    writeFileSync(join(out, 'results.json'), `${JSON.stringify(result, null, 2)}\n`);
-  }
+  if (out !== undefined) writeReports(out, result);
   // The metrics table and breakdowns, without the failure details.
   io.stdout(`${report.split('\n## Steps that')[0]?.trimEnd() ?? ''}\n`);
   const failing = result.steps.length - result.metrics.exact.numerator;
@@ -213,6 +296,44 @@ function isBaseline(value: unknown): value is Baseline {
     typeof Reflect.get(value, 'translator') === 'string' &&
     ['faithfulness', 'gapPreservation', 'gapPreservationIncomplete', 'coverage'].every(numeric)
   );
+}
+
+/** The Claude translator at several efforts, side by side. */
+async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Promise<number> {
+  if (refuseIssues(corpus, io)) return 2;
+  const efforts = (list(options.get('efforts')) ?? ['low', 'medium', 'high']).map(effortFrom);
+  const rows: string[] = [];
+  for (const effort of efforts) {
+    const result = await runEval(corpus, {
+      translator: claudeTranslator(options, io, effort),
+      filter: runFilter(corpus, options, true),
+      concurrency: concurrencyFrom(options, 4),
+    });
+    const out = options.get('out');
+    if (out !== undefined) writeReports(join(out, effort), result);
+    const m = result.metrics;
+    const ms = (value: number | null) => (value === null ? '–' : `${(value / 1000).toFixed(2)} s`);
+    const usd = (value: number | null) => (value === null ? '–' : `$${value.toFixed(4)}`);
+    rows.push(
+      `| ${effort} | ${percent(m.faithfulness)} | ${percent(m.gapPreservation)} | ${percent(m.coverage)} | ${percent(
+        m.placement,
+      )} | ${percent(m.exact)} | ${String(m.rejected)} | ${ms(m.latencyMs.p50)} | ${ms(m.latencyMs.p95)} | ${usd(
+        m.usage.costPer20,
+      )} |`,
+    );
+    io.stderr(`${effort}: done (${String(m.steps)} steps)\n`);
+  }
+  io.stdout(
+    [
+      `# Effort sweep: ${options.get('model') ?? DEFAULT_MODEL}`,
+      '',
+      '| Effort | Faithful | Gaps kept | Coverage | Placement | Exact | Rejected | p50 | p95 | Cost per 20 utterances |',
+      '|---|---|---|---|---|---|---|---|---|---|',
+      ...rows,
+      '',
+    ].join('\n'),
+  );
+  return 0;
 }
 
 function showGold(
@@ -356,16 +477,30 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
       return 0;
     }
     const root = args.options.get('corpus') ?? 'corpus';
-    const corpus = loadCorpus(readCorpusDir(root));
+    const files = readCorpusDir(root);
+    const corpus = loadCorpus(files);
     switch (args.command) {
       case 'check':
         return check(corpus, io);
       case 'run':
         return await run(corpus, args.options, io);
+      case 'sweep':
+        return await sweep(corpus, args.options, io);
       case 'gold':
         return showGold(corpus, args.positional[0], args.options.get('file'), io);
       case 'agree':
         return agree(corpus, root, args.positional, io);
+      case 'examples': {
+        if (corpus.issues.length > 0) {
+          for (const issue of corpus.issues) io.stderr(`${formatIssue(issue)}\n`);
+          return 2;
+        }
+        const json = `${JSON.stringify(buildExamples(corpus, files), null, 2)}\n`;
+        const out = args.options.get('out');
+        if (out === undefined) io.stdout(json);
+        else writeFileSync(out, json);
+        return 0;
+      }
       default:
         throw new UsageError(`unknown command '${args.command}'`);
     }
