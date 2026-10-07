@@ -19,6 +19,7 @@ the old one.
 | [010](010-developer-console.md) | Developer console and scenario scripts | Accepted |
 | [011](011-corpus-and-evaluation.md) | Walkthrough corpus and evaluation | Accepted |
 | [012](012-translator.md) | The translator: commands as output, context packing, baseline, server | Accepted |
+| [013](013-provenance-validator.md) | The provenance validator: lexical checks, downgrades, second opinion | Accepted |
 
 ## Writing a new ADR
 

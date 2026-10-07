@@ -14,6 +14,13 @@ import {
   type Translator,
 } from '@textscript/translator';
 import { examples } from '@textscript/translator/examples';
+import {
+  checkBatch,
+  createClaudeVerifier,
+  VERIFIER_MODEL,
+  type ValidationInput,
+  type ValidationResult,
+} from '@textscript/validator';
 import { agreement } from './agreement';
 import { STYLES, SPLITS, type CorpusIssue, type Split, type Style } from './corpus/corpus';
 import { compileGold, parseGold, type CompiledGold } from './corpus/gold';
@@ -21,7 +28,7 @@ import { loadCorpus, readCorpusDir, type Corpus } from './corpus/load';
 import { buildExamples, exampleProblems } from './examples';
 import { baselineOf, checkGate, type Baseline } from './gate';
 import { percent, htmlReport, markdownReport } from './report/report';
-import { oracleTranslator, runEval, type RunFilter, type RunResult } from './run';
+import { fillerTranslator, oracleTranslator, runEval, type RunFilter, type RunResult } from './run';
 
 export interface Io {
   stdout: (text: string) => void;
@@ -51,9 +58,14 @@ Commands:
 
 Options:
   --corpus <dir>               Corpus directory (default: corpus)
-  --translator <name>          empty, oracle, rules or claude (default: empty).
+  --translator <name>          empty, oracle, rules, filler or claude (default:
+                               empty). filler replays gold and fills every
+                               hole with made-up code, to test the validator.
                                claude needs ANTHROPIC_API_KEY and leaves out
                                the problems its examples come from.
+  --validator <mode>           lexical (the default), verified (adds a
+                               second opinion from ${VERIFIER_MODEL}; the
+                               default for claude) or off
   --model <id>                 Claude model (default: ${DEFAULT_MODEL})
   --effort <level>             Claude effort: ${EFFORTS.join(', ')} (default: medium)
   --efforts <level,...>        Efforts to sweep (default: low,medium,high)
@@ -92,6 +104,7 @@ const VALUE_OPTIONS = new Set([
   'effort',
   'efforts',
   'concurrency',
+  'validator',
 ]);
 
 function parseArgs(argv: readonly string[]): Args {
@@ -187,10 +200,33 @@ function translatorFrom(
       return oracleTranslator;
     case 'rules':
       return rulesTranslator;
+    case 'filler':
+      return fillerTranslator;
     case 'claude':
       return claudeTranslator(options, io, effortFrom(options.get('effort') ?? 'medium'));
     default:
-      throw new UsageError(`unknown translator '${name}'; use empty, oracle, rules or claude`);
+      throw new UsageError(
+        `unknown translator '${name}'; use empty, oracle, rules, filler or claude`,
+      );
+  }
+}
+
+type Validator = (input: ValidationInput) => Promise<ValidationResult>;
+
+/** The validator for a run: lexical by default, with a second opinion for an LLM translator. */
+function validatorFrom(options: Map<string, string>, io: Io, llm: boolean): Validator | undefined {
+  const mode = options.get('validator') ?? (llm ? 'verified' : 'lexical');
+  switch (mode) {
+    case 'off':
+      return undefined;
+    case 'lexical':
+      return (input) => checkBatch(input);
+    case 'verified': {
+      const verifier = createClaudeVerifier({ messages: messagesFrom(io) });
+      return (input) => checkBatch(input, { verifier });
+    }
+    default:
+      throw new UsageError(`unknown validator '${mode}'; use lexical, verified or off`);
   }
 }
 
@@ -252,10 +288,12 @@ function check(corpus: Corpus, io: Io): number {
 async function run(corpus: Corpus, options: Map<string, string>, io: Io): Promise<number> {
   if (refuseIssues(corpus, io)) return 2;
   const llm = options.get('translator') === 'claude';
+  const validator = validatorFrom(options, io, llm);
   const result = await runEval(corpus, {
     translator: translatorFrom(options, io),
     filter: runFilter(corpus, options, llm),
     concurrency: concurrencyFrom(options, llm ? 4 : 1),
+    ...(validator ? { validator } : {}),
   });
   const report = markdownReport(result);
   const out = options.get('out');
@@ -304,10 +342,12 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
   const efforts = (list(options.get('efforts')) ?? ['low', 'medium', 'high']).map(effortFrom);
   const rows: string[] = [];
   for (const effort of efforts) {
+    const validator = validatorFrom(options, io, true);
     const result = await runEval(corpus, {
       translator: claudeTranslator(options, io, effort),
       filter: runFilter(corpus, options, true),
       concurrency: concurrencyFrom(options, 4),
+      ...(validator ? { validator } : {}),
     });
     const out = options.get('out');
     if (out !== undefined) writeReports(join(out, effort), result);
@@ -317,7 +357,9 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
     rows.push(
       `| ${effort} | ${percent(m.faithfulness)} | ${percent(m.gapPreservation)} | ${percent(m.coverage)} | ${percent(
         m.placement,
-      )} | ${percent(m.exact)} | ${String(m.rejected)} | ${ms(m.latencyMs.p50)} | ${ms(m.latencyMs.p95)} | ${usd(
+      )} | ${percent(m.exact)} | ${String(m.rejected)} | ${
+        m.validation ? percent(m.validation.downgrade) : '–'
+      } | ${m.validation ? percent(m.validation.falseRejection) : '–'} | ${ms(m.latencyMs.p50)} | ${ms(m.latencyMs.p95)} | ${usd(
         m.usage.costPer20,
       )} |`,
     );
@@ -327,8 +369,8 @@ async function sweep(corpus: Corpus, options: Map<string, string>, io: Io): Prom
     [
       `# Effort sweep: ${options.get('model') ?? DEFAULT_MODEL}`,
       '',
-      '| Effort | Faithful | Gaps kept | Coverage | Placement | Exact | Rejected | p50 | p95 | Cost per 20 utterances |',
-      '|---|---|---|---|---|---|---|---|---|---|',
+      '| Effort | Faithful | Gaps kept | Coverage | Placement | Exact | Rejected | Held back | False rejections | p50 | p95 | Cost per 20 utterances |',
+      '|---|---|---|---|---|---|---|---|---|---|---|---|',
       ...rows,
       '',
     ].join('\n'),

@@ -51,6 +51,7 @@ packages/          libraries; each exports TypeScript source from src/index.ts
   commands/        the edit-command language: console commands → edit operations
   cli/             developer console
   translator/      the Translator interface, the rules baseline and the Claude translator
+  validator/       checks edits against the words that caused them; holds back the rest
   eval/            corpus loader, evaluation runner, metrics, reports
 apps/              deployable apps; each exports TypeScript source from src/index.ts
   server/          HTTP API that calls Claude, so the key stays server-side

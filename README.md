@@ -17,8 +17,10 @@ hand. Milestone M2 is under way: S6 added a corpus of 30 interview problems
 with annotated walkthroughs ([corpus/](corpus/README.md)) and the runner
 that scores a translator against it. S7 added the translators: a
 rule-based baseline and one that calls Claude through a small server
-([apps/server](apps/server/README.md)). Next is S8, which checks every
-edit against the words that caused it.
+([apps/server](apps/server/README.md)). S8 added the provenance validator,
+which checks every edit against the words that caused it and turns
+whatever they don't say back into holes. Next is S9: reference resolution
+and refinement.
 See [ROADMAP.md](ROADMAP.md) for the architecture and the full plan.
 
 ## Getting started

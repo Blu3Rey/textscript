@@ -1,6 +1,7 @@
 import { createUtterance, emptySession } from '@textscript/core';
 import { createRemoteTranslator, TranslatorError, type Translator } from '@textscript/translator';
 import { describe, expect, it } from 'vitest';
+import { validatedTranslator } from '@textscript/validator';
 import { createApp } from '../src/app';
 
 const context = {
@@ -40,6 +41,55 @@ describe('the server', () => {
     const response = await post(createApp({ translator: echo }), JSON.stringify(context));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ batch: { utteranceId: 'u1' } });
+  });
+
+  it('passes on what the validator held back, which the browser client accepts', async () => {
+    const guessing: Translator = {
+      name: 'guessing',
+      translate: (c) =>
+        Promise.resolve({
+          batch: {
+            utteranceId: c.utterance.id,
+            ops: [
+              {
+                op: 'add_stmt',
+                parent: c.document.program.id,
+                position: { at: 'end' },
+                stmt: {
+                  kind: 'Assign',
+                  id: 't1',
+                  provenance: [{ utteranceId: 'u1', start: 0, end: 5 }],
+                  target: {
+                    kind: 'Name',
+                    id: 't2',
+                    name: 'total',
+                    provenance: [{ utteranceId: 'u1', start: 0, end: 5 }],
+                  },
+                  value: {
+                    kind: 'Literal',
+                    id: 't3',
+                    value: 0,
+                    provenance: [{ utteranceId: 'u1', start: 0, end: 5 }],
+                  },
+                },
+              },
+            ],
+          },
+          unparsedSpans: [],
+        }),
+    };
+    const app = createApp({ translator: validatedTranslator(guessing) });
+    const remote = createRemoteTranslator({
+      url: '/translate',
+      fetch: async (url, init) => app.request(url, init),
+    });
+    const translation = await remote.translate(context);
+    expect(translation.heldBack?.map((h) => h.proposed)).toEqual(['total', '0']);
+    expect(translation.batch.ops.map((op) => op.op)).toEqual([
+      'add_stmt',
+      'replace_node',
+      'replace_node',
+    ]);
   });
 
   it('rejects bodies that are not a translation context', async () => {

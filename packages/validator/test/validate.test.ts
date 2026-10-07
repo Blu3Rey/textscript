@@ -1,0 +1,304 @@
+import { compileCommands } from '@textscript/commands';
+import {
+  allNodes,
+  apply,
+  createUtterance,
+  emptySession,
+  type EditBatch,
+  type EditOp,
+  type IrDocument,
+  type IrNode,
+  type Utterance,
+} from '@textscript/core';
+import { render } from '@textscript/render-python';
+import { describe, expect, it } from 'vitest';
+import { codeOf, HELD_BACK_REASON, validate, type ValidationResult } from '../src/index';
+
+/** A session that says things, compiles console commands for them, and validates. */
+class Session {
+  document: IrDocument = emptySession().document;
+  readonly utterances: Utterance[] = [];
+
+  /** Compiles commands citing the whole utterance (or `@a:b` spans), without validating. */
+  batch(text: string, ...commands: string[]): EditBatch {
+    const id = `u${String(this.utterances.length + 1)}`;
+    const utterance = createUtterance(id, text);
+    this.utterances.push(utterance);
+    const compiled = compileCommands(
+      this.document,
+      commands.map((command) => ({ text: command })),
+      {
+        utteranceId: id,
+        provenance: [{ utteranceId: id, start: 0, end: utterance.tokens.length }],
+      },
+    );
+    if (!compiled.ok) throw new Error(`${compiled.code}: ${compiled.message}`);
+    return compiled.batch;
+  }
+
+  /** Validates a batch and applies what's left. */
+  check(batch: EditBatch): ValidationResult {
+    const result = validate({
+      document: this.document,
+      batch,
+      utterances: this.utterances,
+      inputs: ['nums', 'target'],
+    });
+    const applied = apply(this.document, result.batch);
+    if (!applied.ok) throw new Error(applied.error.message);
+    this.document = applied.document;
+    return result;
+  }
+
+  say(text: string, ...commands: string[]): ValidationResult {
+    return this.check(this.batch(text, ...commands));
+  }
+
+  get code(): string {
+    return render(this.document.program, { mode: 'ui' }).text;
+  }
+
+  find(predicate: (node: IrNode) => boolean): IrNode {
+    const node = allNodes(this.document.program).find(predicate);
+    if (node === undefined) throw new Error('no such node');
+    return node;
+  }
+}
+
+const hole = `⟨${HELD_BACK_REASON}⟩`;
+
+describe('validate', () => {
+  it('passes what the words say', () => {
+    const s = new Session();
+    const result = s.say(
+      'Make a set called seen, and loop through the numbers.',
+      'add root: seen = set()\nfor num~loopvar in nums:\n    ...',
+    );
+    expect(result.heldBack).toEqual([]);
+    expect(result.checked).toBeGreaterThan(4);
+    expect(s.code).toContain('seen = set()');
+  });
+
+  it('holds back a name nobody said, as a name hole that keeps the words', () => {
+    const s = new Session();
+    const result = s.say('Make a set.', 'add root: seen = set()');
+    expect(result.heldBack).toMatchObject([
+      { code: 'VAL003', proposed: 'seen', message: 'The words "Make a set." don\'t say `seen`' },
+    ]);
+    const replaced = s.find((node) => node.kind === 'NameHole');
+    expect(replaced).toMatchObject({
+      reason: HELD_BACK_REASON,
+      provenance: [{ utteranceId: 'u1' }],
+    });
+    expect(s.code).toBe(`${hole} = set()\n`);
+  });
+
+  it('holds back values and conditions with the matching hole kinds', () => {
+    const s = new Session();
+    s.say('Loop through the numbers.', 'add root: for num~loopvar in nums:\n    ...');
+    const blockHole = s.find((node) => node.kind === 'BlockHole');
+    const result = s.say(
+      "If it's valid, return true.",
+      `fill ${blockHole.id}:\n    if num > 0:\n        return True`,
+    );
+    expect(result.heldBack.map((h) => [h.code, h.proposed])).toEqual([['VAL003', 'num > 0']]);
+    expect(s.find((node) => node.kind === 'CondHole')).toBeDefined();
+    expect(s.code).toContain('return True');
+
+    const value = s.say('Count starts somewhere.', 'add root: count = 7');
+    expect(value.heldBack.map((h) => h.proposed)).toEqual(['7']);
+    expect(s.find((node) => node.kind === 'ExprHole')).toBeDefined();
+  });
+
+  it('removes a statement whose kind nobody said, leaving a hole if the block empties', () => {
+    const s = new Session();
+    s.say('Loop through the numbers.', 'add root: for num~loopvar in nums:\n    ...');
+    const blockHole = s.find((node) => node.kind === 'BlockHole');
+    const result = s.say('Then nothing happens.', `fill ${blockHole.id}: break`);
+    expect(result.heldBack.map((h) => h.proposed)).toEqual(['break']);
+    expect(s.code).toContain('⟨body not described⟩');
+  });
+
+  it('checks inferred nodes against their rules', () => {
+    const s = new Session();
+    const misfit = s.say('Count starts at zero.', 'add root: count~loopvar = 0');
+    expect(misfit.heldBack).toMatchObject([
+      {
+        code: 'VAL004',
+        proposed: 'count',
+        message: "`count` is marked INF-LOOPVAR, which doesn't cover it",
+      },
+    ]);
+    // The rule supplies `len`, which nobody said.
+    const range = s.say(
+      'Go over each index i of nums.',
+      'add root: for i in range(len(nums)~range-bounds):\n    ...',
+    );
+    expect(range.heldBack).toEqual([]);
+  });
+
+  it('holds back nodes citing words that were never said', () => {
+    const s = new Session();
+    s.utterances.push(createUtterance('u1', 'Hello there.'));
+    const stmt = (span: { utteranceId: string; start: number; end: number }): EditOp => ({
+      op: 'add_stmt',
+      parent: s.document.program.id,
+      position: { at: 'end' },
+      stmt: { kind: 'Break', id: 't1', provenance: [span] },
+      provenance: [{ utteranceId: 'u1', start: 0, end: 2 }],
+    });
+    for (const span of [
+      { utteranceId: 'u9', start: 0, end: 1 },
+      { utteranceId: 'u1', start: 0, end: 9 },
+    ]) {
+      const bad = s.check({ utteranceId: 'u1', ops: [stmt(span)] });
+      expect(bad.heldBack).toMatchObject([
+        {
+          code: 'VAL002',
+          message: "`break` cites words that aren't in this or an earlier utterance",
+        },
+      ]);
+    }
+    expect(s.code).toBe('');
+  });
+
+  it('only accepts spans from this utterance or earlier ones', () => {
+    const s = new Session();
+    s.utterances.push(
+      createUtterance('u1', 'Return true.'),
+      createUtterance('u2', 'Return false.'),
+    );
+    const result = validate({
+      document: s.document,
+      batch: {
+        utteranceId: 'u1',
+        ops: [
+          {
+            op: 'add_stmt',
+            parent: s.document.program.id,
+            position: { at: 'end' },
+            stmt: {
+              kind: 'Return',
+              id: 't1',
+              provenance: [{ utteranceId: 'u2', start: 0, end: 2 }],
+              value: {
+                kind: 'Literal',
+                id: 't2',
+                value: false,
+                provenance: [{ utteranceId: 'u2', start: 0, end: 2 }],
+              },
+            },
+          },
+        ],
+      },
+      utterances: s.utterances,
+    });
+    expect(result.heldBack.map((h) => h.code)).toEqual(['VAL002']);
+  });
+
+  it('needs an operator said near what it combines, and its operands said too', () => {
+    const s = new Session();
+    s.say('So prev and curr start at one.', 'add root: prev = 1\ncurr = 1');
+    const near = s.say(
+      'Ways is prev plus curr, from two to n inclusive.',
+      'add root: ways = prev + 1',
+    );
+    expect(near.heldBack.map((h) => h.proposed)).toEqual(['prev + 1']);
+    const inclusive = s.say(
+      'Loop i from two to n inclusive.',
+      'add root: for i in range(2, n + 1):\n    ...',
+    );
+    expect(inclusive.heldBack).toEqual([]);
+    const next = s.say('Look at the next index.', 'add root: x = nums[i + 1]');
+    expect(next.heldBack.map((h) => h.proposed)).toEqual(['x']);
+    // "add it to total" says `+ total`, not that best starts at `total + 1`.
+    const operand = s.say('Add it to total.', 'add root: best = total + 1');
+    expect(operand.heldBack.map((h) => h.proposed)).toEqual(['best', 'total + 1']);
+  });
+
+  it('accepts code the batch takes out and rebuilds unchanged', () => {
+    const s = new Session();
+    s.say('If num is in seen, return true.', 'add root: if num in seen:\n    return True');
+    const ifNode = s.find((node) => node.kind === 'If');
+    const rebuilt = s.say(
+      'Otherwise keep going.',
+      `replace ${ifNode.id}:\n    if num in seen:\n        return True\n    else:\n        continue`,
+    );
+    expect(rebuilt.heldBack).toEqual([]);
+    expect(s.code).toContain('else:\n    continue');
+  });
+
+  it('drops field changes, renames and labels the words do not support', () => {
+    const s = new Session();
+    s.say('While lo is less than hi, keep going.', 'add root: while lo < hi:\n    continue');
+    const compare = s.find((node) => node.kind === 'Compare');
+    const name = s.find((node) => node.kind === 'Name' && node.name === 'lo');
+    const loop = s.find((node) => node.kind === 'While');
+
+    expect(s.say('Make it at most.', `set ${compare.id}.op = <=`).heldBack).toEqual([]);
+    const op = s.say('Make it different.', `set ${compare.id}.op = >`);
+    expect(op.heldBack).toMatchObject([{ code: 'VAL003', target: { op: 0 } }]);
+    expect(op.batch.ops).toEqual([]);
+
+    expect(s.say('Call lo low instead.', `rename ${name.id} low`).heldBack).toEqual([]);
+    expect(s.say('Rename that.', `rename ${name.id} start`).heldBack).toHaveLength(1);
+    expect(s.say('Call this the search loop.', `label ${loop.id} search loop`).heldBack).toEqual(
+      [],
+    );
+    expect(s.say('Label it.', `label ${loop.id} binary search`).heldBack).toHaveLength(1);
+    expect(s.code).toContain('while low <= hi:');
+  });
+
+  it('drops ops with no words, and lets questions through', () => {
+    const s = new Session();
+    s.say('Return true.', 'add root: return True');
+    const ret = s.find((node) => node.kind === 'Return');
+    const result = s.check({
+      utteranceId: 'u1',
+      ops: [
+        { op: 'remove_node', node: ret.id },
+        { op: 'ask_clarification', question: 'Which one?', candidates: [] },
+      ],
+    });
+    expect(result.heldBack).toMatchObject([{ code: 'VAL001', target: { op: 0 } }]);
+    expect(result.batch.ops.map((o) => o.op)).toEqual(['ask_clarification']);
+  });
+
+  it('returns nodes it cannot judge as claims for a second opinion', () => {
+    const s = new Session();
+    const result = s.say('Set x to nums at target.', 'add root: x = nums[target]');
+    expect(result.heldBack).toEqual([]);
+    expect(result.claims.map((c) => c.code)).toEqual(['x = nums[target]', 'nums[target]']);
+    expect(result.claims[0]?.words).toBe('set x to nums at target .');
+  });
+
+  it('returns a batch the applier rejects unchanged', () => {
+    const s = new Session();
+    const batch: EditBatch = { utteranceId: 'u1', ops: [{ op: 'remove_node', node: 'n99' }] };
+    expect(validate({ document: s.document, batch, utterances: [] })).toEqual({
+      batch,
+      heldBack: [],
+      checked: 0,
+      claims: [],
+    });
+  });
+});
+
+describe('codeOf', () => {
+  it('renders one line of any node', () => {
+    const s = new Session();
+    s.say(
+      'If x is one, return zero, else if x is two return one, else return a map of x to x.',
+      'add root:\n    if x == 1:\n        return 0\n    elif x == 2:\n        return 1\n    else:\n        return {x: x}',
+    );
+    const kinds = ['If', 'Elif', 'DictEntry', 'Block', 'Compare', 'Program'];
+    expect(kinds.map((kind) => codeOf(s.find((node) => node.kind === kind)))).toEqual([
+      'if x == 1: …',
+      'elif x == 2: …',
+      'x: x',
+      'else: …',
+      'x == 1',
+      '(program)',
+    ]);
+  });
+});

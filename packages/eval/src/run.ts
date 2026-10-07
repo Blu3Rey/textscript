@@ -5,14 +5,29 @@
 // forcing"), so a mistake in one step doesn't lower the score of the next,
 // and a step's score says how well that one utterance was translated.
 
-import { apply, type EditBatch } from '@textscript/core';
+import {
+  allNodes,
+  apply,
+  indexTree,
+  type EditBatch,
+  type EditOp,
+  type Expr,
+  type IrDocument,
+  type Span,
+} from '@textscript/core';
 import { render } from '@textscript/render-python';
 import type { Translation, Translator } from '@textscript/translator';
-import { compareStep, type StepComparison } from './compare/step';
+import type { ValidationInput, ValidationResult } from '@textscript/validator';
+import {
+  compareStep,
+  compareStepDetailed,
+  type GoldAnswer,
+  type StepComparison,
+} from './compare/step';
 import type { Problem, Split, Style } from './corpus/corpus';
 import type { CompiledGold } from './corpus/gold';
 import type { Corpus } from './corpus/load';
-import { computeMetrics, type Metrics, type ScoredStep } from './metrics';
+import { computeMetrics, type Metrics, type ScoredStep, type StepValidation } from './metrics';
 
 export interface StepResult extends ScoredStep {
   problem: string;
@@ -47,6 +62,11 @@ export interface RunOptions {
   /** One translator for every walkthrough, or one made per walkthrough from its gold. */
   translator: Translator | ((gold: CompiledGold) => Translator);
   filter?: RunFilter;
+  /**
+   * Checks each batch before it's applied (docs/adr/013). The report then
+   * includes rejection, downgrade and false-rejection rates.
+   */
+  validator?: (input: ValidationInput) => ValidationResult | Promise<ValidationResult>;
   /** Walkthroughs translated at once (default 1); steps within one stay in order. */
   concurrency?: number;
   /** Milliseconds; injectable for tests. */
@@ -105,8 +125,26 @@ export async function runEval(corpus: Corpus, options: RunOptions): Promise<RunR
           message: error instanceof Error ? error.message : String(error),
         };
       }
+      let batch = translation?.batch ?? { utteranceId: step.utterance.id, ops: [] };
+      let validation: StepValidation | undefined;
+      if (options.validator && translation && batch.utteranceId === step.utterance.id) {
+        const raw = batch;
+        const checked = await options.validator({
+          document: step.before,
+          batch: raw,
+          utterances: [...step.recent, step.utterance],
+          inputs: problem?.inputs ?? [],
+        });
+        batch = checked.batch;
+        validation = falseRejections(
+          step.before,
+          step.alternatives,
+          raw,
+          checked,
+          problem?.inputs ?? [],
+        );
+      }
       const latencyMs = now() - started;
-      const batch = translation?.batch ?? { utteranceId: step.utterance.id, ops: [] };
 
       let document = step.before;
       if (rejected === undefined && batch.utteranceId !== step.utterance.id) {
@@ -139,6 +177,7 @@ export async function runEval(corpus: Corpus, options: RunOptions): Promise<RunR
         unparsed: translation?.unparsedSpans.length ?? 0,
         latencyMs,
         ...(translation?.usage ? { usage: translation.usage } : {}),
+        ...(validation ? { validation } : {}),
         comparison,
         code: {
           before: render(step.before.program).text,
@@ -174,6 +213,59 @@ export async function runEval(corpus: Corpus, options: RunOptions): Promise<RunR
   };
 }
 
+/**
+ * Scores what the validator held back against gold: a held-back node is a
+ * false rejection if a gold answer supports anything in it.
+ */
+function falseRejections(
+  before: IrDocument,
+  alternatives: readonly GoldAnswer[],
+  raw: EditBatch,
+  validation: ValidationResult,
+  inputs: readonly string[],
+): StepValidation {
+  const applied = apply(before, raw);
+  const detailed = applied.ok
+    ? compareStepDetailed(
+        before,
+        alternatives,
+        { document: applied.document, batch: raw },
+        { inputs },
+      )
+    : undefined;
+  const supported = detailed?.supportedIds ?? new Set<string>();
+  const index = applied.ok ? indexTree(applied.document.program) : undefined;
+  let falselyHeld = 0;
+  const heldBack = validation.heldBack.map((held) => {
+    // A held-back node with everything in it, or the node a dropped op changed.
+    const changed = 'op' in held.target ? raw.ops[held.target.op] : undefined;
+    const root =
+      'node' in held.target
+        ? held.target.node
+        : changed !== undefined && 'node' in changed && typeof changed.node === 'string'
+          ? changed.node
+          : undefined;
+    const node = root === undefined ? undefined : index?.get(root)?.node;
+    const ids =
+      node === undefined ? [] : 'node' in held.target ? allNodes(node).map((n) => n.id) : [node.id];
+    const count = ids.filter((id) => supported.has(id)).length;
+    falselyHeld += count;
+    return {
+      code: held.code,
+      proposed: held.proposed,
+      message: held.message,
+      falseRejection: count > 0,
+    };
+  });
+  return {
+    checked: validation.checked,
+    heldBack,
+    supportedUnits: detailed?.comparison.supported ?? 0,
+    falselyHeld,
+    claims: validation.claims.length,
+  };
+}
+
 /** Metrics for each value of `key`, in sorted order. */
 export function breakdown(
   steps: readonly StepResult[],
@@ -199,6 +291,81 @@ export function oracleTranslator(gold: CompiledGold): Translator {
       const step = gold.steps.find((s) => s.utterance.id === context.utterance.id);
       const batch = step?.alternatives[0]?.batch ?? { utteranceId: context.utterance.id, ops: [] };
       return Promise.resolve({ batch, unparsedSpans: [] });
+    },
+  };
+}
+
+/**
+ * Replays gold, then fills every hole left in the result with made-up code
+ * citing the whole utterance: what an over-helpful translator does. Without
+ * a validator it closes every gap; with one, the gaps should stay open.
+ */
+export function fillerTranslator(gold: CompiledGold): Translator {
+  return {
+    name: 'filler',
+    translate: (context) => {
+      const step = gold.steps.find((s) => s.utterance.id === context.utterance.id);
+      const answer = step?.alternatives[0];
+      const ops = answer?.batch.ops ?? [];
+      const after = answer?.after.program;
+      const provenance: Span[] = [
+        { utteranceId: context.utterance.id, start: 0, end: context.utterance.tokens.length },
+      ];
+      const name = allNodes(after ?? context.document.program).find((n) => n.kind === 'Name');
+      let temp = 1000;
+      const meta = () => ({ id: `t${String(++temp)}`, provenance });
+      const known = (): Expr => ({
+        kind: 'Name',
+        ...meta(),
+        name: name?.kind === 'Name' ? name.name : 'x',
+      });
+      const fills: EditOp[] = [];
+      for (const hole of allNodes(after ?? context.document.program)) {
+        if (hole.kind === 'CondHole')
+          fills.push({
+            op: 'fill_hole',
+            hole: hole.id,
+            value: {
+              kind: 'Compare',
+              ...meta(),
+              op: '>',
+              left: known(),
+              right: { kind: 'Literal', ...meta(), value: 0 },
+            },
+            provenance,
+          });
+        else if (hole.kind === 'ExprHole')
+          fills.push({
+            op: 'fill_hole',
+            hole: hole.id,
+            value: {
+              kind: 'BinOp',
+              ...meta(),
+              op: '+',
+              left: known(),
+              right: { kind: 'Literal', ...meta(), value: 1 },
+            },
+            provenance,
+          });
+        else if (hole.kind === 'NameHole')
+          fills.push({
+            op: 'fill_hole',
+            hole: hole.id,
+            value: { kind: 'Name', ...meta(), name: 'result' },
+            provenance,
+          });
+        else if (hole.kind === 'BlockHole')
+          fills.push({
+            op: 'fill_hole',
+            hole: hole.id,
+            value: [{ kind: 'Return', ...meta(), value: known() }],
+            provenance,
+          });
+      }
+      return Promise.resolve({
+        batch: { utteranceId: context.utterance.id, ops: [...ops, ...fills] },
+        unparsedSpans: [],
+      });
     },
   };
 }

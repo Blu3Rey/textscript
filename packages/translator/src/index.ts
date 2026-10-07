@@ -29,6 +29,7 @@ export {
 export { rulesTranslator, translateWithRules } from './rules';
 export {
   emptyTranslator,
+  type HeldBackNotice,
   type ProblemContext,
   type Translation,
   type TranslationContext,

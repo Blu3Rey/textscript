@@ -14,14 +14,18 @@ ANTHROPIC_API_KEY=… pnpm --filter @textscript/server start
 | `TEXTSCRIPT_MODEL` | `claude-opus-5-5` | Model |
 | `TEXTSCRIPT_EFFORT` | `medium` | `low`, `medium`, `high`, `xhigh` or `max` |
 | `PORT` | `8787` | Port to listen on |
+| `TEXTSCRIPT_VERIFY` | off | `on` adds the validator's second opinion (Claude Haiku 4.5, one call per batch with claims) |
 
 ## Routes
 
 - `GET /health` returns `{ "ok": true, "translator": "claude:claude-opus-5-5:medium" }`.
 - `POST /translate` takes a translation context as JSON: `utterance`,
   `document`, `recent` and `problem`. It returns a translation: `batch`,
-  `unparsedSpans`, `usage` and `trace`. The document is validated against
-  the IR schema before anything else.
+  `unparsedSpans`, `usage`, `trace` and `heldBack`. The document is
+  validated against the IR schema before anything else. Every batch also
+  goes through the provenance validator
+  ([ADR-013](../../docs/adr/013-provenance-validator.md)). What it held
+  back is in `heldBack`, and those parts of the batch are holes.
 
 Errors are JSON `{ "error": "…" }`:
 

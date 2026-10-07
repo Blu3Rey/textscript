@@ -1,7 +1,16 @@
+import { createUtterance } from '@textscript/core';
 import { emptyTranslator, type Translator } from '@textscript/translator';
+import { validate, type ValidationInput } from '@textscript/validator';
 import { describe, expect, it } from 'vitest';
 import { isExact } from '../src/metrics';
-import { oracleTranslator, runEval, selectWalkthroughs, type StepResult } from '../src/run';
+import { markdownReport } from '../src/report/report';
+import {
+  fillerTranslator,
+  oracleTranslator,
+  runEval,
+  selectWalkthroughs,
+  type StepResult,
+} from '../src/run';
 import { corpusOf, fixture, INCOMPLETE, PROBLEM, scriptedTranslator, TERSE } from './helpers';
 
 const clock = () => {
@@ -264,5 +273,55 @@ describe('selectWalkthroughs', () => {
     expect(ids({ split: 'train', styles: ['terse'] })).toEqual(['dup.terse']);
     expect(ids({ problems: ['other'] })).toEqual([]);
     expect(ids({ walkthroughs: ['dup.incomplete'] })).toEqual(['dup.incomplete']);
+  });
+});
+
+describe('the validator', () => {
+  const lexical = (input: ValidationInput) => validate(input);
+
+  it('passes gold and reports its rates', async () => {
+    const { metrics, steps } = await runEval(fixture(), {
+      translator: oracleTranslator,
+      validator: lexical,
+    });
+    expect(metrics.validation).toMatchObject({
+      rejection: { numerator: 0, denominator: 7 },
+      downgrade: { numerator: 0 },
+      falseRejection: { numerator: 0 },
+    });
+    expect(metrics.validation?.downgrade.denominator).toBeGreaterThan(5);
+    expect(steps[0]?.validation).toMatchObject({ heldBack: [], falselyHeld: 0 });
+    expect((await run(oracleTranslator)).metrics.validation).toBeNull();
+  });
+
+  it('counts held-back gold as false rejections', async () => {
+    // Validating against mumbling holds back everything gold says.
+    const mumbled = (input: ValidationInput) =>
+      validate({
+        ...input,
+        utterances: input.utterances.map((u) =>
+          createUtterance(u.id, u.tokens.map(() => 'mm').join(' ')),
+        ),
+      });
+    const { metrics, steps } = await runEval(fixture(), {
+      translator: oracleTranslator,
+      validator: mumbled,
+    });
+    expect(metrics.validation?.falseRejection.value).toBeGreaterThan(0.5);
+    expect(metrics.faithfulness.value).toBe(1);
+    const held = steps.flatMap((s) => s.validation?.heldBack ?? []);
+    expect(held.some((h) => h.falseRejection)).toBe(true);
+    expect(markdownReport({ translator: 'oracle', steps, metrics })).toContain(
+      'Held back (VAL003, which a gold answer supports)',
+    );
+  });
+
+  it('keeps the gaps a gap-filling translator closes', async () => {
+    const open = await runEval(fixture(), { translator: fillerTranslator });
+    expect(open.metrics.gapPreservation.value).toBeLessThan(1);
+    const kept = await runEval(fixture(), { translator: fillerTranslator, validator: lexical });
+    expect(kept.metrics.gapPreservation.value).toBe(1);
+    expect(kept.metrics.validation?.rejection.numerator).toBeGreaterThan(0);
+    expect(kept.translator).toBe('filler');
   });
 });

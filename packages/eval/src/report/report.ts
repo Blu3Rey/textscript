@@ -108,6 +108,48 @@ const BREAKDOWN_HEADER = [
   'Exact',
 ];
 
+const FALSE_REJECTION_TARGET = 0.05;
+
+/** The validator's rates, if one ran (docs/adr/013). */
+function validationRows(m: RunResult['metrics']): string[][] {
+  const v = m.validation;
+  if (v === null) return [];
+  return [
+    [
+      'Rejection rate: batches with something held back',
+      percent(v.rejection),
+      fraction(v.rejection),
+      '',
+      '',
+    ],
+    [
+      'Downgrade rate: checked nodes and changes held back',
+      percent(v.downgrade),
+      fraction(v.downgrade),
+      '',
+      '',
+    ],
+    [
+      'False rejections: gold-supported units held back',
+      percent(v.falseRejection),
+      fraction(v.falseRejection),
+      '< 5%',
+      v.falseRejection.value === null
+        ? ''
+        : v.falseRejection.value < FALSE_REJECTION_TARGET
+          ? '✓'
+          : '✗',
+    ],
+  ];
+}
+
+function validationSection(m: RunResult['metrics']): string[] {
+  const rows = validationRows(m);
+  return rows.length === 0
+    ? []
+    : ['## Validator', '', ...table(['Metric', 'Value', 'Count', 'S8 target', ''], rows), ''];
+}
+
 export function markdownReport(
   result: RunResult,
   title = `Evaluation: ${result.translator}`,
@@ -140,6 +182,7 @@ export function markdownReport(
         ? ''
         : ` Cost $${m.usage.costUsd.toFixed(4)} ($${(m.usage.costPer20 ?? 0).toFixed(4)} per 20 utterances).`),
     '',
+    ...validationSection(m),
     '## By style',
     '',
     ...table(BREAKDOWN_HEADER, breakdownRows(breakdown(result.steps, (s) => s.style))),
@@ -242,6 +285,7 @@ export function htmlReport(result: RunResult, title = `Evaluation: ${result.tran
 Rejected batches: ${String(m.rejected)}. Latency p50 ${ms(m.latencyMs.p50)}, p95 ${ms(m.latencyMs.p95)}.</p>
 <h2>Metrics</h2>
 ${htmlTable(['Metric', 'Meaning', 'Value', 'Count', 'M2 target', ''], metricRows)}
+${m.validation === null ? '' : `<h2>Validator</h2>\n${htmlTable(['Metric', 'Value', 'Count', 'S8 target', ''], validationRows(m))}`}
 ${sections.map(([name, groups]) => `<h2>${name}</h2>\n${htmlTable(BREAKDOWN_HEADER, breakdownRows(groups))}`).join('\n')}
 <h2>Steps that don't match (${String(failing.length)})</h2>
 ${failures.length === 0 ? '<p>None.</p>' : failures.join('\n')}

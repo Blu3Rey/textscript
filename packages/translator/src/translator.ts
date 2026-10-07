@@ -1,9 +1,6 @@
 // The Translator turns one utterance into one edit batch (ROADMAP.md §2.1).
 // It's the only part of the system that may use a language model; everything
 // it returns still goes through the validator (S8) and `apply`.
-//
-// S6 defines the contract so the evaluation runner can drive any
-// translator. S7 adds the baseline and LLM implementations.
 
 import type { EditBatch, IrDocument, Span, Utterance } from '@textscript/core';
 
@@ -46,8 +43,22 @@ export interface Translation {
    */
   unparsedSpans: Span[];
   usage?: TranslationUsage;
+  /**
+   * What the validator held back from the batch (docs/adr/013): info-level
+   * notes for the user, each stating what the words didn't say.
+   */
+  heldBack?: HeldBackNotice[];
   /** How the translation went, for reports. */
   trace?: { attempts: number; salvaged: boolean; errors: string[] };
+}
+
+export interface HeldBackNotice {
+  /** A `VALIDATION_CODES` code from `@textscript/validator`. */
+  code: string;
+  /** The code that was held back. */
+  proposed: string;
+  message: string;
+  spans: Span[];
 }
 
 export interface Translator {

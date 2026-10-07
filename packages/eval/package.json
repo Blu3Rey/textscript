@@ -23,6 +23,7 @@
     "@textscript/core": "workspace:*",
     "@textscript/render-python": "workspace:*",
     "@textscript/translator": "workspace:*",
+    "@textscript/validator": "workspace:*",
     "tsx": "^4.23.15"
   }
 }

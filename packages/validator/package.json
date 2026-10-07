@@ -1,0 +1,24 @@
+{
+  "name": "@textscript/validator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Checks every edit against the words that caused it; holds back what they don't support.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@textscript/core": "workspace:*",
+    "@textscript/render-python": "workspace:*",
+    "@textscript/translator": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@textscript/commands": "workspace:*"
+  }
+}
