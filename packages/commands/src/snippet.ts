@@ -434,6 +434,19 @@ class Parser {
     );
     if (assignAt !== -1) {
       const op = tokens[assignAt]?.text ?? '=';
+      const comma = tokens.slice(0, assignAt).findIndex((t) => t.text === ',');
+      if (
+        comma !== -1 &&
+        new ExprParser(this, tokens.slice(0, assignAt), line).findTopLevel(
+          (t) => t.text === ',',
+        ) !== -1
+      ) {
+        throw lineError(
+          line,
+          'Tuple assignments ("a, b = x, y") aren\'t supported: write one assignment per line, in the order the speaker described',
+          tokens[comma]?.column,
+        );
+      }
       const target = this.asTarget(
         new ExprParser(this, tokens.slice(0, assignAt), line).all(),
         line,

@@ -126,6 +126,30 @@ export const HELD_BACK_REASON = 'held back: not stated in the words';
 
 type Verdict = 'yes' | 'no' | 'unchecked';
 
+const SETUP_CUES: readonly string[] = [
+  'is',
+  'are',
+  'be',
+  '=',
+  'set',
+  'start',
+  'begin',
+  'become',
+  'initialize',
+  'init',
+  'equal',
+  'assign',
+  'make',
+  'keep',
+  'store',
+  'hold',
+  'called',
+  'named',
+  'create',
+  'reset',
+  'track',
+];
+
 const OPERAND_KINDS: ReadonlySet<string> = new Set([
   'Name',
   'Literal',
@@ -510,6 +534,17 @@ class Checker {
     return this.node(operand, undefined, words) === 'no';
   }
 
+  /**
+   * Whether the words set a name up ("count starts at", "set best to", "x
+   * is"), not only use it ("add one to islands"): a setup word within a
+   * few words of the name.
+   */
+  setupSaid(name: string, words: Words): boolean {
+    const at = namePositions(name, words, NAME_SYNONYMS);
+    const cues = words.positions(SETUP_CUES);
+    return at.some((i) => cues.some((p) => words.near(i, p, 3)));
+  }
+
   /** Where the words say something in an expression. */
   anchors(node: IrNode, words: Words): number[] {
     switch (node.kind) {
@@ -779,6 +814,24 @@ export function validate(input: ValidationInput): ValidationResult {
         }
         i = end;
       }
+    }
+    // `islands = 0` from "add one to islands": with the value held back, the
+    // line would still claim a setup nobody described, so it goes too.
+    if (
+      node.kind === 'Assign' &&
+      node.target.kind === 'Name' &&
+      !before.has(node.target.name) &&
+      checker.operandUnsaid(node.value, words) &&
+      !checker.setupSaid(node.target.name, words)
+    ) {
+      holdBack(
+        node,
+        position,
+        'VAL003',
+        `The words "${checker.quote(spans)}" don't set up \`${node.target.name}\``,
+        spans,
+      );
+      return false;
     }
     if (verdict === 'unchecked' && input.rejected?.has(node.id) === true) {
       holdBack(

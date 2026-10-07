@@ -161,6 +161,17 @@ The prompt now also says where edits go:
 - add at the end unless the words say otherwise.
 
 The eval report shows why a model's answer failed when it was retried.
+The fourth run's traces showed commands that were clearly meant but
+rejected, so the compiler now accepts them:
+
+- an `after`/`before` anchor decides the block, so `add root after n30`
+  works when n30 is inside a loop;
+- `add <plain statement>: …` means right after it;
+- `set n54.value = return …` and `set n42.value = hi = …` drop the
+  repeated statement.
+
+Tuple assignments, and statements given for an expression hole, now fail
+with a message saying what to write instead.
 
 ## Consequences
 

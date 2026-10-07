@@ -92,6 +92,12 @@ Two more rules came from the third local run's failing steps:
 - A loop variable can't be named by its collection's exact name. In "each
   amount in nums", `num` matches only "nums", so it is held back.
 
+One more rule came from the fourth local run. A new variable whose value
+is held back loses its whole line, unless a setup word ("starts", "set",
+"is") is said near its name. For "add one to islands", the line
+`islands = 0` became `islands = ?`, which closed the "never set up" gap
+the speaker left open; now the line is held back as a whole.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

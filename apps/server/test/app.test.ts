@@ -84,12 +84,8 @@ describe('the server', () => {
       fetch: async (url, init) => app.request(url, init),
     });
     const translation = await remote.translate(context);
-    expect(translation.heldBack?.map((h) => h.proposed)).toEqual(['total', '0']);
-    expect(translation.batch.ops.map((op) => op.op)).toEqual([
-      'add_stmt',
-      'replace_node',
-      'replace_node',
-    ]);
+    expect(translation.heldBack?.map((h) => h.proposed)).toEqual(['total = 0']);
+    expect(translation.batch.ops.map((op) => op.op)).toEqual(['add_stmt', 'remove_node']);
   });
 
   it('rejects bodies that are not a translation context', async () => {

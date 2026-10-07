@@ -58,6 +58,52 @@ describe('compileCommands', () => {
     expect(root).toMatchObject({ ok: false, message: 'Program n1 has no block "orelse"' });
   });
 
+  it('forgives what models get wrong but mean clearly', () => {
+    const run = (...texts: string[]) =>
+      compileCommands(
+        empty,
+        texts.map((text) => ({ text })),
+        { utteranceId: 'u1', provenance: whole },
+      );
+    // n2 is the loop, n6 the first statement in it.
+    const setup = 'add root:\n    for x in xs:\n        y = x\n        return y';
+    // The anchor says where: `root` is overruled by n6's own block.
+    expect(render(run(setup, 'add root after n6: z = 1').document.program).text).toBe(
+      'for x in xs:\n    y = x\n    z = 1\n    return y\n',
+    );
+    // `add <plain statement>:` means right after it.
+    expect(render(run(setup, 'add n6: z = 1').document.program).text).toBe(
+      'for x in xs:\n    y = x\n    z = 1\n    return y\n',
+    );
+    // A repeated `return` or `name =` around a value.
+    const ret = run(setup, 'set n9.value = return y + 1');
+    expect(render(ret.document.program).text).toContain('return y + 1');
+    const assign = run(setup, 'set n6.value = y = x * 2');
+    expect(render(assign.document.program).text).toContain('y = x * 2');
+  });
+
+  it('says clearly what to do instead for tuple assignments and statements in an expression hole', () => {
+    const tuple = compileCommands(empty, [{ text: 'add root: a, b = b, a' }], {
+      utteranceId: 'u1',
+      provenance: whole,
+    });
+    expect(tuple).toMatchObject({ ok: false, code: 'syntax' });
+    expect(tuple.ok ? '' : tuple.message).toContain(
+      'Tuple assignments ("a, b = x, y") aren\'t supported: write one assignment per line',
+    );
+    const statements = compileCommands(
+      empty,
+      [{ text: 'add root: x = ?' }, { text: 'fill h1:\n    if y:\n        return 1' }],
+      { utteranceId: 'u1', provenance: whole },
+    );
+    expect(statements).toMatchObject({
+      ok: false,
+      index: 1,
+      message:
+        'h1 is a hole for a value: fill it with one expression. To add statements, use add with a block',
+    });
+  });
+
   it('gives each command its own provenance when asked', () => {
     const result = compileCommands(
       empty,

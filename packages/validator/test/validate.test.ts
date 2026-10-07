@@ -213,7 +213,7 @@ describe('validate', () => {
     expect(next.heldBack.map((h) => h.proposed)).toEqual(['x']);
     // "add it to total" says `+ total`, not that best starts at `total + 1`.
     const operand = s.say('Add it to total.', 'add root: best = total + 1');
-    expect(operand.heldBack.map((h) => h.proposed)).toEqual(['best', 'total + 1']);
+    expect(operand.heldBack.map((h) => h.proposed)).toEqual(['best = total + 1']);
   });
 
   it('checks a narrow citation against its whole utterance before holding anything back', () => {
@@ -249,6 +249,22 @@ describe('validate', () => {
     );
     expect(none.heldBack.map((h) => h.proposed)).toEqual(['0 <= x and x < 10']);
     expect(s.code).toContain(`if ${hole}:`);
+  });
+
+  it('holds back a whole setup line when neither the value nor the setup was said', () => {
+    const s = new Session();
+    const invented = s.say('Add one to islands for each one.', 'add root: islands = 0');
+    expect(invented.heldBack).toMatchObject([
+      {
+        proposed: 'islands = 0',
+        message: 'The words "Add one to islands for each one." don\'t set up `islands`',
+      },
+    ]);
+    expect(s.code).toBe('');
+    // The setup said, the value not: only the value is held back.
+    expect(
+      s.say('Islands starts somewhere.', 'add root: islands = 7').heldBack.map((h) => h.proposed),
+    ).toEqual(['7']);
   });
 
   it("doesn't let a collection's name stand for its loop variable's", () => {

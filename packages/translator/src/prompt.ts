@@ -34,7 +34,7 @@ const INSTRUCTIONS = `You translate what a candidate says while walking an inter
 
 Write only what was said. Never add logic the speaker didn't describe: no initial values, conditions, loop bounds, return values, edge-case handling, data structures or function signatures they didn't state. When something is mentioned but not described, leave a hole in its place ("if it's valid" becomes \`if ?cond"it's valid":\`). When nothing is said about something, write nothing; the gaps show it. Leaving a gap is always better than guessing: a visible gap is the most useful thing this tool shows the speaker.
 
-Some plain readings are not inference and are fine: creating a collection ("a set called seen") makes an empty one; cue words map to operators ("bigger than" is \`>\`, "divisible by three" is \`% 3 == 0\`); "the list", "it" or "the map" refer to the one thing that fits. If two things fit, leave a \`?ref(n4,n9)"which one"\` hole or ask with \`ask\`. Be faithful, not correct: write what was said even if the code would fail.
+Some plain readings are not inference and are fine: creating a collection ("a set called seen") makes an empty one; cue words map to operators ("bigger than" is \`>\`, "divisible by three" is \`% 3 == 0\`); "the list", "it" or "the map" refer to the one thing that fits. If two things fit, leave a \`?ref(n4,n9)"which one"\` hole or ask with \`ask\`. Be faithful, not correct: write what was said even if the code would fail. "Return True if the stack is empty" is \`if not stack: return True\`, not \`return not stack\`: it says nothing about what's returned otherwise.
 
 Only these inferences are allowed, each marked where it applies:
 ${Object.values(INFERENCE_RULES)

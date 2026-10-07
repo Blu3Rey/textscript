@@ -71,6 +71,17 @@ const NOTE_TAGS: readonly NoteTag[] = ['general', 'edge-case', 'complexity'];
 
 /** Fields holding a block of statements. */
 const BLOCK_FIELDS: ReadonlySet<string> = new Set(['body', 'orelse']);
+
+/** Whether code for a hole is statements rather than an expression. */
+function looksLikeStatements(code: string): boolean {
+  const lines = code.trim().split('\n');
+  const first = lines[0]?.trim() ?? '';
+  return (
+    lines.length > 1 ||
+    /^(if|elif|else|for|while|return|break|continue|def|intent)\b/.test(first) ||
+    /^[^=!<>]*[^=!<>+\-*/%]=(?!=)/.test(first)
+  );
+}
 /** Fields holding a condition, where `?` means a condition hole. */
 const CONDITION_FIELDS: ReadonlySet<string> = new Set(['cond']);
 
@@ -217,8 +228,35 @@ export function compileCommand(
           return [{ op: 'update_field', node: id, field: 'orelse', value, provenance }];
         }
       }
-      const target = parent(parentRef);
-      const first = position(where);
+      let first = position(where);
+      const index = indexTree(program);
+      /** The block (or root) that holds a statement directly. */
+      const holder = (id: string): string | undefined => {
+        const parentNode = index.get(id)?.position?.parent;
+        return parentNode?.kind === 'Block' || parentNode?.kind === 'Program'
+          ? parentNode.id
+          : undefined;
+      };
+      const named = index.get(ref(base));
+      let target: string;
+      if (
+        field === undefined &&
+        named !== undefined &&
+        !('body' in named.node) &&
+        named.node.kind !== 'BlockHole' &&
+        holder(named.node.id) !== undefined &&
+        where.length === 0
+      ) {
+        // `add n30: …` on a plain statement can only mean right after it.
+        target = holder(named.node.id) ?? '';
+        first = { after: named.node.id };
+      } else {
+        target = parent(parentRef);
+      }
+      // `add root after n30` with n30 inside a loop: the anchor says where.
+      const anchor = 'after' in first ? first.after : 'before' in first ? first.before : undefined;
+      const anchorHolder = anchor === undefined ? undefined : holder(anchor);
+      if (anchorHolder !== undefined) target = anchorHolder;
       const stmts = parseStatements(body, snippet);
       return stmts.map((stmt, i): EditOp => {
         const previous = stmts[i - 1];
@@ -235,6 +273,20 @@ export function compileCommand(
       const { head, body } = headAndBody(rest, 'Write fill <hole>: <code>');
       const hole = ref(head);
       const kind = indexTree(program).get(hole)?.node.kind;
+      if (kind !== undefined && kind !== 'BlockHole' && looksLikeStatements(body)) {
+        const what =
+          kind === 'CondHole'
+            ? 'a condition'
+            : kind === 'NameHole'
+              ? 'a name'
+              : kind === 'RefHole'
+                ? 'a reference'
+                : 'a value';
+        throw new CommandError(
+          'usage',
+          `${head} is a hole for ${what}: fill it with one expression. To add statements, use add with a block`,
+        );
+      }
       const value =
         kind === 'BlockHole'
           ? parseStatements(body, snippet)
@@ -248,10 +300,19 @@ export function compileCommand(
       if (match === null) throw new CommandError('usage', 'Write set <ref>.<field> = <value>');
       const [, nodeRef, field = '', value = ''] = match;
       const newline = value.indexOf('\n');
-      const valueText =
+      const statedValue =
         newline === -1 ? value : joinBody(value.slice(0, newline).trim(), value.slice(newline + 1));
       const node = ref(nodeRef);
       const target = indexTree(program).get(node)?.node;
+      // `set n54.value = return not stack`, `set n42.value = hi = mid`: the
+      // statement around the value was repeated.
+      let valueText = statedValue;
+      if (field === 'value' && target?.kind === 'Return')
+        valueText = valueText.replace(/^\s*return\s+/, '');
+      if (field === 'value' && target?.kind === 'Assign' && target.target.kind === 'Name') {
+        const prefix = new RegExp(`^\\s*${target.target.name}\\s*=(?!=)\\s*`);
+        valueText = valueText.replace(prefix, '');
+      }
       const childFields: readonly string[] = target ? CHILD_FIELDS[target.kind] : [];
       let newValue: JsonValue | Stmt | Block | ReturnType<typeof parseExpression>;
       if (BLOCK_FIELDS.has(field) && childFields.includes(field)) {
