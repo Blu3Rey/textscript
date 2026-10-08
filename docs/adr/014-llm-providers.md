@@ -80,7 +80,10 @@ Where providers are chosen:
   exceeds its context window, and its default window is a few thousand
   tokens. The prompt with its examples is about 7,000 tokens before the
   turn, so the adapter always sets `num_ctx` (16384 by default). `think`
-  is passed only when set, since models disagree on its values. Usage is
+  is passed only when set, since models disagree on its values. Sampling
+  uses a fixed seed (42, `--seed` in the eval): the fourth and fifth local
+  runs differed by several points on the same code, and two runs that
+  differ by chance can't show whether a change helped. Usage is
   reported with a cost of zero. Ollama is chosen only when asked for (`--translator
   ollama`, `TEXTSCRIPT_PROVIDER=ollama`), and its second opinion uses the
   same model, so nothing else needs pulling.

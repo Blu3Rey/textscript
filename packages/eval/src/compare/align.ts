@@ -119,16 +119,43 @@ function normalizeStmt(stmt: Stmt): Stmt {
   return stmt;
 }
 
+/** `list()`, `tuple()` and `dict()` as the empty literal they make. */
+function normalizeExpr(node: IrNode): IrNode {
+  if (node.kind !== 'Call' || node.args.length > 0 || node.callee.kind !== 'Name') return node;
+  const { kind: _kind, callee, args: _args, ...meta } = node;
+  switch (callee.name) {
+    case 'list':
+    case 'tuple':
+      return { ...meta, kind: 'CollectionLiteral', collection: callee.name, elements: [] };
+    case 'dict':
+      return { ...meta, kind: 'DictLiteral', entries: [] };
+    default:
+      return node;
+  }
+}
+
 /**
- * Rewrites `x = x + y` as `x += y`: the same code, said either way, so
- * comparisons don't depend on which one an annotator or translator chose.
- * Returns a copy; node IDs are kept.
+ * Rewrites `x = x + y` as `x += y`, and `list()` as `[]`: the same code,
+ * said either way, so comparisons don't depend on which one an annotator or
+ * translator chose. Returns a copy; node IDs are kept.
  */
 export function normalizeProgram(program: Program): Program {
   const copy = structuredClone(program);
   walk(copy, (node) => {
     if (node.kind === 'Program') node.body = node.body.map(normalizeStmt);
     if (node.kind === 'Block') node.stmts = node.stmts.map(normalizeStmt);
+    for (const field of CHILD_FIELDS[node.kind]) {
+      const value: unknown = Reflect.get(node, field);
+      if (isIrNode(value)) Reflect.set(node, field, normalizeExpr(value));
+      if (Array.isArray(value)) {
+        const items: readonly unknown[] = value;
+        Reflect.set(
+          node,
+          field,
+          items.map((item) => (isIrNode(item) ? normalizeExpr(item) : item)),
+        );
+      }
+    }
   });
   return copy;
 }

@@ -50,7 +50,7 @@ The problem, then for each utterance: earlier utterances, the code so far with s
 
 Each command is one line, with the code on following lines indented when it spans several lines:
 
-- \`add <parent> [start|end|before <ref>|after <ref>]: <statements>\` adds statements. The parent is \`root\`, a loop, \`if\` or \`def\` (meaning its body), or \`n7.orelse\` for an \`else\`.
+- \`add <parent> [start|end|before <ref>|after <ref>]: <statements>\` adds statements. The parent is \`root\`, a loop, \`if\` or \`def\` (meaning its body), or \`n7.orelse\` for an \`else\`. \`add after <ref>: …\` and \`add before <ref>: …\` put statements next to a statement, in its block.
 - \`fill <hole>: <code>\` fills a hole (\`h1\` or its node ID): statements for a block hole, a condition or an expression otherwise.
 - \`set <ref>.<field> = <value>\` changes one field: \`body\`, \`orelse\` (statements), \`cond\`, \`value\`, \`target\`, \`iterable\`, \`start\`, \`stop\`, \`step\` (code), or \`op\`, \`name\` (plain values).
 - \`replace <ref>: <code>\` replaces a statement or an expression. To add an \`elif\` to an existing \`if\`, replace the whole \`if\` with its new chain.
@@ -64,7 +64,8 @@ Where edits go:
 
 - Change only what was said. To change an operator, a value, a condition or a name, use \`set <ref>.<field> = …\`; don't replace or re-add the statement around it.
 - "Otherwise …" after an \`if\` is its \`else\`: \`add <if>.orelse: …\` (this creates the \`else\` when there is none).
-- A step said to come after a loop or block ("after the loop, return False") goes after it, in the block that holds it: \`add <that block> after <loop>: …\`, not inside the loop.
+- A step said to come after a loop or block ("after the loop, return False", "when the loop ends", "once it's done", "at the very end") goes after it, in the block that holds it: \`add after <loop>: …\`, not inside the loop.
+- Each command is its own entry in \`commands\`; don't put two commands in one string.
 - New statements go at the end of the block being described (\`add root: …\`, \`add n7: …\`) unless the words put them somewhere else.
 
 References are \`root\`, node IDs (\`n12\`) and hole numbers (\`h2\`). Code is a Python subset: one statement per line; \`?\` is a hole (\`?cond\`, \`?value\`, \`?name\` to be explicit, with an optional reason in quotes right after), \`...\` is a block nobody described, \`intent <words>\` is a step said only in words. Mark an inference right after the name or expression it applies to (\`for num~loopvar in nums:\`); for a whole statement, in a trailing comment (\`seen.add(num)  # ~synonym\`). There are no tuple targets, keyword arguments, conditional expressions or chained assignments: write two assignments, or an \`intent\`.

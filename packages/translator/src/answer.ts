@@ -6,7 +6,7 @@
 // recursive schemas, and the IR is recursive; the commands carry the code
 // as text, and the snippet parser checks it.
 
-import { compileCommands, type CommandInput } from '@textscript/commands';
+import { compileCommands, EDIT_COMMANDS, type CommandInput } from '@textscript/commands';
 import { quoteSpan, type EditOp, type Span } from '@textscript/core';
 import { z } from 'zod';
 import type { Translation, TranslationContext } from './translator';
@@ -77,12 +77,31 @@ function whole(context: TranslationContext): Span[] {
   return words > 0 ? [{ utteranceId: context.utterance.id, start: 0, end: words }] : [];
 }
 
+/**
+ * Splits commands a model wrote into one string ("add root: a = 0\nadd root:
+ * b = 0"): a line at column 0 that starts with a command word, then a space
+ * and something other than an operator, starts a new command.
+ */
+export function splitCommands(command: string): string[] {
+  const commands: string[] = [];
+  for (const line of command.split('\n')) {
+    const match = /^([a-z]+) +[^\s=(.[+\-*/%<>!]/.exec(line);
+    const last = commands.length - 1;
+    if (last < 0 || (match?.[1] !== undefined && EDIT_COMMANDS.has(match[1]))) commands.push(line);
+    else commands[last] = `${commands[last] ?? ''}\n${line}`;
+  }
+  return commands;
+}
+
 /** Commands with their provenance; a missing or bad word range means the whole utterance. */
 function inputs(context: TranslationContext, commands: readonly AnswerCommand[]): CommandInput[] {
-  return commands.map(({ command, words }) => {
+  return commands.flatMap(({ command, words }) => {
     const [start, end] = words;
     const cited = start === undefined || end === undefined ? undefined : span(context, start, end);
-    return { text: command, provenance: cited ? [cited] : whole(context) };
+    return splitCommands(command).map((text) => ({
+      text,
+      provenance: cited ? [cited] : whole(context),
+    }));
   });
 }
 
@@ -120,7 +139,7 @@ export function withUnparsedNotes(
 
 export type EncodeResult =
   | { ok: true; translation: Translation }
-  | { ok: false; index: number; code: string; message: string };
+  | { ok: false; index: number; command: string; code: string; message: string };
 
 function unparsedSpans(context: TranslationContext, answer: Answer): Span[] {
   return answer.unparsed.flatMap(({ start, end }) => {
@@ -139,12 +158,15 @@ function translation(
 
 /** Compiles an answer exactly, or says which command failed and why. */
 export function encodeAnswer(context: TranslationContext, answer: Answer): EncodeResult {
-  const result = compileCommands(context.document, inputs(context, answer.commands), {
+  const commands = inputs(context, answer.commands);
+  const result = compileCommands(context.document, commands, {
     utteranceId: context.utterance.id,
     provenance: whole(context),
   });
-  if (!result.ok)
-    return { ok: false, index: result.index, code: result.code, message: result.message };
+  if (!result.ok) {
+    const command = commands[result.index]?.text ?? '';
+    return { ok: false, index: result.index, command, code: result.code, message: result.message };
+  }
   return {
     ok: true,
     translation: translation(context, result.batch.ops, unparsedSpans(context, answer)),

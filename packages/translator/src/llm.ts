@@ -131,8 +131,7 @@ export function createLlmTranslator(backend: LlmBackend): Translator {
               trace: { attempts: attempt + 1, salvaged: false, errors },
             };
           }
-          const command = read.commands[encoded.index]?.command ?? '';
-          feedback = `Command ${String(encoded.index + 1)} (${JSON.stringify(command)}) failed: ${encoded.code}: ${encoded.message}`;
+          feedback = `Command ${String(encoded.index + 1)} (${JSON.stringify(encoded.command)}) failed: ${encoded.code}: ${encoded.message}`;
         }
         errors.push(feedback);
       }

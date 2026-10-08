@@ -204,6 +204,27 @@ describe('equivalent code', () => {
     });
     expect(steps.every(isExact)).toBe(true);
   });
+
+  it('treats list(), tuple() and dict() as the empty literals', async () => {
+    const corpus = corpusOf({
+      problems: { dup: PROBLEM },
+      walkthroughs: { 'dup.incomplete': INCOMPLETE, 'dup.terse': TERSE },
+      gold: {
+        'dup.incomplete':
+          'step 1\nadd root: a = []\nstep 2\nadd root: b = {}\nstep 3\nadd root: f(())\nstep 4\n',
+        'dup.terse': 'step 1\nstep 2\nstep 3\n',
+      },
+    });
+    const { steps } = await runEval(corpus, {
+      translator: scriptedTranslator('explicit', {
+        u1: ['add root: a = list()'],
+        u2: ['add root: b = dict()'],
+        u3: ['add root: f(tuple())'],
+      }),
+      filter: { walkthroughs: ['dup.incomplete'] },
+    });
+    expect(steps.every(isExact)).toBe(true);
+  });
 });
 
 describe('failures', () => {

@@ -173,6 +173,23 @@ rejected, so the compiler now accepts them:
 Tuple assignments, and statements given for an expression hole, now fail
 with a message saying what to write instead.
 
+The fifth run's traces added more of the same:
+
+- `add after <ref>: …` and `add before <ref>: …` need no parent. "When
+  the loop ends, return …" was the most common placement failure, and
+  the prompt now names that form for it.
+- `add <statement>.orelse: …`, with the statement inside an `if`, means
+  that `if`'s `else`.
+- Two commands written into one string are split into two.
+- A chained comparison (`lo <= mid < hi`) is an `and` of comparisons
+  instead of an error.
+- A header with its body on the following lines is indented as a block.
+- `set dp[0] = nums[0]` fails with a message saying that `set` changes a
+  field and `add` writes a statement.
+
+The eval treats an empty `list()`, `tuple()` or `dict()` as the empty
+literal, the same way it treats `x = x + y` and `x += y`.
+
 ## Consequences
 
 - The model can only make edits the command language can express, which

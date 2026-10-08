@@ -610,30 +610,42 @@ class ExprParser {
     return undefined;
   }
 
+  /**
+   * A comparison, or a chain of them: \`0 <= i < n\` is \`0 <= i and i < n\`,
+   * the IR's form for chains. The shared operand is parsed twice so each
+   * comparison has its own nodes.
+   */
   comparison(): Expr {
-    const left = this.arithmetic();
-    const found = this.comparisonOp();
-    if (found === undefined) return left;
-    this.pos += found.width;
-    const right = this.arithmetic();
-    if (this.comparisonOp() !== undefined) {
-      throw lineError(
-        this.line,
-        'Chained comparisons are not supported; join them with "and"',
-        this.peek()?.column,
-      );
+    let left = this.arithmetic();
+    const parts: Expr[] = [];
+    for (;;) {
+      const found = this.comparisonOp();
+      if (found === undefined) break;
+      this.pos += found.width;
+      const rightStart = this.pos;
+      const right = this.arithmetic();
+      parts.push(this.compare(found.op, left, right));
+      if (this.comparisonOp() === undefined) break;
+      left = new ExprParser(this.parser, this.tokens.slice(rightStart, this.pos), this.line).all();
     }
-    if (found.op === 'in' || found.op === 'not in') {
+    const [only] = parts;
+    if (only === undefined) return left;
+    if (parts.length === 1) return only;
+    return { kind: 'BoolOp', ...this.parser.base(), op: 'and', operands: parts };
+  }
+
+  compare(op: string, left: Expr, right: Expr): Expr {
+    if (op === 'in' || op === 'not in') {
       return {
         kind: 'Membership',
         ...this.parser.base(),
-        negated: found.op === 'not in',
+        negated: op === 'not in',
         element: left,
         container: right,
       };
     }
-    if (!isCompareOp(found.op)) throw lineError(this.line, `Unknown comparison "${found.op}"`);
-    return { kind: 'Compare', ...this.parser.base(), op: found.op, left, right };
+    if (!isCompareOp(op)) throw lineError(this.line, `Unknown comparison "${op}"`);
+    return { kind: 'Compare', ...this.parser.base(), op, left, right };
   }
 
   binary(operators: readonly ArithmeticOp[], operand: () => Expr): Expr {

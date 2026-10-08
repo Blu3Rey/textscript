@@ -213,9 +213,27 @@ describe('expressions', () => {
   });
 });
 
+describe('chained comparisons', () => {
+  it('become an and of comparisons, each with its own nodes', () => {
+    const expr = parseExpression('0 <= i < len(nums)', options());
+    expect(expr).toMatchObject({
+      kind: 'BoolOp',
+      op: 'and',
+      operands: [
+        { kind: 'Compare', op: '<=', left: { value: 0 }, right: { name: 'i' } },
+        { kind: 'Compare', op: '<', left: { name: 'i' }, right: { kind: 'Call' } },
+      ],
+    });
+    const ids = JSON.stringify(expr).match(/"id":"[^"]+"/g) ?? [];
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(parseExpression('a < b in c', options())).toMatchObject({
+      operands: [{ kind: 'Compare' }, { kind: 'Membership' }],
+    });
+  });
+});
+
 describe('errors', () => {
   it.each([
-    ['a < b < c', /Chained comparisons/],
     ['pass', /Use "\.\.\."/],
     ['if x', /Expected ":"/],
     ['elif x: y', /needs an "if"/],

@@ -10,6 +10,8 @@
 //   take true/false, some take low/medium/high, and some reject it.
 // - A `length` stop is a cut-off. There are no refusals to detect.
 // - A dropped connection ("fetch failed") is retried once.
+// - Sampling uses a fixed seed, so a run can be repeated: two runs that
+//   differ only by chance can't tell whether a change helped.
 
 import type { ChatRequest, ChatResponse, Message } from 'ollama';
 import { ANSWER_JSON_SCHEMA } from './answer';
@@ -33,6 +35,8 @@ export const OLLAMA_DEFAULT_MODEL = 'qwen3:8b';
 /** Enough for the prompt, its examples, a long session and the answer. */
 export const OLLAMA_DEFAULT_CONTEXT = 16384;
 
+export const OLLAMA_DEFAULT_SEED = 42;
+
 /** What the translator reads from a response. `ChatResponse` has all of it. */
 export type OllamaReply = Pick<
   ChatResponse,
@@ -52,6 +56,8 @@ export interface OllamaTranslatorOptions extends LlmTranslatorOptions {
   /** `num_ctx`: tokens of context, prompt and answer together. */
   contextLength?: number;
   maxTokens?: number;
+  /** The sampling seed; the same seed and input give the same answer. */
+  seed?: number;
 }
 
 export function ollamaBackend(options: OllamaTranslatorOptions): LlmBackend {
@@ -86,6 +92,7 @@ export function ollamaBackend(options: OllamaTranslatorOptions): LlmBackend {
             options: {
               num_ctx: options.contextLength ?? OLLAMA_DEFAULT_CONTEXT,
               num_predict: options.maxTokens ?? 8192,
+              seed: options.seed ?? OLLAMA_DEFAULT_SEED,
             },
           } satisfies ChatRequest & { stream: false };
           let reply: OllamaReply;

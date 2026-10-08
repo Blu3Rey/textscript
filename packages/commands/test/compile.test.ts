@@ -80,6 +80,18 @@ describe('compileCommands', () => {
     expect(render(ret.document.program).text).toContain('return y + 1');
     const assign = run(setup, 'set n6.value = y = x * 2');
     expect(render(assign.document.program).text).toContain('y = x * 2');
+    // `add after <ref>:` with no parent: the anchor's block.
+    expect(render(run(setup, 'add after n2: return 0').document.program).text).toBe(
+      'for x in xs:\n    y = x\n    return y\nreturn 0\n',
+    );
+    expect(render(run(setup, 'add before n9: z = 1').document.program).text).toBe(
+      'for x in xs:\n    y = x\n    z = 1\n    return y\n',
+    );
+    // `<statement>.orelse` with the statement inside an `if`: that `if`'s else.
+    const branch = 'add root:\n    if x:\n        continue';
+    expect(render(run(branch, 'add n5.orelse: y = 1').document.program).text).toBe(
+      'if x:\n    continue\nelse:\n    y = 1\n',
+    );
   });
 
   it('says clearly what to do instead for tuple assignments and statements in an expression hole', () => {
@@ -135,6 +147,11 @@ describe('compileCommands', () => {
     expect(fail('add root: x = = 1')).toMatchObject({ ok: false, code: 'syntax' });
     expect(fail('frobnicate')).toMatchObject({ ok: false, code: 'unknown-command' });
     expect(fail('add root after n1: x = 1')).toMatchObject({ ok: false, code: 'invalid-anchor' });
+    const set = fail('set dp[0] = nums[0]');
+    expect(set).toMatchObject({ ok: false, code: 'usage' });
+    expect(set.ok ? '' : set.message).toContain(
+      'To write a new statement such as "dp[0] = nums[0]", use add <block>: <statements>',
+    );
   });
 
   it('collects clarification questions', () => {
@@ -160,6 +177,10 @@ describe('compileCommand', () => {
 });
 
 describe('joinBody', () => {
+  it("keeps lines written at an inline header's own level as they are", () => {
+    expect(joinBody('if x:', '    y = 1\nz = 2')).toBe('if x:\n    y = 1\nz = 2');
+  });
+
   it('keeps lines below an inline compound header nested', () => {
     expect(joinBody('for x in xs:', '        print(x)')).toBe('for x in xs:\n    print(x)');
     expect(joinBody('a = 1', '    b = 2')).toBe('a = 1\nb = 2');

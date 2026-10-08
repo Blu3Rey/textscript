@@ -21,6 +21,7 @@ import {
   CHILD_FIELDS,
   EditOpSchema,
   indexTree,
+  pathTo,
   resolveTempIds,
   zodIssueMessages,
   type ApplyError,
@@ -127,6 +128,11 @@ export function joinBody(inline: string, more: string): string {
   const below = lines.map((line) => line.slice(indent));
   if (inline === '') return below.join('\n');
   if (below.length === 0) return inline;
+  // "add n7: if x:\n    y = 1\nz = 2": the lines are written at the header's
+  // own level (its body indented, later lines not), so they stay as written.
+  const first = lines[0] ?? '';
+  if (inline.endsWith(':') && indent === 0 && first.length - first.trimStart().length > 0)
+    return [inline, ...lines].join('\n');
   const nested = inline.endsWith(':') ? below.map((line) => `    ${line}`) : below;
   return [inline, ...nested].join('\n');
 }
@@ -212,9 +218,18 @@ export function compileCommand(
   switch (word) {
     case 'add': {
       const { head, body } = headAndBody(rest, 'Write add <parent> [position]: <statements>');
-      const [parentRef, ...where] = head.split(/\s+/);
-      // "Otherwise …" on an `if` with no `else` yet: the statements become its `else`.
-      const [base, field] = (parentRef ?? '').split('.');
+      // `add after n7: …`: the anchor alone says where.
+      const words = head.split(/\s+/);
+      const [parentRef, ...where] =
+        words[0] === 'after' || words[0] === 'before' ? ['root', ...words] : words;
+      const [named, field] = (parentRef ?? '').split('.');
+      let base = named;
+      if (field === 'orelse') {
+        // `n43.orelse` with n43 a statement inside an `if`: that `if`.
+        const path = pathTo(program, ref(named)) ?? [];
+        const enclosing = path.findLast((node) => node.kind === 'If');
+        if (enclosing !== undefined) base = enclosing.id;
+      }
       if (field === 'orelse') {
         const id = ref(base);
         const node = indexTree(program).get(id)?.node;
@@ -237,21 +252,21 @@ export function compileCommand(
           ? parentNode.id
           : undefined;
       };
-      const named = index.get(ref(base));
+      const statement = index.get(ref(base));
       let target: string;
       if (
         field === undefined &&
-        named !== undefined &&
-        !('body' in named.node) &&
-        named.node.kind !== 'BlockHole' &&
-        holder(named.node.id) !== undefined &&
+        statement !== undefined &&
+        !('body' in statement.node) &&
+        statement.node.kind !== 'BlockHole' &&
+        holder(statement.node.id) !== undefined &&
         where.length === 0
       ) {
         // `add n30: …` on a plain statement can only mean right after it.
-        target = holder(named.node.id) ?? '';
-        first = { after: named.node.id };
+        target = holder(statement.node.id) ?? '';
+        first = { after: statement.node.id };
       } else {
-        target = parent(parentRef);
+        target = parent(field === undefined ? base : `${base ?? ''}.${field}`);
       }
       // `add root after n30` with n30 inside a loop: the anchor says where.
       const anchor = 'after' in first ? first.after : 'before' in first ? first.before : undefined;
@@ -297,7 +312,14 @@ export function compileCommand(
     }
     case 'set': {
       const match = /^\s*(\S+)\.([A-Za-z]+)\s*=\s*([\s\S]*)$/.exec(rest);
-      if (match === null) throw new CommandError('usage', 'Write set <ref>.<field> = <value>');
+      if (match === null) {
+        // `set dp[0] = nums[0]`: a new statement written as a field change.
+        const statement = /[^=!<>]=(?!=)/.test(rest) ? ` such as "${rest.trim()}"` : '';
+        throw new CommandError(
+          'usage',
+          `Write set <ref>.<field> = <value>: set changes one field of an existing node, like set n12.value = 0. To write a new statement${statement}, use add <block>: <statements>`,
+        );
+      }
       const [, nodeRef, field = '', value = ''] = match;
       const newline = value.indexOf('\n');
       const statedValue =

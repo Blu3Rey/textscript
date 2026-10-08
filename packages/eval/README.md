@@ -70,7 +70,10 @@ For Gemini, `--effort` sets the thinking level. For Ollama, `--think`
 (`true`, `false`, `low`, `medium` or `high`) or `--effort` does; without
 either, the model's default applies. `--context-length` sets Ollama's
 context window (default 16384); the prompt alone is about 7,000 tokens
-before the turn.
+before the turn. A larger window helps only while the model still fits in
+GPU memory: with qwen3:14b on one consumer GPU, 24576 kept the GPU about
+98% busy, while 32768 spilled to the CPU and dropped it to about 60%.
+`--seed` (default 42) fixes Ollama's sampling, so a run can be repeated.
 
 Claude translates four walkthroughs at once. Gemini and Ollama translate
 one at a time. Gemini's free tier allows only a few requests a minute, so

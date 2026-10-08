@@ -63,7 +63,8 @@ Ollama truncates prompts that don't fit its context window, which is a few
 thousand tokens by default. The prompt with its examples is about 7,000
 tokens before the turn, so the adapter sets `num_ctx` to 16384
 (`contextLength`). `think` is left to the model unless set: some models
-take `true`/`false`, others `low`/`medium`/`high`.
+take `true`/`false`, others `low`/`medium`/`high`. Sampling uses a fixed
+`seed` (42 by default), so the same input gives the same answer.
 
 Words a translator can't encode come back as `unparsedSpans`. Apps call
 `withUnparsedNotes(context, translation)` to keep them visible as notes.

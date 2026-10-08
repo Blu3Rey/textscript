@@ -72,7 +72,7 @@ describe('the Ollama translator', () => {
       ],
       stream: false,
       format: ANSWER_JSON_SCHEMA,
-      options: { num_ctx: 16384, num_predict: 8192 },
+      options: { num_ctx: 16384, num_predict: 8192, seed: 42 },
     });
   });
 
@@ -92,13 +92,14 @@ describe('the Ollama translator', () => {
       think: 'low',
       contextLength: 32768,
       maxTokens: 2000,
+      seed: 7,
     });
     expect(translator.name).toBe('ollama:gpt-oss:20b:think-low');
     await translator.translate(context());
     expect(ollama.requests[0]).toMatchObject({
       model: 'gpt-oss:20b',
       think: 'low',
-      options: { num_ctx: 32768, num_predict: 2000 },
+      options: { num_ctx: 32768, num_predict: 2000, seed: 7 },
     });
   });
 

@@ -15,6 +15,7 @@ import {
   GEMINI_DEFAULT_MODEL,
   GEMINI_HTTP_OPTIONS,
   OLLAMA_DEFAULT_CONTEXT,
+  OLLAMA_DEFAULT_SEED,
   OLLAMA_DEFAULT_MODEL,
   rulesTranslator,
   type Effort,
@@ -117,6 +118,8 @@ Options:
                                Not every model accepts every value.
   --context-length <n>         Ollama only: context window in tokens
                                (default: ${String(OLLAMA_DEFAULT_CONTEXT)})
+  --seed <n>                   Ollama only: sampling seed, so a run can be
+                               repeated (default: ${String(OLLAMA_DEFAULT_SEED)})
   --efforts <level,...>        Efforts to sweep (default: low,medium,high)
   --concurrency <n>            Walkthroughs translated at once (default: 1;
                                4 for claude)
@@ -157,6 +160,7 @@ const VALUE_OPTIONS = new Set([
   'verifier',
   'think',
   'context-length',
+  'seed',
 ]);
 
 function parseArgs(argv: readonly string[]): Args {
@@ -287,6 +291,14 @@ function contextLengthFrom(options: Map<string, string>): number | undefined {
   return n;
 }
 
+function seedFrom(options: Map<string, string>): number | undefined {
+  const value = options.get('seed');
+  if (value === undefined) return undefined;
+  const n = Number(value);
+  if (!Number.isInteger(n)) throw new UsageError('--seed needs a whole number');
+  return n;
+}
+
 /** An LLM translator; `effort` is undefined when nobody asked for one. */
 function llmTranslator(
   provider: Provider,
@@ -313,12 +325,14 @@ function llmTranslator(
     case 'ollama': {
       const think = thinkFrom(options, effort);
       const contextLength = contextLengthFrom(options);
+      const seed = seedFrom(options);
       return createOllamaTranslator({
         ollama: ollamaFrom(io),
         model: model ?? OLLAMA_DEFAULT_MODEL,
         examples,
         ...(think === undefined ? {} : { think }),
         ...(contextLength === undefined ? {} : { contextLength }),
+        ...(seed === undefined ? {} : { seed }),
       });
     }
   }

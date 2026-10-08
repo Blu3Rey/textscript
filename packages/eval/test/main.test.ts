@@ -339,7 +339,10 @@ describe('textscript-eval', () => {
     expect(translations).toHaveLength(7);
     expect(ollama.requests).toHaveLength(7);
     expect(result.stdout).toContain('## Validator');
-    expect(translations[0]).toMatchObject({ model: 'gpt-oss:20b', options: { num_ctx: 16384 } });
+    expect(translations[0]).toMatchObject({
+      model: 'gpt-oss:20b',
+      options: { num_ctx: 16384, seed: 42 },
+    });
     expect(translations[0]).not.toHaveProperty('think');
 
     const thinking = silentOllama();
@@ -354,12 +357,17 @@ describe('textscript-eval', () => {
         'false',
         '--context-length',
         '32768',
+        '--seed',
+        '7',
       ],
       undefined,
       undefined,
       thinking,
     );
-    expect(thinking.requests[0]).toMatchObject({ think: false, options: { num_ctx: 32768 } });
+    expect(thinking.requests[0]).toMatchObject({
+      think: false,
+      options: { num_ctx: 32768, seed: 7 },
+    });
     const effort = silentOllama();
     await run(
       ['run', '--corpus', root, '--translator', 'ollama', '--effort', 'max', '--validator', 'off'],
@@ -412,6 +420,7 @@ describe('textscript-eval', () => {
     for (const [argv, message] of [
       [['--think', 'maybe'], "unknown think 'maybe'"],
       [['--context-length', '100'], '--context-length needs a whole number of tokens'],
+      [['--seed', 'x'], '--seed needs a whole number'],
     ] as const) {
       const bad = await run(
         ['run', '--corpus', root, '--translator', 'ollama', ...argv],

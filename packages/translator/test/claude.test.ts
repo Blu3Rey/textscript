@@ -9,6 +9,7 @@ import {
   packProblem,
   packTurn,
   salvageAnswer,
+  splitCommands,
   systemPrompt,
   TranslatorError,
   withUnparsedNotes,
@@ -225,6 +226,22 @@ describe('answers', () => {
     expect(op?.op === 'add_stmt' ? op.provenance : undefined).toEqual([
       { utteranceId: 'u1', start: 0, end: 7 },
     ]);
+  });
+
+  it('split commands written into one string', () => {
+    expect(splitCommands('add root: prev = 0\nadd root: curr = 0')).toEqual([
+      'add root: prev = 0',
+      'add root: curr = 0',
+    ]);
+    // Body lines, and Python that starts with a command word, stay put.
+    expect(splitCommands('add root:\n    for x in xs:\n        ...\nadd = 1')).toEqual([
+      'add root:\n    for x in xs:\n        ...\nadd = 1',
+    ]);
+    const result = encodeAnswer(context(), {
+      commands: [{ command: 'add root: x = 1\nremove n99', words: [] }],
+      unparsed: [],
+    });
+    expect(result).toMatchObject({ ok: false, index: 1, command: 'remove n99' });
   });
 
   it('salvage keeps commands that depend on earlier kept ones', () => {
