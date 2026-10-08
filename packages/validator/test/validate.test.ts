@@ -300,6 +300,39 @@ describe('validate', () => {
     expect(check.heldBack).toEqual([]);
   });
 
+  it("doesn't take the pronoun I for the variable i", () => {
+    const s = new Session();
+    const pronoun = s.say("I'll go through the numbers.", 'add root: for i in nums:\n    ...');
+    expect(pronoun.heldBack.map((h) => h.proposed)).toEqual(['i']);
+    const variable = s.say('Loop with i over nums.', 'add root: for i in nums:\n    ...');
+    expect(variable.heldBack).toEqual([]);
+  });
+
+  it('calls the speaker\'s own functions by name, not by "that"', () => {
+    const s = new Session();
+    s.say('Define explore on r.', 'add root:\n    def explore(r):\n        ...');
+    const that = s.say('And inside that, the main part.', 'add root: explore(0)');
+    expect(that.heldBack.map((h) => h.proposed)).toEqual(['explore(0)']);
+    const named = s.say('Explore from zero.', 'add root: explore(0)');
+    expect(named.heldBack).toEqual([]);
+  });
+
+  it('holds back returning a condition when the words return True only under it', () => {
+    const s = new Session();
+    s.say('Make a list called queue.', 'add root: queue = []');
+    const result = s.say('Return True if the queue is empty.', 'add root: return not queue');
+    expect(result.heldBack).toMatchObject([
+      {
+        code: 'VAL003',
+        proposed: 'return not queue',
+        message:
+          'The words "Return True if the queue is empty." say when it returns True, not what it returns otherwise',
+      },
+    ]);
+    const whether = s.say('Return whether the queue is empty.', 'add root: return not queue');
+    expect(whether.heldBack).toEqual([]);
+  });
+
   it("doesn't let a collection's name stand for its loop variable's", () => {
     const s = new Session();
     expect(

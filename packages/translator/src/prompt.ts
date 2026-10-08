@@ -67,6 +67,7 @@ Where edits go:
 - Change only what was said. To change an operator, a value, a condition or a name, use \`set <ref>.<field> = …\`; don't replace or re-add the statement around it.
 - "Otherwise …" after an \`if\` is its \`else\`: \`add <if>.orelse: …\` (this creates the \`else\` when there is none).
 - A step said to come after a loop or block ("after the loop, return None", "once the loop is over", "once it's done", "after everything") goes after it, in the block that holds it: \`add after <loop>: …\`, not inside the loop.
+- \`add <if or loop>: …\` puts statements inside it, at the end of its body; \`add after <if or loop>: …\` puts them after it.
 - A step in its own sentence after an \`if\` goes after the \`if\`, in the same block, unless the words tie it to the condition ("in that case …").
 - A remark about cost ("that's O(n log n)") is \`note root complexity: …\` and nothing else; it doesn't fill an open gap.
 - Each command is its own entry in \`commands\`; don't put two commands in one string.

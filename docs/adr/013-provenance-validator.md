@@ -114,6 +114,21 @@ loop. A `return` stays, because "return" says it returns; so do holes
 the model wrote with the speaker's words. Gold false rejections stayed at
 1.4%.
 
+Three more came from the eighth run:
+
+- The pronoun "I" no longer says the variable `i`. "So I'll just scan"
+  had kept an empty `for i in range(⟨held back⟩)` alive. Every spoken `i`
+  in the corpus is lowercase.
+- A function the program defines is called by name. "Inside that" had
+  let an invented `sink(r, c)` through. Built-ins like `len` still accept
+  "it", which gold relies on.
+- "Return True if the stack is empty" written as `return not stack` is
+  held back. The words say when it returns True, not what it returns
+  otherwise, and returning the condition closes that gap.
+
+Gold false rejections stayed at 1.4%. A removed empty statement now gives
+one notice instead of one for each of its parts.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

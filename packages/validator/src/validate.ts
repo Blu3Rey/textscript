@@ -266,6 +266,8 @@ class Checker {
   readonly #inputs: ReadonlySet<string>;
   /** Shapes of the code the batch removes: rebuilding it needs no new words. */
   readonly #existing: ReadonlySet<string>;
+  /** Functions the program defines: called by name, not by "it" or "that". */
+  readonly #functions: ReadonlySet<string>;
 
   constructor(
     input: ValidationInput,
@@ -274,6 +276,11 @@ class Checker {
     existing: ReadonlySet<string>,
   ) {
     this.#existing = existing;
+    const functions = new Set<string>();
+    walk(input.document.program, (node) => {
+      if (node.kind === 'FunctionDef' && node.name.kind === 'Name') functions.add(node.name.name);
+    });
+    this.#functions = functions;
     this.#utterances = input.utterances;
     this.#current = input.utterances.findIndex((u) => u.id === input.batch.utteranceId);
     this.#before = before;
@@ -317,11 +324,26 @@ class Checker {
     return spans.map((span) => quoteSpan(span, this.#utterances) ?? '').join(' … ');
   }
 
-  name(name: string, words: Words, binding: boolean): boolean {
+  /** "Return True if …": the literal returned under a condition, if the words say one. */
+  conditionalReturn(words: Words): 'True' | 'False' | undefined {
+    const { tokens } = words;
+    for (let i = 0; i < tokens.length; i++) {
+      const literal = tokens[i + 1];
+      if (!(tokens[i] ?? '').startsWith('return') || (literal !== 'true' && literal !== 'false'))
+        continue;
+      const next = tokens.slice(i + 2, i + 4);
+      if (next.some((word) => ['if', 'when', 'whenever', 'unless', 'once'].includes(word)))
+        return literal === 'true' ? 'True' : 'False';
+    }
+    return undefined;
+  }
+
+  /** `refer`: whether "it" or "the list" can stand for a name already set up. */
+  name(name: string, words: Words, binding: boolean, refer = true): boolean {
     if (nameSaid(name, words, NAME_SYNONYMS)) return true;
     const callee = CALLEE_CUES[name];
     if (callee !== undefined && words.hasAny(callee)) return true;
-    if (binding || !this.#known.has(name)) return false;
+    if (binding || !refer || !this.#known.has(name)) return false;
     // A name already set up can be referred to without saying it.
     return words.hasAny(REFERENCE_WORDS) || (this.#inputs.has(name) && words.hasAny(INPUT_WORDS));
   }
@@ -429,7 +451,10 @@ class Checker {
         );
       case 'Call': {
         const { callee } = node;
-        if (callee.kind === 'Name') return yes(this.name(callee.name, words, false));
+        // "inside that" doesn't call `sink`: the speaker's own functions
+        // are called by name.
+        if (callee.kind === 'Name')
+          return yes(this.name(callee.name, words, false, !this.#functions.has(callee.name)));
         if (callee.kind === 'Attribute')
           return yes(
             nameSaid(callee.name, words, NAME_SYNONYMS) ||
@@ -815,6 +840,24 @@ export function validate(input: ValidationInput): ValidationResult {
         i = end;
       }
     }
+    // "Return True if the stack is empty" as `return not stack`: the words
+    // say when it returns True, not what it returns otherwise.
+    const value = node.kind === 'Return' ? node.value : undefined;
+    const literal =
+      value !== undefined &&
+      (BOOLEAN_KINDS.has(value.kind) || (value.kind === 'UnaryOp' && value.op === 'not'))
+        ? checker.conditionalReturn(words)
+        : undefined;
+    if (literal !== undefined) {
+      holdBack(
+        node,
+        position,
+        'VAL003',
+        `The words "${checker.quote(spans)}" say when it returns ${literal}, not what it returns otherwise`,
+        spans,
+      );
+      return false;
+    }
     // `islands = 0` from "add one to islands": with the value held back, the
     // line would still claim a setup nobody described, so it goes too.
     if (
@@ -917,6 +960,13 @@ export function validate(input: ValidationInput): ValidationResult {
   if (tentative.ok) {
     for (const { node, position } of shells(tentative.document.program, isNew)) {
       const original = index.get(node.id)?.node ?? node;
+      // One notice for the statement, instead of one for each part of it.
+      const inside = new Set(allNodes(original).map((n) => n.id));
+      for (let i = heldBack.length - 1; i >= 0; i--) {
+        const target = heldBack[i]?.target;
+        if (target !== undefined && 'node' in target && inside.has(target.node))
+          heldBack.splice(i, 1);
+      }
       holdBack(
         node,
         position,

@@ -109,7 +109,9 @@ export class Words {
       if (utterance === undefined) continue;
       if (tokens.length > 0) tokens.push('');
       for (const token of utterance.tokens.slice(span.start, span.end))
-        tokens.push(normalize(token.text));
+        // "I'll scan": the pronoun, not the variable `i`, which is said
+        // in lowercase ("nums at i").
+        tokens.push(/^I(?:['’]\p{L}+)?$/u.test(token.text) ? 'myself' : normalize(token.text));
     }
     return new Words(tokens);
   }
