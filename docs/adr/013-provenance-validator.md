@@ -98,6 +98,11 @@ is held back loses its whole line, unless a setup word ("starts", "set",
 `islands = 0` became `islands = ?`, which closed the "never set up" gap
 the speaker left open; now the line is held back as a whole.
 
+The sixth run turned "the key is just count" into `key = tuple(count)`,
+fixing a mistake the speaker corrects one utterance later. The words
+passed because "key" and "sorted" were cues for `tuple`. Only "tuple" and
+"pair" are now; gold false rejections stayed at 1.4%.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

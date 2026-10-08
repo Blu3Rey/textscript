@@ -898,7 +898,7 @@ export const CALLEE_CUES: Readonly<Record<string, readonly string[]>> = {
   insert: ['insert', 'add', 'put'],
   copy: ['copy', 'snapshot', 'clone'],
   isinstance: ['type', 'kind', 'is a'],
-  tuple: ['tuple', 'pair', 'key', 'sorted'],
+  tuple: ['tuple', 'pair'],
 };
 
 /** Single-letter and common short names: the words that can say them. */

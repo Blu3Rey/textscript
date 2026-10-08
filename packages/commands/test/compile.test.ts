@@ -147,6 +147,24 @@ describe('compileCommands', () => {
     expect(fail('add root: x = = 1')).toMatchObject({ ok: false, code: 'syntax' });
     expect(fail('frobnicate')).toMatchObject({ ok: false, code: 'unknown-command' });
     expect(fail('add root after n1: x = 1')).toMatchObject({ ok: false, code: 'invalid-anchor' });
+    const fill = fail('fill h1:\n    x = 1\n    y = 2');
+    expect(fill).toMatchObject({
+      ok: false,
+      code: 'bad-ref',
+      message:
+        'There is no hole h1; there are 0 holes. To add statements, use add <block>: <statements>, or add <if>.orelse: <statements> for "otherwise"',
+    });
+    const loopElse = compileCommands(
+      empty,
+      [{ text: 'add root: for x in xs:\n    ...' }, { text: 'set n2.orelse = print(x)' }],
+      { utteranceId: 'u1', provenance: whole },
+    );
+    expect(loopElse).toMatchObject({
+      ok: false,
+      code: 'usage',
+      message:
+        'ForEach n2 has no else. For "otherwise" after an if, use add <if>.orelse: <statements>',
+    });
     const set = fail('set dp[0] = nums[0]');
     expect(set).toMatchObject({ ok: false, code: 'usage' });
     expect(set.ok ? '' : set.message).toContain(

@@ -190,6 +190,19 @@ The fifth run's traces added more of the same:
 The eval treats an empty `list()`, `tuple()` or `dict()` as the empty
 literal, the same way it treats `x = x + y` and `x += y`.
 
+In the sixth run, three steps failed first because the model tried to
+`fill h1` when there were no holes. Each wanted new statements, twice for
+an "otherwise". That error, and `set <loop>.orelse = …`, now say to use
+`add <block>:` or `add <if>.orelse:`. The prompt also says to keep the
+speaker's names ("each amount" is `amount`, not `num`) and not to make a
+correction before the speaker does.
+
+The prompt's examples must not come from the held-out split, or the test
+run scores answers the prompt gave away. A few had: "Return True if the
+stack is empty", "at the very end" and "when the loop ends" are test
+utterances. They were replaced with phrases that appear nowhere in the
+corpus.
+
 ## Consequences
 
 - The model can only make edits the command language can express, which

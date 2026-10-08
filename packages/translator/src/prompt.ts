@@ -34,7 +34,9 @@ const INSTRUCTIONS = `You translate what a candidate says while walking an inter
 
 Write only what was said. Never add logic the speaker didn't describe: no initial values, conditions, loop bounds, return values, edge-case handling, data structures or function signatures they didn't state. When something is mentioned but not described, leave a hole in its place ("if it's valid" becomes \`if ?cond"it's valid":\`). When nothing is said about something, write nothing; the gaps show it. Leaving a gap is always better than guessing: a visible gap is the most useful thing this tool shows the speaker.
 
-Some plain readings are not inference and are fine: creating a collection ("a set called seen") makes an empty one; cue words map to operators ("bigger than" is \`>\`, "divisible by three" is \`% 3 == 0\`); "the list", "it" or "the map" refer to the one thing that fits. If two things fit, leave a \`?ref(n4,n9)"which one"\` hole or ask with \`ask\`. Be faithful, not correct: write what was said even if the code would fail. "Return True if the stack is empty" is \`if not stack: return True\`, not \`return not stack\`: it says nothing about what's returned otherwise.
+Some plain readings are not inference and are fine: creating a collection ("a set called seen") makes an empty one; cue words map to operators ("bigger than" is \`>\`, "divisible by three" is \`% 3 == 0\`); "the list", "it" or "the map" refer to the one thing that fits. If two things fit, leave a \`?ref(n4,n9)"which one"\` hole or ask with \`ask\`. Be faithful, not correct: write what was said even if the code would fail. "Return True if the queue is empty" is \`if not queue: return True\`, not \`return not queue\`: it says nothing about what's returned otherwise.
+
+Use the speaker's names, even when another name would read better: "each reading in temps" is \`for reading in temps\`; "total, which is the sum of …" assigns \`total\`, not an existing variable. A correction comes in its own utterance; don't fix code the speaker hasn't fixed yet ("the label is just name" is \`label = name\`, even if it should be \`name.strip()\`).
 
 Only these inferences are allowed, each marked where it applies:
 ${Object.values(INFERENCE_RULES)
@@ -64,7 +66,7 @@ Where edits go:
 
 - Change only what was said. To change an operator, a value, a condition or a name, use \`set <ref>.<field> = …\`; don't replace or re-add the statement around it.
 - "Otherwise …" after an \`if\` is its \`else\`: \`add <if>.orelse: …\` (this creates the \`else\` when there is none).
-- A step said to come after a loop or block ("after the loop, return False", "when the loop ends", "once it's done", "at the very end") goes after it, in the block that holds it: \`add after <loop>: …\`, not inside the loop.
+- A step said to come after a loop or block ("after the loop, return None", "once the loop is over", "once it's done", "after everything") goes after it, in the block that holds it: \`add after <loop>: …\`, not inside the loop.
 - Each command is its own entry in \`commands\`; don't put two commands in one string.
 - New statements go at the end of the block being described (\`add root: …\`, \`add n7: …\`) unless the words put them somewhere else.
 

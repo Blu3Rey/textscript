@@ -267,6 +267,15 @@ describe('validate', () => {
     ).toEqual(['7']);
   });
 
+  it('holds back a conversion nobody said', () => {
+    const s = new Session();
+    s.say('Make a list called count.', 'add root: count = []');
+    const result = s.say('The key is just count itself.', 'add root: key = tuple(count)');
+    expect(result.heldBack.map((h) => [h.code, h.proposed])).toEqual([['VAL003', 'tuple(count)']]);
+    const said = s.say('Make the key the tuple of count.', 'add root: key = tuple(count)');
+    expect(said.heldBack).toEqual([]);
+  });
+
   it("doesn't let a collection's name stand for its loop variable's", () => {
     const s = new Session();
     expect(

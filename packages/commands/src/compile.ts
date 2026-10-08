@@ -286,7 +286,17 @@ export function compileCommand(
     }
     case 'fill': {
       const { head, body } = headAndBody(rest, 'Write fill <hole>: <code>');
-      const hole = ref(head);
+      let hole: string;
+      try {
+        hole = ref(head);
+      } catch (error) {
+        // Statements for a hole that isn't there: nothing was left open
+        // for them, so they are new code.
+        if (!(error instanceof RefError) || !looksLikeStatements(body)) throw error;
+        throw new RefError(
+          `${error.message}. To add statements, use add <block>: <statements>, or add <if>.orelse: <statements> for "otherwise"`,
+        );
+      }
       const kind = indexTree(program).get(hole)?.node.kind;
       if (kind !== undefined && kind !== 'BlockHole' && looksLikeStatements(body)) {
         const what =
@@ -334,6 +344,12 @@ export function compileCommand(
       if (field === 'value' && target?.kind === 'Assign' && target.target.kind === 'Name') {
         const prefix = new RegExp(`^\\s*${target.target.name}\\s*=(?!=)\\s*`);
         valueText = valueText.replace(prefix, '');
+      }
+      if (field === 'orelse' && target !== undefined && target.kind !== 'If') {
+        throw new CommandError(
+          'usage',
+          `${target.kind} ${node} has no else. For "otherwise" after an if, use add <if>.orelse: <statements>`,
+        );
       }
       const childFields: readonly string[] = target ? CHILD_FIELDS[target.kind] : [];
       let newValue: JsonValue | Stmt | Block | ReturnType<typeof parseExpression>;
