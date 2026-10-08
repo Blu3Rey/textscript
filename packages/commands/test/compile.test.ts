@@ -67,6 +67,7 @@ describe('compileCommands', () => {
       );
     // n2 is the loop, n6 the first statement in it.
     const setup = 'add root:\n    for x in xs:\n        y = x\n        return y';
+    const branch = 'add root:\n    if x:\n        continue';
     // The anchor says where: `root` is overruled by n6's own block.
     expect(render(run(setup, 'add root after n6: z = 1').document.program).text).toBe(
       'for x in xs:\n    y = x\n    z = 1\n    return y\n',
@@ -87,8 +88,18 @@ describe('compileCommands', () => {
     expect(render(run(setup, 'add before n9: z = 1').document.program).text).toBe(
       'for x in xs:\n    y = x\n    z = 1\n    return y\n',
     );
+    // `add after <if>: else: …` is that if's else.
+    expect(
+      render(run(branch, 'add after n2: else:\n    y = 1\n    z = 2').document.program).text,
+    ).toBe('if x:\n    continue\nelse:\n    y = 1\n    z = 2\n');
+    // Two adds after the same statement keep the order they were said in.
+    expect(
+      render(
+        run(setup, 'add after n6: a = 1', 'add after n6: b = 2\nc = 3', 'add after n6: d = 4')
+          .document.program,
+      ).text,
+    ).toBe('for x in xs:\n    y = x\n    a = 1\n    b = 2\n    c = 3\n    d = 4\n    return y\n');
     // `<statement>.orelse` with the statement inside an `if`: that `if`'s else.
-    const branch = 'add root:\n    if x:\n        continue';
     expect(render(run(branch, 'add n5.orelse: y = 1').document.program).text).toBe(
       'if x:\n    continue\nelse:\n    y = 1\n',
     );
@@ -197,6 +208,16 @@ describe('compileCommand', () => {
 describe('joinBody', () => {
   it("keeps lines written at an inline header's own level as they are", () => {
     expect(joinBody('if x:', '    y = 1\nz = 2')).toBe('if x:\n    y = 1\nz = 2');
+  });
+
+  it('puts an inline header at the level of its own else', () => {
+    expect(joinBody('if x:', '        y = 1\n    else:\n        z = 2')).toBe(
+      'if x:\n    y = 1\nelse:\n    z = 2',
+    );
+    // An else that closes an if inside the body stays inside it.
+    expect(joinBody('if x:', '    if y:\n        a = 1\n    else:\n        b = 2')).toBe(
+      'if x:\n    if y:\n        a = 1\n    else:\n        b = 2',
+    );
   });
 
   it('keeps lines below an inline compound header nested', () => {

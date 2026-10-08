@@ -133,6 +133,11 @@ export function joinBody(inline: string, more: string): string {
   const first = lines[0] ?? '';
   if (inline.endsWith(':') && indent === 0 && first.length - first.trimStart().length > 0)
     return [inline, ...lines].join('\n');
+  // "replace n22: if x:\n        y\n    else:\n        z": an `else` that is
+  // the first line at the lines' own level is the header's, so the header
+  // sits at that level.
+  const outer = below.find((line) => !/^\s/.test(line)) ?? '';
+  if (inline.endsWith(':') && /^(else|elif)\b/.test(outer)) return [inline, ...below].join('\n');
   const nested = inline.endsWith(':') ? below.map((line) => `    ${line}`) : below;
   return [inline, ...nested].join('\n');
 }
@@ -217,11 +222,24 @@ export function compileCommand(
 
   switch (word) {
     case 'add': {
-      const { head, body } = headAndBody(rest, 'Write add <parent> [position]: <statements>');
+      const command = headAndBody(rest, 'Write add <parent> [position]: <statements>');
+      let { body } = command;
       // `add after n7: …`: the anchor alone says where.
-      const words = head.split(/\s+/);
-      const [parentRef, ...where] =
+      const words = command.head.split(/\s+/);
+      let [parentRef, ...where] =
         words[0] === 'after' || words[0] === 'before' ? ['root', ...words] : words;
+      // `add after n22: else: …` with n22 an `if`: its `else`.
+      const elseOf = where[0] === 'after' ? where[1] : undefined;
+      const elseBody = /^else\s*:(.*)\n?([\s\S]*)$/.exec(body);
+      if (
+        elseOf !== undefined &&
+        elseBody !== null &&
+        indexTree(program).get(ref(elseOf))?.node.kind === 'If'
+      ) {
+        parentRef = `${elseOf}.orelse`;
+        where = [];
+        body = joinBody(elseBody[1]?.trim() ?? '', elseBody[2] ?? '');
+      }
       const [named, field] = (parentRef ?? '').split('.');
       let base = named;
       if (field === 'orelse') {
@@ -495,6 +513,16 @@ export type CompileBatchResult =
  * before, so later commands can refer to what earlier ones made. Stops at
  * the first command that doesn't compile or apply.
  */
+/** The statement `steps` places after `id` in the same block. */
+function siblingAfter(document: IrDocument, id: string, steps: number): string | undefined {
+  const position = indexTree(document.program).get(id)?.position;
+  if (position?.index === undefined) return undefined;
+  const { parent } = position;
+  const stmts =
+    parent.kind === 'Block' ? parent.stmts : parent.kind === 'Program' ? parent.body : [];
+  return stmts[position.index + steps]?.id;
+}
+
 export function compileCommands(
   document: IrDocument,
   commands: readonly CommandInput[],
@@ -505,6 +533,9 @@ export function compileCommands(
   let current = document;
   let clarifications: Clarification[] = [];
   const nextId = () => `t${String(++temp)}`;
+  // "add after n13: a", then "add after n13: b": b goes after a, in the
+  // order said, not between n13 and a.
+  const lastAfter = new Map<string, string>();
   for (const [index, command] of commands.entries()) {
     const failure = (code: string, message: string): CompileBatchResult => ({
       ok: false,
@@ -526,6 +557,12 @@ export function compileCommands(
       if (known === undefined) throw error;
       return failure(known.code, known.message);
     }
+    const [head] = compiled;
+    const anchor =
+      head?.op === 'add_stmt' && 'after' in head.position ? head.position.after : undefined;
+    const after = anchor === undefined ? undefined : (lastAfter.get(anchor) ?? anchor);
+    if (head?.op === 'add_stmt' && after !== undefined)
+      compiled = [{ ...head, position: { after } }, ...compiled.slice(1)];
     const all = [...ops, ...compiled];
     const result = apply(document, { utteranceId: options.utteranceId, ops: all });
     if (!result.ok) {
@@ -537,6 +574,11 @@ export function compileCommands(
     ops = all;
     current = result.document;
     clarifications = result.clarifications;
+    if (anchor !== undefined && after !== undefined) {
+      const added = compiled.filter((op) => op.op === 'add_stmt').length;
+      const last = siblingAfter(current, after, added);
+      if (last !== undefined) lastAfter.set(anchor, last);
+    }
   }
   return {
     ok: true,

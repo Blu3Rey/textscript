@@ -907,10 +907,27 @@ export function validate(input: ValidationInput): ValidationResult {
   });
 
   if (heldBack.length === 0) return { batch, heldBack, checked, claims };
-  const validated: EditBatch = {
+  const remaining = (): EditBatch => ({
     utteranceId: batch.utteranceId,
     ops: [...batch.ops.filter((_, i) => !dropped.has(i)), ...downgrades],
-  };
+  });
+  // "Scan for that drop" as `for i in range(?): if ?: ...`: with the unsaid
+  // parts held back, nothing said is left but a keyword, so it goes too.
+  const tentative = apply(document, remaining());
+  if (tentative.ok) {
+    for (const { node, position } of shells(tentative.document.program, isNew)) {
+      const original = index.get(node.id)?.node ?? node;
+      holdBack(
+        node,
+        position,
+        'VAL003',
+        `The words "${checker.quote(node.provenance)}" don't say any part of \`${codeOf(original)}\``,
+        node.provenance,
+        codeOf(original),
+      );
+    }
+  }
+  const validated = remaining();
   if (!apply(document, validated).ok) {
     // Shouldn't happen; if it does, nothing unchecked gets through.
     return { batch: { utteranceId: batch.utteranceId, ops: [] }, heldBack, checked, claims: [] };
@@ -928,6 +945,45 @@ export function validate(input: ValidationInput): ValidationResult {
     checked,
     claims: claims.filter((claim) => !gone.has(claim.node)),
   };
+}
+
+/**
+ * New statements with nothing said left in them: every expression held back
+ * or inferred, at least one held back, and no statements kept in their
+ * blocks. A `return` stays: "return" says it returns. Outermost first.
+ */
+function shells(
+  program: IrNode,
+  isNew: (id: NodeId) => boolean,
+): { node: IrNode; position: Position | undefined }[] {
+  const empty = (node: IrNode): boolean => {
+    if (!isNew(node.id) || node.kind === 'Return') return false;
+    let heldBack = false;
+    for (const { node: child } of children(node)) {
+      if (child.kind === 'BlockHole') continue;
+      if (child.kind === 'Block') {
+        if (child.stmts.every((stmt) => stmt.kind === 'BlockHole' || empty(stmt))) continue;
+        return false;
+      }
+      if (child.kind === 'Elif') {
+        if (empty(child)) continue;
+        return false;
+      }
+      if ('reason' in child && child.reason === HELD_BACK_REASON) {
+        heldBack = true;
+        continue;
+      }
+      if (child.inferred === undefined) return false;
+    }
+    return heldBack;
+  };
+  const found: { node: IrNode; position: Position | undefined }[] = [];
+  walk(program, (node, { position }) => {
+    if (!isStatementSlot(position) || !empty(node)) return;
+    found.push({ node, position });
+    return false;
+  });
+  return found;
 }
 
 function describeOp(op: EditOp): string {

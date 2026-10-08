@@ -197,6 +197,18 @@ an "otherwise". That error, and `set <loop>.orelse = …`, now say to use
 speaker's names ("each amount" is `amount`, not `num`) and not to make a
 correction before the speaker does.
 
+The seventh run's traces added three more:
+
+- Two commands adding after the same statement keep the order they were
+  said in. "prev becomes curr, and curr becomes best" as two `add after
+  n13` commands had put `curr = best` first.
+- In `replace n22: if x:` with its `else:` written at the level of the
+  lines below, the header is at that level.
+- `add after <if>: else: …` is that `if`'s `else`.
+
+The prompt now also says that a remark about cost is only a complexity
+note, and that a step in its own sentence after an `if` goes after it.
+
 The prompt's examples must not come from the held-out split, or the test
 run scores answers the prompt gave away. A few had: "Return True if the
 stack is empty", "at the very end" and "when the loop ends" are test

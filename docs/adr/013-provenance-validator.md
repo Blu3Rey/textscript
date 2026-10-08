@@ -103,6 +103,17 @@ fixing a mistake the speaker corrects one utterance later. The words
 passed because "key" and "sorted" were cues for `tuple`. Only "tuple" and
 "pair" are now; gold false rejections stayed at 1.4%.
 
+The seventh run showed what holding back parts can leave behind. "So I'll
+scan for that drop" became `for i in range(⟨held back⟩): if ⟨held back⟩:
+...`, and a musing became `⟨held back⟩ = ⟨held back⟩`. Only a keyword
+was left, and a weak one ("that" is a cue for `if`). A new statement with
+nothing said left in it is now held back whole: every expression in it
+held back or inferred, at least one held back, and no statements kept in
+its blocks. The check runs bottom-up, so an emptied `if` empties its
+loop. A `return` stays, because "return" says it returns; so do holes
+the model wrote with the speaker's words. Gold false rejections stayed at
+1.4%.
+
 Code that a batch removes and rebuilds unchanged needs no new words
 (restructuring an `if` chain, for example). It was checked when it was
 first said.

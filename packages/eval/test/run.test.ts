@@ -329,7 +329,8 @@ describe('the validator', () => {
       validator: mumbled,
     });
     expect(metrics.validation?.falseRejection.value).toBeGreaterThan(0.5);
-    expect(metrics.faithfulness.value).toBe(1);
+    // Nothing said is left, so nothing unsupported is either.
+    expect(metrics.faithfulness.numerator).toBe(metrics.faithfulness.denominator);
     const held = steps.flatMap((s) => s.validation?.heldBack ?? []);
     expect(held.some((h) => h.falseRejection)).toBe(true);
     const report = markdownReport({ translator: 'oracle', steps, metrics });

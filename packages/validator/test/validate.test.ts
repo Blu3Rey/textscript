@@ -276,6 +276,30 @@ describe('validate', () => {
     expect(said.heldBack).toEqual([]);
   });
 
+  it('holds back a statement with nothing said left in it', () => {
+    const s = new Session();
+    const scan = s.say(
+      "It's sorted except for one drop, so I'll scan for that drop.",
+      'add root:\n    for i in range(len(nums) - 1):\n        if nums[i] > nums[i + 1]:\n            return nums[i + 1]',
+    );
+    expect(scan.heldBack.at(-1)).toMatchObject({
+      code: 'VAL003',
+      proposed: 'for i in range(len(nums) - 1): …',
+    });
+    expect(s.code).toBe('');
+    const musing = s.say('I keep landing on the same thing, right?', 'add root: visited = set()');
+    expect(musing.heldBack.at(-1)?.proposed).toBe('visited = set()');
+    expect(s.code).toBe('');
+    // A said `return`, and holes written with the speaker's words, stay.
+    s.say('Return the answer.', 'add root: return best');
+    expect(s.code).toBe(`return ${hole}\n`);
+    const check = s.say(
+      'If it is valid, do something.',
+      'add root:\n    if ?cond"it is valid":\n        ...',
+    );
+    expect(check.heldBack).toEqual([]);
+  });
+
   it("doesn't let a collection's name stand for its loop variable's", () => {
     const s = new Session();
     expect(
